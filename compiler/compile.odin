@@ -13,5 +13,9 @@ compile_run :: proc() {
 
     libc.system(strings.clone_to_cstring(exec))
 
-    //os.remove(cargs.out)
+    os.remove(cargs.odin_file)
+
+    if cargs.command == "run" {
+        os.remove(cargs.out)
+    }
 }

@@ -1,8 +1,8 @@
 PROJECT_NAME  := Stanczyk
 NAME          := ./skc
-CODE          := ./code
+CODE          := ./compiler
 
 default: main
 
 main:
-	@ go build -o $(NAME) $(CODE)
+	@ odin build $(CODE) -out:$(NAME)

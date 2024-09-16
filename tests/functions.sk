@@ -1,42 +1,46 @@
-using "io"
+; using "io"
 
-;; Test: functions
+;; Test: Functions
 ;; Description:
-;    simple function composition
+;    simple fn composition
 
-function S do
+fn println any (
+  print "\n" print
+)
+
+fn S (
   "S" print
-.
+)
 
-function t do
+fn t (
   "t" print
-.
+)
 
-function a do
+fn a (
   "a" print
-.
+)
 
-function ń do
+fn ń (
   "ń" print
-.
+)
 
-function c do
+fn c (
   "c" print
-.
+)
 
-function z do
+fn z (
   "z" print
-.
+)
 
-function y do
+fn y (
   "y" print
-.
+)
 
-function k do
+fn k (
   "k" println
-.
+)
 
-function main do
+fn main (
   "Stańczyk  " print
   S t a ń c z y k
-.
+)

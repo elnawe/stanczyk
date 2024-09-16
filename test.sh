@@ -55,7 +55,6 @@ for FILE in tests/*.sk; do
             ./skc run ${TEST_SRC}.sk > ${TEST_SRC}.txt
         fi
 
-
         ./skc run ${TEST_SRC}.sk > result.txt
 
         RESULT=$(diff ${TEST_SRC}.txt result.txt)

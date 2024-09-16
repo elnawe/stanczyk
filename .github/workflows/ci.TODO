@@ -8,6 +8,10 @@ jobs:
             - name: run tests
               run: |
                    sudo apt-get update
-                   sudo apt-get install -qq make yasm
+                   sudo apt-get install -qq make llvm-dev
+                   git clone https://github.com/odin-lang/Odin
+                   cd Odin
+                   make release-native
+                   cd ..
                    make
                    bash ./test.sh

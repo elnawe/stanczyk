@@ -3,10 +3,10 @@ using "io"
 ;; Test: strings
 ;; Description:
 ;    String writing and string length checking
-function main do
+function main (
   ; Check the length
   "Hello, World\n" strlen println
 
   ; Print something
   "Hello, Stańczyk!" println
-.
+)

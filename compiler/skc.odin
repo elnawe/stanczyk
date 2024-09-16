@@ -124,6 +124,7 @@ main :: proc() {
 
     no_ext_name := strings.split(cargs.entry, ".")[0]
     cargs.odin_file = strings.concatenate({ no_ext_name, ".odin", })
+    cargs.out = get_os_extension(no_ext_name)
 
     for index := 3; index < len(os.args); index += 1 {
         arg := os.args[index]
@@ -137,63 +138,7 @@ main :: proc() {
         }
     }
 
-    if cargs.out == "" {
-        cargs.out = get_os_extension(cargs.entry)
-    }
-
     start_compiling_process()
-
-    // setup_and_create_ast()
-    // generate_code_for_program()
-    // compile_results()
-
-    // if len(program.compiler_errors) > 0 {
-    //     fmt.println("COMPILER ERROR")
-
-    //     for error in program.compiler_errors {
-    //         loc := error.token.location
-
-    //         switch error.error_type {
-    //         case .UNKNOWN:
-    //             fmt.printfln(
-    //                 "{0}:{1}:{2}: error: Unknown error. This could be a compiler bug.\nPlease report at https://github.com/nawetimebomb/stanczyk",
-    //                 loc.filename, loc.line, loc.column,
-    //             )
-    //         case .BLOCK_OF_CODE_CLOSURE_EXPECTED:
-    //             fmt.printfln(
-    //                 "{0}:{1}:{2}: error: missing dot (.) at the end of block of code",
-    //                 loc.filename, loc.line, loc.column,
-    //             )
-    //         case .FUNCTION_IDENTIFIER_ALREADY_EXISTS:
-    //             fmt.printfln(
-    //                 "{0}:{1}:{2}: error: function identifier already exists",
-    //                 loc.filename, loc.line, loc.column,
-    //             )
-    //         case .FUNCTION_IDENTIFIER_IS_NOT_A_VALID_WORD:
-    //             fmt.printfln(
-    //                 "{0}:{1}:{2}: error: function identifier is not a valid word",
-    //                 loc.filename, loc.line, loc.column,
-    //             )
-    //         case .MISSING_IDENTIFIER_FOR_NUMERIC_CONSTANT:
-    //             fmt.printfln(
-    //                 "{0}:{1}:{2}: error: expected identifier before numeric constant",
-    //                 loc.filename, loc.line, loc.column,
-    //             )
-    //         case .MISSING_STACK_VALUE_FOR_OPERATION:
-    //             fmt.printfln(
-    //                 "{0}:{1}:{2}: error: missing stack value for operation",
-    //                 loc.filename, loc.line, loc.column,
-    //             )
-    //         case .WORK_IN_PROGRESS:
-    //             fmt.printfln(
-    //                 "{0}:{1}:{2}: error: WIP message",
-    //                 loc.filename, loc.line, loc.column,
-    //             )
-    //         }
-    //     }
-
-    //     return
-    // }
 }
 
 start_compiling_process :: proc() {
