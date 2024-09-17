@@ -52,84 +52,89 @@
 ;; TODO: Add descriptions
 
 ;; File descriptor (fd)
-const STDIN  0 .
-const STDOUT 1 .
-const STDERR 2 .
+; const STDIN  0 .
+; const STDOUT 1 .
+; const STDERR 2 .
 
-const LINUX_READ  0  .
-const LINUX_WRITE 1  .
-const LINUX_EXIT  60 .
+; const LINUX_READ  0  .
+; const LINUX_WRITE 1  .
+; const LINUX_EXIT  60 .
 
-const READ      0   .
-const WRITE     1   .
-const READWRITE 2   .
-const CREATE    64  .
-const TRUNCATE  512 .
+; const READ      0   .
+; const WRITE     1   .
+; const READWRITE 2   .
+; const CREATE    64  .
+; const TRUNCATE  512 .
 
-function []argv int -> ptr do
-  8 * argv (int) + (ptr) ->64
-  if dup (int) 0 = do
-    dup print
-    "argv empty" error
-  .
-.
+; function []argv int -> ptr do
+;   8 * argv (int) + (ptr) ->64
+;   if dup (int) 0 = do
+;     dup print
+;     "argv empty" error
+;   .
+; .
 
-function clear do
-  "\e[H\e[2J" print
-.
+; function clear do
+;   "\e[H\e[2J" print
+; .
 
-function eputs ptr do
-  dup strlen swap
-  STDERR LINUX_WRITE
-  syscall int ptr int int .
-.
+; function eputs ptr do
+;   dup strlen swap
+;   STDERR LINUX_WRITE
+;   syscall int ptr int int .
+; .
 
-function error ptr do
-  " ERROR: " eputs
-  eputs
-  "\n" eputs
-  1 exit
-.
+; function error ptr do
+;   " ERROR: " eputs
+;   eputs
+;   "\n" eputs
+;   1 exit
+; .
 
-function exit int do
-  LINUX_EXIT
-  syscall int int .
-.
+; function exit int do
+;   LINUX_EXIT
+;   syscall int int .
+; .
 
-function* print ptr do
-  dup strlen swap
-  STDOUT LINUX_WRITE
-  syscall int ptr int int .
-.
+; function* print ptr do
+;   dup strlen swap
+;   STDOUT LINUX_WRITE
+;   syscall int ptr int int .
+; .
 
-function* print int do
-  int->str print
-.
+; function* print int do
+;   int->str print
+; .
 
-function* print bool do
-  if take 1 = do
-    "true" print
-  else
-    "false" print
-  .
-.
+; function* print bool do
+;   if take 1 = do
+;     "true" print
+;   else
+;     "false" print
+;   .
+; .
 
-function* println ptr do
+; function* println ptr do
+;   print
+;   "\n" print
+; .
+
+; function* println int do
+;   print
+;   "\n" print
+; .
+
+; function* println bool do
+;   print
+;   "\n" print
+; .
+
+; function read int ptr -> int do
+;   STDIN LINUX_READ
+;   syscall int ptr int int .
+; .
+
+fn println any (
   print
   "\n" print
-.
-
-function* println int do
-  print
-  "\n" print
-.
-
-function* println bool do
-  print
-  "\n" print
-.
-
-function read int ptr -> int do
-  STDIN LINUX_READ
-  syscall int ptr int int .
-.
+)

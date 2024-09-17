@@ -11,9 +11,8 @@ SKC_VERSION :: "1"
 SKC_DATE :: "2024-09-14"
 
 Program :: struct {
-    body: [dynamic]FunctionStatement,
+    body: [dynamic]Function_Declaration,
     errors: [dynamic]string,
-    compiler_errors: [dynamic]CompilerError,
     tokens: [dynamic]Token,
     main_fn_id: string,
 }
@@ -40,11 +39,6 @@ ErrorType :: enum {
     MISSING_STACK_VALUE_FOR_OPERATION,
 
     WORK_IN_PROGRESS,
-}
-
-CompilerError :: struct {
-    error_type: ErrorType,
-    token: Token,
 }
 
 Compiler_Args :: struct {
@@ -143,9 +137,8 @@ main :: proc() {
 
 start_compiling_process :: proc() {
     program.tokens = make([dynamic]Token, 0, 32)
-    program.body = make([dynamic]FunctionStatement, 0, 16)
+    program.body = make([dynamic]Function_Declaration, 0, 16)
     program.errors = make([dynamic]string, 0, 4)
-    program.compiler_errors = make([dynamic]CompilerError, 0, 4)
 
     tokenizer_run()
     ast_run()

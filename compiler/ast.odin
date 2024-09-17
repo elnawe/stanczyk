@@ -10,7 +10,7 @@ StackValue :: struct {
     type: DataType,
 }
 
-FunctionStatement :: struct {
+Function_Declaration :: struct {
     arguments: [dynamic]DataType,
     body: [dynamic]StatementOrExpression,
     returns: [dynamic]DataType,
@@ -59,18 +59,10 @@ ReturnExpression :: struct {
     identifiers: [dynamic]string,
 }
 
-error_at_token :: proc(token: Token, error_type: ErrorType = .UNKNOWN) {
-    fmt.println("ERROR: -----", token)
-    append(&program.compiler_errors, CompilerError{
-        error_type = error_type,
-        token = token,
-    })
-}
-
 // Gets the current index for the program token where the function identifier is,
 // then returns the new index, after the function statement is closed.
 register_function :: proc(index: int) -> int {
-    fn: FunctionStatement
+    fn: Function_Declaration
     new_index := index + 1
     fn_id_token := program.tokens[new_index]
 
@@ -88,19 +80,19 @@ register_function :: proc(index: int) -> int {
 
         if token.type == .EOF {
             function_valid = false
-            error_at_token(token, .BLOCK_OF_CODE_CLOSURE_EXPECTED)
-            break
+            error_at_ast(token, "AST__FUNCTION__MISSING_CLOSING_STATEMENT")
+            panic_execution(.AST)
         }
 
         if skip_body {
-            if token.type == .BLOCK_CLOSE {
+            if token.type == .PAREN_RIGHT {
                 fn.end = token.location
                 fn.end_index = lookup_index
                 break
             }
         } else {
             #partial switch token.type {
-                case .BLOCK_OPEN: {
+                case .PAREN_LEFT: {
                     skip_body = true
                     fn.start = token.location
                     fn.start_index = lookup_index
@@ -129,12 +121,13 @@ register_function :: proc(index: int) -> int {
         for func in program.body {
             if func.identifier == id {
                 function_valid = false
-                error_at_token(fn_id_token, .FUNCTION_IDENTIFIER_ALREADY_EXISTS)
+                error_at_ast(fn_id_token, "AST__FUNCTION__IDENTIFIER_EXISTS", fn.name)
             }
         }
     } else {
         function_valid = false
-        error_at_token(fn_id_token, .FUNCTION_IDENTIFIER_IS_NOT_A_VALID_WORD)
+        error_at_ast(fn_id_token, "AST__FUNCTION__IDENTIFIER_IS_NOT_A_VALID_WORD")
+        panic_execution(.AST)
     }
 
     // Arguments
@@ -147,11 +140,11 @@ register_function :: proc(index: int) -> int {
             token := program.tokens[new_index]
 
             #partial switch token.type {
-                case .EOF, .BLOCK_CLOSE: {
+                case .EOF, .PAREN_RIGHT: {
                     arguments_found = true
                     arguments_valid = false
                 }
-                case .RETURNS, .BLOCK_OPEN: {
+                case .RETURNS, .PAREN_LEFT: {
                     arguments_found = true
                 }
                 case .TYPE_ANY:   append(&fn.arguments, DataType.ANY)
@@ -178,11 +171,11 @@ register_function :: proc(index: int) -> int {
             token := program.tokens[new_index]
 
             #partial switch token.type {
-                case .EOF, .BLOCK_CLOSE: {
+                case .EOF, .PAREN_RIGHT: {
                     returns_found = true
                     returns_valid = false
                 }
-                case .BLOCK_OPEN: {
+                case .PAREN_LEFT: {
                     returns_found = true
                 }
                 case .TYPE_ANY:   append(&fn.returns, DataType.ANY)
@@ -204,11 +197,11 @@ register_function :: proc(index: int) -> int {
         token := program.tokens[new_index]
 
         if token.type == .EOF {
-            error_at_token(token)
-            break
+            error_at_ast(token, "AST__FUNCTION__MISSING_CLOSING_STATEMENT")
+            panic_execution(.AST)
         }
 
-        if token.type == .BLOCK_CLOSE {
+        if token.type == .PAREN_RIGHT {
             break
         }
     }
@@ -220,29 +213,22 @@ register_function :: proc(index: int) -> int {
     return new_index
 }
 
-validate_main_fn :: proc(fn: FunctionStatement) -> bool {
-    valid := true
-
+validate_main_fn :: proc(fn: Function_Declaration) {
     if len(fn.arguments) > 0 || len(fn.returns) > 0 {
-        valid = false
-        error_at_token(program.tokens[fn.start_index])
+        error_at_ast(program.tokens[fn.start_index], "AST__MAIN__NO_ARGUMENTS_OR_RETURNS_ALLOWED")
+        panic_execution(.AST)
     }
-
-    return valid
 }
 
-generate_ast :: proc() -> bool {
-    main_fn_found := false
-    compilation_error := false
-
+generate_ast :: proc() {
     for &fn in program.body {
-        error_found := false
+        skip_rest_of_function := false
         code_level := 0
         stack: [dynamic]StackValue = make([dynamic]StackValue, 0, 4)
         end_token := program.tokens[fn.end_index]
 
         if fn.name == "main" {
-            main_fn_found = validate_main_fn(fn)
+            validate_main_fn(fn)
             program.main_fn_id = fn.identifier
         }
 
@@ -257,8 +243,7 @@ generate_ast :: proc() -> bool {
             token := program.tokens[index]
             token_stack_id := gen_stack_name(index)
 
-            if error_found {
-                compilation_error = true
+            if skip_rest_of_function {
                 break
             }
 
@@ -318,25 +303,28 @@ generate_ast :: proc() -> bool {
                     identifier = token_stack_id,
                     type = .BOOL,
                 })
-            case .BLOCK_CLOSE:
+            case .PAREN_RIGHT:
                 if code_level == 0 {
-                    error_found = true
-                    error_at_token(token)
+                    // TODO: check if this ever happens
+                    skip_rest_of_function = true
+                    error_at_ast(token, "GENERAL__COMPILER_BUG")
+                    panic_execution(.AST)
                 } else {
                     code_level -= 1
                 }
-            case .BLOCK_OPEN:
+            case .PAREN_LEFT:
                 code_level += 1
             case .EOF:
-                error_found = true
-                error_at_token(token)
+                skip_rest_of_function = true
+                error_at_ast(token, "GENERAL__COMPILER_BUG")
+                panic_execution(.AST)
             case .FUNCTION:
-                error_found = true
-                error_at_token(token)
+                skip_rest_of_function = true
+                error_at_ast(token, "AST__BODY__FUNCTION_DECLARATION_NOT_ALLOWED")
             case .MINUS:
                 if len(stack) < 2 {
-                    error_found = true
-                    error_at_token(token)
+                    skip_rest_of_function = true
+                    error_at_ast(token, "AST__BODY__MISSING_STACK_VALUES_EXPECTED_GOT", 2, len(stack))
                 } else {
                     b := pop(&stack)
                     a := pop(&stack)
@@ -355,8 +343,8 @@ generate_ast :: proc() -> bool {
                 }
             case .PERCENT:
                 if len(stack) < 2 {
-                    error_found = true
-                    error_at_token(token)
+                    skip_rest_of_function = true
+                    error_at_ast(token, "AST__BODY__MISSING_STACK_VALUES_EXPECTED_GOT", 2, len(stack))
                 } else {
                     b := pop(&stack)
                     a := pop(&stack)
@@ -375,8 +363,8 @@ generate_ast :: proc() -> bool {
                 }
             case .PLUS:
                 if len(stack) < 2 {
-                    error_found = true
-                    error_at_token(token)
+                    skip_rest_of_function = true
+                    error_at_ast(token, "AST__BODY__MISSING_STACK_VALUES_EXPECTED_GOT", 2, len(stack))
                 } else {
                     // TODO: Check types
                     b := pop(&stack)
@@ -398,8 +386,8 @@ generate_ast :: proc() -> bool {
                 native_fn := get_native_fn(.PRINT)
 
                 if len(stack) < 1 {
-                    error_found = true
-                    error_at_token(token)
+                    skip_rest_of_function = true
+                    error_at_ast(token, "AST__BODY__MISSING_STACK_VALUES_EXPECTED_GOT", 1, len(stack))
                 } else {
                     a := pop(&stack)
 
@@ -411,8 +399,8 @@ generate_ast :: proc() -> bool {
             case .RETURNS:
             case .SLASH:
                 if len(stack) < 2 {
-                    error_found = true
-                    error_at_token(token)
+                    skip_rest_of_function = true
+                    error_at_ast(token, "AST__BODY__MISSING_STACK_VALUES_EXPECTED_GOT", 2, len(stack))
                 } else {
                     b := pop(&stack)
                     a := pop(&stack)
@@ -431,8 +419,8 @@ generate_ast :: proc() -> bool {
                 }
             case .STAR:
                 if len(stack) < 2 {
-                    error_found = true
-                    error_at_token(token)
+                    skip_rest_of_function = true
+                    error_at_ast(token, "AST__BODY__MISSING_STACK_VALUES_EXPECTED_GOT", 2, len(stack))
                 } else {
                     b := pop(&stack)
                     a := pop(&stack)
@@ -463,7 +451,13 @@ generate_ast :: proc() -> bool {
                 switch {
                 case f_ok:
                     if len(stack) < len(f.arguments) {
-                        error_at_token(token)
+                        skip_rest_of_function = true
+                        error_at_ast(
+                            token,
+                            "AST__BODY__MISSING_STACK_VALUES_EXPECTED_GOT",
+                            len(f.arguments),
+                            len(stack),
+                        )
                     } else {
                         fcall := FunctionCall{
                             callee = f.identifier,
@@ -474,8 +468,9 @@ generate_ast :: proc() -> bool {
                             a := pop(&stack)
 
                             if arg != .ANY && a.type != arg {
-                                error_found = true
-                                error_at_token(token)
+                                skip_rest_of_function = true
+                                // TODO: Generic error should be replaced for specific one (with types)
+                                error_at_ast(token, "AST__BODY__INCORRECT_STACK_VALUE_TYPES")
                             } else {
                                 append(&fcall.argument_ids, a.identifier)
                             }
@@ -494,8 +489,6 @@ generate_ast :: proc() -> bool {
 
                         append(&fn.body, fcall)
                     }
-                case: error_at_token(token)
-
                 }
             }
         }
@@ -503,7 +496,12 @@ generate_ast :: proc() -> bool {
         // Check for RETURN
         if len(fn.returns) > 0 {
             if len(stack) != len(fn.returns) {
-                error_at_token(end_token)
+                error_at_ast(
+                    end_token,
+                    "AST__BODY__MISSING_STACK_VALUES_EXPECTED_GOT",
+                    len(fn.returns),
+                    len(stack),
+                )
             } else {
                 rt_exp := ReturnExpression{}
 
@@ -511,8 +509,9 @@ generate_ast :: proc() -> bool {
                     a := pop(&stack)
 
                     if a.type != ret {
-                        error_found = true
-                        error_at_token(end_token)
+                        skip_rest_of_function = true
+                        // TODO: Generic error should be replaced for specific one (with types)
+                        error_at_ast(end_token, "AST__BODY__INCORRECT_STACK_VALUE_TYPES")
                     } else {
                         append(&rt_exp.identifiers, a.identifier)
                     }
@@ -523,13 +522,11 @@ generate_ast :: proc() -> bool {
         }
 
         if len(stack) > 0 {
-            error_at_token(end_token)
+            error_at_ast(end_token, "AST__BODY__STACK_NOT_EMPTY")
         }
 
         delete(stack)
     }
-
-    return !compilation_error && main_fn_found
 }
 
 /** This entry function to create AST has to take care of the program creation so it can
@@ -539,8 +536,6 @@ generate_ast :: proc() -> bool {
   * Checks go first because we want to make sure the AST creation is correct.
   */
 ast_run :: proc() {
-    success := true
-
     // Register functions
     for index := 0; index < len(program.tokens); index += 1 {
         token := program.tokens[index]
@@ -548,14 +543,14 @@ ast_run :: proc() {
         if token.type == .FUNCTION {
             index = register_function(index)
         } else if token.type != .EOF {
-            success = false
-            error_at_token(token)
+            error_at_ast(token, "AST__GLOBAL__INVALID_SCOPE")
+            panic_execution(.AST)
         }
     }
 
-    success = generate_ast()
+    generate_ast()
 
-    if !success {
-        fmt.println("Error at compilation")
+    if len(program.errors) > 0 {
+        panic_execution(.AST)
     }
 }

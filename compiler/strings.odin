@@ -8,8 +8,8 @@ LOCAL_FUNCTION_ARG    :: "sk_arg__"
 LOCAL_FUNCTION_RET    :: "ret__"
 LOCAL_FUNCTION_STACK  :: "sk_stack__"
 
-find_fn_by_name :: proc(fn_name: string) -> (FunctionStatement, bool) {
-    result: FunctionStatement
+find_fn_by_name :: proc(fn_name: string) -> (Function_Declaration, bool) {
+    result: Function_Declaration
     found := false
 
     for fn in program.body {

@@ -31,8 +31,8 @@ Token_Type :: enum {
     WORD,
 
     // Intrinsics from the language
-    BLOCK_CLOSE,
-    BLOCK_OPEN,
+    PAREN_LEFT,
+    PAREN_RIGHT,
     EOF,
     FUNCTION,
     MINUS,
@@ -69,8 +69,8 @@ Reserved_Word :: struct {
 }
 
 reserved_words :: []Reserved_Word{
-    { type = .BLOCK_CLOSE,    value = ")",     },
-    { type = .BLOCK_OPEN,     value = "(",     },
+    { type = .PAREN_LEFT,     value = "(",     },
+    { type = .PAREN_RIGHT,    value = ")",     },
     { type = .CONSTANT_FALSE, value = "false", },
     { type = .CONSTANT_TRUE,  value = "true",  },
     { type = .FUNCTION,       value = "fn",    },
@@ -88,6 +88,8 @@ reserved_words :: []Reserved_Word{
     { type = .TYPE_PTR,       value = "ptr",   },
     { type = .TYPE_STR,       value = "str",   },
 }
+
+USING_WORD :: "using"
 
 tokenizer: Tokenizer
 
@@ -215,8 +217,12 @@ make_word_token :: proc(c: rune, line: string) {
         append(&result, new_c)
     }
 
-    // TODO: Type should match the token value
     val := utf8.runes_to_string(result[:])
+
+    if val == USING_WORD {
+        using_statement(line)
+        return
+    }
 
     for word in reserved_words {
         if word.value == val {
@@ -307,4 +313,26 @@ get_location :: proc() -> Location {
         column   = tokenizer.column,
         filename = tokenizer.filename,
     }
+}
+
+using_statement :: proc(line: string) {
+    lib_folder := strings.concatenate({ os.get_env("SKC_HOME"), "libs", })
+    result: [dynamic]rune
+
+    for advance() {
+        c := rune(line[tokenizer.column])
+
+        if unicode.is_alpha(c) {
+            append(&result, c)
+        }
+
+        if c == ';' {
+            break
+        }
+    }
+
+    val := utf8.runes_to_string(result[:])
+    filename := strings.concatenate({ val, ".sk", })
+
+    append(&tokenizer.files, strings.concatenate({ lib_folder, "\\", filename, }))
 }
