@@ -14,4 +14,5 @@ jobs:
                    make release-native
                    cd ..
                    make
+                   alias skc="./skc"
                    bash ./test.sh

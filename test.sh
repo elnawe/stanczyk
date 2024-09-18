@@ -52,10 +52,10 @@ for FILE in tests/*.sk; do
         TEST_NAME="${TEST_SRC##*/}"
 
         if [ "$1" == "save" ]; then
-            ./skc run ${TEST_SRC}.sk > ${TEST_SRC}.txt
+            skc run ${TEST_SRC}.sk > ${TEST_SRC}.txt
         fi
 
-        ./skc run ${TEST_SRC}.sk > result.txt
+        skc run ${TEST_SRC}.sk > result.txt
 
         RESULT=$(diff ${TEST_SRC}.txt result.txt)
         echo -en $RED'┃'

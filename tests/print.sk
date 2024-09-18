@@ -1,9 +1,9 @@
-using "io"
+using io
 
 ;; Test: print
 ;; Description:
 ;    print numbers on the screen. Numbers with snake_case should print without the _.
-function main do
+fn main (
   "1  " print 1 println
   "-----------" println
 
@@ -19,11 +19,11 @@ function main do
   "92720  " print 92720 println
   "-----------" println
 
-  "121911  " print 121991 println
+  "121911  " print 121911 println
   "-----------" println
 
   "1000000  " print 1_000_000 println
   "-----------" println
 
   "2000000000  " print 2_000_000_000 println
-.
+)
