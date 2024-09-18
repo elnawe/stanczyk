@@ -5,7 +5,7 @@ import "core:slice"
 import "core:strconv"
 import "core:strings"
 
-StackValue :: struct {
+Stack_Value :: struct {
     identifier: string,
     type: DataType,
 }
@@ -224,7 +224,7 @@ generate_ast :: proc() {
     for &fn in program.body {
         skip_rest_of_function := false
         code_level := 0
-        stack: [dynamic]StackValue = make([dynamic]StackValue, 0, 4)
+        stack: [dynamic]Stack_Value = make([dynamic]Stack_Value, 0, 4)
         end_token := program.tokens[fn.end_index]
 
         if fn.name == "main" {
@@ -233,7 +233,7 @@ generate_ast :: proc() {
         }
 
         for arg_type, index in fn.arguments {
-            append(&stack, StackValue{
+            append(&stack, Stack_Value{
                 identifier = gen_arg_name(index),
                 type = arg_type,
             })
@@ -255,7 +255,7 @@ generate_ast :: proc() {
                     value = false,
                 })
 
-                append(&stack, StackValue{
+                append(&stack, Stack_Value{
                     identifier = token_stack_id,
                     type = .BOOL,
                 })
@@ -266,7 +266,7 @@ generate_ast :: proc() {
                     value = token.value.(f64),
                 })
 
-                append(&stack, StackValue{
+                append(&stack, Stack_Value{
                     identifier = token_stack_id,
                     type = .FLOAT,
                 })
@@ -277,7 +277,7 @@ generate_ast :: proc() {
                     value = token.value.(int),
                 })
 
-                append(&stack, StackValue{
+                append(&stack, Stack_Value{
                     identifier = token_stack_id,
                     type = .INT,
                 })
@@ -288,7 +288,7 @@ generate_ast :: proc() {
                     value = token.value.(string),
                 })
 
-                append(&stack, StackValue{
+                append(&stack, Stack_Value{
                     identifier = token_stack_id,
                     type = .STRING,
                 })
@@ -299,7 +299,7 @@ generate_ast :: proc() {
                     value = true,
                 })
 
-                append(&stack, StackValue{
+                append(&stack, Stack_Value{
                     identifier = token_stack_id,
                     type = .BOOL,
                 })
@@ -336,7 +336,7 @@ generate_ast :: proc() {
                         operation = "-",
                     })
 
-                    append(&stack, StackValue{
+                    append(&stack, Stack_Value{
                         identifier = token_stack_id,
                         type = .INT,
                     })
@@ -356,7 +356,7 @@ generate_ast :: proc() {
                         operation = "%",
                     })
 
-                    append(&stack, StackValue{
+                    append(&stack, Stack_Value{
                         identifier = token_stack_id,
                         type = .INT,
                     })
@@ -377,7 +377,7 @@ generate_ast :: proc() {
                         operation = "+",
                     })
 
-                    append(&stack, StackValue{
+                    append(&stack, Stack_Value{
                         identifier = token_stack_id,
                         type = .INT,
                     })
@@ -412,7 +412,7 @@ generate_ast :: proc() {
                         operation = "/",
                     })
 
-                    append(&stack, StackValue{
+                    append(&stack, Stack_Value{
                         identifier = token_stack_id,
                         type = .INT,
                     })
@@ -432,7 +432,7 @@ generate_ast :: proc() {
                         operation = "*",
                     })
 
-                    append(&stack, StackValue{
+                    append(&stack, Stack_Value{
                         identifier = token_stack_id,
                         type = .INT,
                     })
@@ -479,7 +479,7 @@ generate_ast :: proc() {
                         for ret, rind in f.returns {
                             ret_id := gen_ret_name(fn.identifier, rind)
 
-                            append(&stack, StackValue{
+                            append(&stack, Stack_Value{
                                 identifier = ret_id,
                                 type = ret,
                             })
