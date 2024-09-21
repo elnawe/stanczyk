@@ -8,7 +8,6 @@ jobs:
             - name: run tests
               run: |
                    sudo apt-get update
-                   sudo apt-get install -qq make
+                   sudo apt-get install -qq make yasm
                    make
-                   alias skc="./bin/skc"
                    bash ./test.sh
