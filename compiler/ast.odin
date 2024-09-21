@@ -26,7 +26,7 @@ StatementOrExpression :: union {
     BinaryArithmeticExpression,
     FunctionCall,
     Literal,
-    NativeCall,
+    Native_Call,
     ReturnExpression,
 }
 
@@ -50,9 +50,8 @@ Literal :: struct {
     value: Value,
 }
 
-NativeCall :: struct {
-    argument_ids: [dynamic]string,
-    callee: NativeFunctionId,
+Native_Call :: struct {
+    code: string,
 }
 
 ReturnExpression :: struct {
@@ -119,7 +118,7 @@ register_function :: proc(index: int) -> int {
         fn.identifier = id
 
         for func in program.body {
-            if func.identifier == id {
+            if func.name == fn.name {
                 function_valid = false
                 error_at_ast(fn_id_token, "AST__FUNCTION__IDENTIFIER_EXISTS", fn.name)
             }
@@ -213,6 +212,8 @@ register_function :: proc(index: int) -> int {
     return new_index
 }
 
+// The `main` function shouldn't allow any argument or return value, since stack will be empty when
+// the application starts and should be empty when the application ends.
 validate_main_fn :: proc(fn: Function_Declaration) {
     if len(fn.arguments) > 0 || len(fn.returns) > 0 {
         error_at_ast(program.tokens[fn.start_index], "AST__MAIN__NO_ARGUMENTS_OR_RETURNS_ALLOWED")
@@ -369,31 +370,40 @@ generate_ast :: proc() {
                     // TODO: Check types
                     b := pop(&stack)
                     a := pop(&stack)
+                    native_fn : Native_Function_Definition
+                    res: DataType
 
-                    append(&fn.body, BinaryArithmeticExpression{
-                        identifier = token_stack_id,
-                        left_type = a.type,
-                        right_type = b.type,
-                        operation = "+",
+                    if a.type == .INT && b.type == .INT {
+                        native_fn = get_native_by_id(.ADD_INT)
+                        res = .INT
+                    } else if a.type == .FLOAT && b.type == .FLOAT {
+                        native_fn = get_native_by_id(.ADD_FLOAT)
+                        res = .FLOAT
+                    } else if a.type == .STRING && b.type == .STRING {
+                        native_fn = get_native_by_id(.CONCAT_STR)
+                        res = .STRING
+                    }
+
+                    append(&fn.body, Native_Call{
+                        code = native_fn.code,
                     })
 
                     append(&stack, Stack_Value{
                         identifier = token_stack_id,
-                        type = .INT,
+                        type = res,
                     })
                 }
             case .PRINT:
-                native_fn := get_native_fn(.PRINT)
+                native_fn := get_native_by_id(.PRINT)
 
                 if len(stack) < 1 {
                     skip_rest_of_function = true
                     error_at_ast(token, "AST__BODY__MISSING_STACK_VALUES_EXPECTED_GOT", 1, len(stack))
                 } else {
-                    a := pop(&stack)
+                    pop(&stack)
 
-                    append(&fn.body, NativeCall{
-                        argument_ids = { a.identifier },
-                        callee = .PRINT_STATEMENT,
+                    append(&fn.body, Native_Call{
+                        code = native_fn.code,
                     })
                 }
             case .RETURNS:

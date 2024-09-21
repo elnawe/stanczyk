@@ -4,14 +4,14 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 
-CodeGenerator :: struct {
+Code_Generator :: struct {
     builder: strings.Builder,
     file: os.Handle,
 }
 
 BASE_INDENT :: 4
 
-codegen: CodeGenerator
+codegen: Code_Generator
 
 cleanup_file :: proc() {
     if os.exists(cargs.odin_file) {
@@ -110,7 +110,6 @@ codegen_run :: proc() {
             switch v in stmt {
             case BinaryArithmeticExpression:
                 switch v.operation {
-                case "+": write("sk__sum()", 1, 1)
                 case "-": write("sk__substract()", 1, 1)
                 case "*": write("sk__multiply()", 1, 1)
                 case "/": write("sk__divide()", 1, 1)
@@ -119,14 +118,11 @@ codegen_run :: proc() {
             case FunctionCall:
                 write(strings.concatenate({ v.callee, "()", }), 1, 1)
             case Literal:
-                write("sk__push(", 1, 0)
+                write("_push(", 1, 0)
                 write(v.value)
                 write(")", 0, 1)
-            case NativeCall:
-                switch v.callee {
-                case .PRINT_STATEMENT:
-                    write("sk__print()", 1, 1)
-                }
+            case Native_Call:
+                write(v.code, 1, 1)
             case ReturnExpression:
             }
         }
