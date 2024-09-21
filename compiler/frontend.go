@@ -152,30 +152,35 @@ func newConstant(token Token) {
 		errorAt(&token, msg)
 	}
 
-	for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
-		advance()
-		tokens = append(tokens, parser.previous)
-	}
-
-	if len(tokens) > 3 || len(tokens) == 2 {
-		msg := fmt.Sprintf(MsgParseConstInvalidContent, constant.word)
-		errorAt(&token, msg)
-		return
-	} else if len(tokens) == 3 {
-		left := tokens[0].value.(int)
-		right := tokens[1].value.(int)
-
-		switch tokens[2].typ {
-		case TOKEN_PLUS: constant.value = left + right
-		case TOKEN_STAR: constant.value = left * right
+	if match(TOKEN_PAREN_OPEN) {
+		for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
+			advance()
+			tokens = append(tokens, parser.previous)
 		}
-	} else if len(tokens) == 1 {
-		constant.value = tokens[0].value.(int)
+
+		if len(tokens) > 3 || len(tokens) == 2 {
+			msg := fmt.Sprintf(MsgParseConstInvalidContent, constant.word)
+			errorAt(&token, msg)
+			return
+		} else if len(tokens) == 3 {
+			left := tokens[0].value.(int)
+			right := tokens[1].value.(int)
+
+			switch tokens[2].typ {
+			case TOKEN_PLUS: constant.value = left + right
+			case TOKEN_STAR: constant.value = left * right
+			}
+		} else if len(tokens) == 1 {
+			constant.value = tokens[0].value.(int)
+		}
+
+		consume(TOKEN_PAREN_CLOSE, MsgParseConstMissingDot)
+	} else {
+		advance()
+		constant.value = parser.previous.value.(int)
 	}
 
 	frontend.constants = append(frontend.constants, constant)
-
-	consume(TOKEN_PAREN_CLOSE, MsgParseConstMissingDot)
 }
 
 func newFunction(token Token) {
@@ -329,8 +334,6 @@ func newReserve(token Token) {
 	}
 
 	frontend.memories = append(frontend.memories, memory)
-
-	consume(TOKEN_PAREN_CLOSE, MsgParseReserveMissingDot)
 }
 
 func compile(index int) {
@@ -405,6 +408,8 @@ func addWord(word string) {
 func addBind(token Token) {
 	startingBoundIndex := len(frontend.bindings)
 
+	consume(TOKEN_PAREN_OPEN, MsgParseBindMissingOpenStmt)
+
 	for match(TOKEN_WORD) {
 		t := parser.previous
 		frontend.bindings = append(frontend.bindings, Bound{
@@ -419,7 +424,7 @@ func addBind(token Token) {
 		return
 	}
 
-	consume(TOKEN_PAREN_CLOSE, MsgParseBindMissingDot)
+	consume(TOKEN_PAREN_CLOSE, MsgParseBindMissingCloseStmt)
 	emit(Code{op: OP_BIND, loc: token.loc, value: len(frontend.bindings)})
 }
 

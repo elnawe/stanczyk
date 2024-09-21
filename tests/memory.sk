@@ -1,6 +1,6 @@
 using io
 
-reserve number 32 )
+reserve number 32
 
 fn main (
   "Save the number to static memory and print it" println

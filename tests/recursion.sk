@@ -3,7 +3,7 @@ using io
 ;; Test: recursion
 ;; Description:
 ;    testing recusive functions
-const ORIGINAL 10 )
+const ORIGINAL 10
 
 fn add-3-to-original int -> int (
   if dup ORIGINAL 3 + = (

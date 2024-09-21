@@ -52,19 +52,19 @@
 ;; TODO: Add descriptions
 
 ; File descriptor (fd)
-const STDIN  0 )
-const STDOUT 1 )
-const STDERR 2 )
+const STDIN  0
+const STDOUT 1
+const STDERR 2
 
-const LINUX_READ  0  )
-const LINUX_WRITE 1  )
-const LINUX_EXIT  60 )
+const LINUX_READ  0
+const LINUX_WRITE 1
+const LINUX_EXIT  60
 
-const READ      0   )
-const WRITE     1   )
-const READWRITE 2   )
-const CREATE    64  )
-const TRUNCATE  512 )
+const READ      0
+const WRITE     1
+const READWRITE 2
+const CREATE    64
+const TRUNCATE  512
 
 fn []argv int -> ptr (
   8 * argv (int) + (ptr) ->64

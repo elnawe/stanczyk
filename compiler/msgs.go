@@ -55,10 +55,14 @@ const (
 		"missing or invalid bind content\n" +
 			"\t\tbind a b c .\n" +
 			"\t\t     ^^^^^"
-	MsgParseBindMissingDot =
-		"missing '.'\n" +
-			"\t\tbind a b c .\n" +
-			"\t\t           ^"
+	MsgParseBindMissingCloseStmt =
+		"missing ')'\n" +
+			"\t\tbind ( a b c )\n" +
+			"\t\t             ^"
+	MsgParseBindMissingOpenStmt =
+		"missing '('\n" +
+			"\t\tbind ( a b c )\n" +
+			"\t\t     ^"
 
 	MsgParseDoOrphanTokenFound =
 		"only use 'do' when starting a block statement\nE.g.:\n\tif [condition] do [...] else [...] .\n\t^^             ^^\n'do' can be used in other blocks like function and loops"
