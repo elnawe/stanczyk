@@ -64,6 +64,15 @@ const (
 			"\t\tbind ( a b c )\n" +
 			"\t\t     ^"
 
+	MsgParseSyscallMissingCloseStmt =
+		"missing ')'\n" +
+			"\t\tsyscall ( int int )\n" +
+			"\t\t                  ^"
+	MsgParseSyscallMissingOpenStmt =
+		"missing '('\n" +
+			"\t\tsyscall ( int int )\n" +
+			"\t\t        ^"
+
 	MsgParseDoOrphanTokenFound =
 		"only use 'do' when starting a block statement\nE.g.:\n\tif [condition] do [...] else [...] .\n\t^^             ^^\n'do' can be used in other blocks like function and loops"
 

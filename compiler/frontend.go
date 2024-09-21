@@ -434,6 +434,8 @@ func newSyscall(token Token) {
 	code.op = OP_SYSCALL
 	code.loc = token.loc
 
+	consume(TOKEN_PAREN_OPEN, MsgParseSyscallMissingOpenStmt)
+
 	for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
 		advance()
 		var arg DataType
@@ -453,7 +455,7 @@ func newSyscall(token Token) {
 		value = append(value, arg)
 	}
 	code.value = value
-	consume(TOKEN_PAREN_CLOSE, "TODO: handle error")
+	consume(TOKEN_PAREN_CLOSE, MsgParseSyscallMissingCloseStmt)
 	emit(code)
 }
 

@@ -81,7 +81,7 @@ fn clear (
 fn eputs ptr (
   dup strlen swap
   STDERR LINUX_WRITE
-  syscall int ptr int int )
+  syscall ( int ptr int int )
 )
 
 fn error ptr (
@@ -93,13 +93,13 @@ fn error ptr (
 
 fn exit int (
   LINUX_EXIT
-  syscall int int )
+  syscall ( int int )
 )
 
 fn* print ptr (
   dup strlen swap
   STDOUT LINUX_WRITE
-  syscall int ptr int int )
+  syscall ( int ptr int int )
 )
 
 fn* print int (
@@ -131,5 +131,5 @@ fn* println bool (
 
 fn read int ptr -> int (
   STDIN LINUX_READ
-  syscall int ptr int int )
+  syscall ( int ptr int int )
 )
