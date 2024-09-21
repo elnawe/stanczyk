@@ -1,12 +1,8 @@
-; using "io"
+using io
 
 ;; Test: Functions
 ;; Description:
 ;    simple fn composition
-
-fn println any (
-  print "\n" print
-)
 
 fn S (
   "S" print

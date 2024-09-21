@@ -1,10 +1,10 @@
-using "io"
+using io
 
-function main do
+fn main (
   "1  " print
   argc print
   "\n" print
 
   "./output  " print
   0 []argv print "\n" print
-.
+)

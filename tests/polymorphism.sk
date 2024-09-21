@@ -1,20 +1,20 @@
-using "io"
+using io
 
-function* equal int int -> bool do
+fn* equal int int -> bool (
   =
-.
+)
 
-function* equal bool bool -> bool do
+fn* equal bool bool -> bool (
   =
-.
+)
 
-function* equal ptr ptr -> bool do
+fn* equal ptr ptr -> bool (
   str=
-.
+)
 
-function main do
+fn main (
   "Testing polymorphism with this function that takes different parameters but always returns a boolean value" println
   "true  " print 2 2 equal println
   "false  " print false true equal println
   "true  " print "test" "test" equal println
-.
+)

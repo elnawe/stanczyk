@@ -1,27 +1,27 @@
-using "io"
+using io
 
-function get-str -> ptr do
+fn get-str -> ptr (
   "My test string"
-.
+)
 
-function main do
+fn main (
   "Testing strings in Stańczyk is a little bit more complicated" println
 
-  if "Stańczyk" "Stańczyk" str= do
+  if "Stańczyk" "Stańczyk" str= (
     "1- test success" println
   else
     "1- test failed!" println
-  .
+  )
 
-  if get-str get-str str= do
+  if get-str get-str str= (
     "2- test success" println
   else
     "2- test failed!" println
-  .
+  )
 
-  if "Stańczyk" "Nope" str= do
+  if "Stańczyk" "Nope" str= (
     "3- test failed!" println
   else
     "3- test success" println
-  .
-.
+  )
+)

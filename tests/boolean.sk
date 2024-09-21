@@ -1,14 +1,14 @@
-using "io"
+using io
 
 ;; Test: boolean
 ;; Description:
 ;    Check the values of pushed booleans to the stack
 
-function main do
+fn main (
   "true value:  " print
   true (int) println
   "-----------" println
 
   "false value:  " print
   false (int) println
-.
+)

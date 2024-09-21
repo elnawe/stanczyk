@@ -1,15 +1,15 @@
-using "io"
+using io
 
-reserve number 32 .
+reserve number 32 )
 
-function main do
+fn main (
   "Save the number to static memory and print it" println
   "The number is 1234567890123  " print
   1234567890123
-  loop dup intlen 0 > do
+  loop dup intlen 0 > (
     dup 10 % 48 +
     over intlen 1 - number swap + swap (char) <-8
     10 /
-  . drop
+  ) drop
   number println
-.
+)

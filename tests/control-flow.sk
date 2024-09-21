@@ -1,61 +1,61 @@
-using "io"
+using io
 
 ;; Test: control-flow
 ;; Description:
 ;    Test the control flow mechanism
 
-function main do
+fn main (
   "if true -> 13  " print
-  if true do
+  if true (
     13 println
-  .
+  )
   "-----------" println
 
   "if false -> (nothing)" println
-  if false do
+  if false (
     13 println
-  .
+  )
   "-----------" println
 
   "if false else -> 13  " print
-  if false do
+  if false (
     31 println
   else
     13 println
-  .
+  )
   "-----------" println
 
   "loop 0 to 5" println
-  0 loop dup 5 <= do
+  0 loop dup 5 <= (
     dup println
     ++
-  . drop
+  ) drop
   "-----------" println
 
   "loop 0 to 10, skipping even" println
-  0 loop dup 10 <= do
-    if dup 2 % 0 != do
+  0 loop dup 10 <= (
+    if dup 2 % 0 != (
       dup println
-    .
+    )
     ++
-  . drop
+  ) drop
   "-----------" println
 
   "loop 0 to 10, skipping odd" println
-  0 loop dup 10 <= do
-    if dup 2 % 0 = do
+  0 loop dup 10 <= (
+    if dup 2 % 0 = (
       dup println
-    .
+    )
     ++
-  . drop
+  ) drop
   "-----------" println
 
   "loop 10 to 0, skipping every 2 elements" println
-  10 loop dup 0 >= do
-    if dup 3 % 0 = do
+  10 loop dup 0 >= (
+    if dup 3 % 0 = (
       dup println
-    .
+    )
     --
-  . drop
+  ) drop
   "-----------" println
-.
+)

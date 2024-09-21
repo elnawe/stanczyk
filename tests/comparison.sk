@@ -1,9 +1,9 @@
-using "io"
+using io
 
 ;; Test: comparison
 ;; Description:
 ;    Comparing values and checking the results
-function main do
+fn main (
   "equal" println
   "2 2 = -> 1 " print 2 2 = (int) println
   "2 3 = -> 0 " print 2 3 = (int) println
@@ -38,4 +38,4 @@ function main do
   "2 2 <= -> 1 " print 2 2 <= (int) println
   "2 3 <= -> 1 " print 2 3 <= (int) println
   "3 2 <= -> 0 " print 3 2 <= (int) println
-.
+)

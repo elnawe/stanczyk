@@ -1,8 +1,16 @@
 PROJECT_NAME  := Stanczyk
-NAME          := ./skc
-CODE          := ./code
+OUT_DIR       := ./bin
+LIBS_DIR      := ./libs
+OUTPUT        := $(OUT_DIR)/skc
 
-default: main
+all: clean $(OUT_DIR) $(LIBS_DIR) compile
 
-main:
-	@ go build $(CODE) -o $(NAME)
+clean:
+	rm -rf $(OUT_DIR)
+
+$(OUT_DIR):
+	mkdir -p $@
+
+compile:
+	cp -r $(LIBS_DIR) $(OUT_DIR)
+	go build -o $(OUTPUT)

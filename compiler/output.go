@@ -1,4 +1,4 @@
-package main
+package skc
 
 import (
 	"bufio"

@@ -1,9 +1,9 @@
-using "io"
+using io
 
 ;; Test: strings
 ;; Description:
 ;    String writing and string length checking
-function main (
+fn main (
   ; Check the length
   "Hello, World\n" strlen println
 

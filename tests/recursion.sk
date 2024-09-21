@@ -1,21 +1,21 @@
-using "io"
+using io
 
 ;; Test: recursion
 ;; Description:
 ;    testing recusive functions
-const ORIGINAL 10 .
+const ORIGINAL 10 )
 
-function add-3-to-original int -> int do
-  if dup ORIGINAL 3 + = do
+fn add-3-to-original int -> int (
+  if dup ORIGINAL 3 + = (
     ret
   else
     ++ add-3-to-original ret
-  .
-.
+  )
+)
 
-function main do
+fn main (
   "define a recursive function that adds 3 (1 by 1) to 'ORIGINAL' of value 10 and returns it"
   println
   "add-3-to-original  13  " print
   ORIGINAL add-3-to-original println
-.
+)

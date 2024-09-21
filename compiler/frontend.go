@@ -1,4 +1,4 @@
-package main
+package skc
 
 import (
 	"fmt"
@@ -147,12 +147,12 @@ func newConstant(token Token) {
 		}
 	}
 
-	if match(TOKEN_DOT) {
+	if match(TOKEN_PAREN_CLOSE) {
 		msg := fmt.Sprintf(MsgParseConstInvalidContent, constant.word)
 		errorAt(&token, msg)
 	}
 
-	for !check(TOKEN_DOT) && !check(TOKEN_EOF) {
+	for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
 		advance()
 		tokens = append(tokens, parser.previous)
 	}
@@ -175,12 +175,12 @@ func newConstant(token Token) {
 
 	frontend.constants = append(frontend.constants, constant)
 
-	consume(TOKEN_DOT, MsgParseConstMissingDot)
+	consume(TOKEN_PAREN_CLOSE, MsgParseConstMissingDot)
 }
 
 func newFunction(token Token) {
 	var function Function
-	function.polymorphic = token.typ == TOKEN_FUNCTION_STAR
+	function.polymorphic = token.typ == TOKEN_FN_STAR
 	function.ip = len(TheProgram.chunks)
 	function.loc = token.loc
 	function.internal = parser.internal
@@ -223,8 +223,8 @@ func newFunction(token Token) {
 		}
 	}
 
-	if !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_DO) {
-		for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_DO) && !check(TOKEN_EOF) {
+	if !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) {
+		for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
 			advance()
 			t := parser.previous
 			targ := DATA_EMPTY
@@ -245,11 +245,11 @@ func newFunction(token Token) {
 	}
 
 	if match(TOKEN_RIGHT_ARROW) {
-		if check(TOKEN_DO) {
+		if check(TOKEN_PAREN_OPEN) {
 			errorAt(&parser.previous, MsgParseFunctionNoReturnSpecified)
 		}
 
-		for !check(TOKEN_DO) {
+		for !check(TOKEN_PAREN_OPEN) {
 			advance()
 			t := parser.previous
 			tret := DATA_EMPTY
@@ -269,10 +269,10 @@ func newFunction(token Token) {
 		}
 	}
 
-	consume(TOKEN_DO, MsgParseFunctionMissingDo)
+	consume(TOKEN_PAREN_OPEN, MsgParseFunctionMissingDo)
 
 	frontend.sLevel++
-	frontend.scope[1].tt = TOKEN_FUNCTION
+	frontend.scope[1].tt = TOKEN_FN
 
 	for frontend.sLevel > 0 && !check(TOKEN_EOF) {
 		advance()
@@ -330,7 +330,7 @@ func newReserve(token Token) {
 
 	frontend.memories = append(frontend.memories, memory)
 
-	consume(TOKEN_DOT, MsgParseReserveMissingDot)
+	consume(TOKEN_PAREN_CLOSE, MsgParseReserveMissingDot)
 }
 
 func compile(index int) {
@@ -344,7 +344,7 @@ func compile(index int) {
 		switch token.typ {
 		case TOKEN_CONST:
 			newConstant(token)
-		case TOKEN_FUNCTION, TOKEN_FUNCTION_STAR:
+		case TOKEN_FN, TOKEN_FN_STAR:
 			newFunction(token)
 		case TOKEN_RESERVE:
 			newReserve(token)
@@ -415,11 +415,11 @@ func addBind(token Token) {
 
 	if len(frontend.bindings) == startingBoundIndex {
 		errorAt(&token, MsgParseBindEmptyBody)
-		for !match(TOKEN_DOT) { advance() }
+		for !match(TOKEN_PAREN_CLOSE) { advance() }
 		return
 	}
 
-	consume(TOKEN_DOT, MsgParseBindMissingDot)
+	consume(TOKEN_PAREN_CLOSE, MsgParseBindMissingDot)
 	emit(Code{op: OP_BIND, loc: token.loc, value: len(frontend.bindings)})
 }
 
@@ -429,7 +429,7 @@ func newSyscall(token Token) {
 	code.op = OP_SYSCALL
 	code.loc = token.loc
 
-	for !check(TOKEN_DOT) && !check(TOKEN_EOF) {
+	for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
 		advance()
 		var arg DataType
 		t := parser.previous
@@ -448,7 +448,7 @@ func newSyscall(token Token) {
 		value = append(value, arg)
 	}
 	code.value = value
-	consume(TOKEN_DOT, "TODO: handle error")
+	consume(TOKEN_PAREN_CLOSE, "TODO: handle error")
 	emit(code)
 }
 
@@ -607,7 +607,7 @@ func parseToken(token Token) {
 		*sLevel++
 		frontend.scope[*sLevel].tt = token.typ
 		frontend.scope[*sLevel].loopIP = len(frontend.current.code)
-	case TOKEN_DO:
+	case TOKEN_PAREN_OPEN:
 		if *sLevel > 0 {
 			frontend.scope[*sLevel].thenIP = len(frontend.current.code)
 			code.op = OP_JUMP_IF_FALSE
@@ -615,7 +615,7 @@ func parseToken(token Token) {
 		} else {
 			errorAt(&token, MsgParseDoOrphanTokenFound)
 		}
-	case TOKEN_DOT:
+	case TOKEN_PAREN_CLOSE:
 		if *sLevel > 0 {
 			cScope := frontend.scope[*sLevel]
 

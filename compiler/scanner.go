@@ -1,4 +1,4 @@
-package main
+package skc
 
 import (
 	"bufio"
@@ -33,14 +33,12 @@ const (
 	TOKEN_CAST_PTR
 	TOKEN_CONST
 	TOKEN_DIV
-	TOKEN_DO
-	TOKEN_DOT
 	TOKEN_DROP
 	TOKEN_DUP
 	TOKEN_ELSE
 	TOKEN_EQUAL
-	TOKEN_FUNCTION
-	TOKEN_FUNCTION_STAR
+	TOKEN_FN
+	TOKEN_FN_STAR
 	TOKEN_GREATER
 	TOKEN_GREATER_EQUAL
 	TOKEN_IF
@@ -53,6 +51,8 @@ const (
 	TOKEN_LOOP
 	TOKEN_MINUS
 	TOKEN_OVER
+	TOKEN_PAREN_CLOSE
+	TOKEN_PAREN_OPEN
 	TOKEN_PLUS
 	TOKEN_RESERVE
 	TOKEN_RET
@@ -91,8 +91,6 @@ var reservedWords = [53]reserved{
 	reserved{typ: TOKEN_CAST_PTR,       word: "(ptr)"     },
 	reserved{typ: TOKEN_CONST,   		word: "const"	  },
 	reserved{typ: TOKEN_DIV,			word: "div"		  },
-	reserved{typ: TOKEN_DO,				word: "do"		  },
-	reserved{typ: TOKEN_DOT,			word: "."		  },
 	reserved{typ: TOKEN_DROP,			word: "drop"	  },
 	reserved{typ: TOKEN_DTYPE_BOOL,     word: "bool"      },
 	reserved{typ: TOKEN_DTYPE_CHAR,     word: "char"      },
@@ -102,8 +100,8 @@ var reservedWords = [53]reserved{
 	reserved{typ: TOKEN_ELSE,			word: "else"	  },
 	reserved{typ: TOKEN_EQUAL,			word: "="         },
 	reserved{typ: TOKEN_FALSE,			word: "false"	  },
-	reserved{typ: TOKEN_FUNCTION,		word: "function"  },
-	reserved{typ: TOKEN_FUNCTION_STAR,	word: "function*" },
+	reserved{typ: TOKEN_FN,	        	word: "fn"        },
+	reserved{typ: TOKEN_FN_STAR,    	word: "fn*"       },
 	reserved{typ: TOKEN_GREATER,		word: ">"		  },
 	reserved{typ: TOKEN_GREATER_EQUAL,	word: ">="		  },
 	reserved{typ: TOKEN_IF,				word: "if"		  },
@@ -116,6 +114,8 @@ var reservedWords = [53]reserved{
 	reserved{typ: TOKEN_LOOP,			word: "loop"	  },
 	reserved{typ: TOKEN_MINUS,			word: "-"		  },
 	reserved{typ: TOKEN_OVER,           word: "over"	  },
+	reserved{typ: TOKEN_PAREN_CLOSE,	word: ")"		  },
+	reserved{typ: TOKEN_PAREN_OPEN,		word: "("		  },
 	reserved{typ: TOKEN_PLUS,			word: "+"		  },
 	reserved{typ: TOKEN_RESERVE,        word: "reserve"   },
 	reserved{typ: TOKEN_RET,            word: "ret"   	  },

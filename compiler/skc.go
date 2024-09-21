@@ -1,4 +1,4 @@
-package main
+package skc
 
 import (
 	"os"
@@ -79,14 +79,13 @@ func setupWorkspace() {
 
 	Stanczyk.workspace.pDir = pDir
 
-
 	if Stanczyk.workspace.out == "" {
 		out := Stanczyk.workspace.entry[:len(Stanczyk.workspace.entry) - 3]
 		Stanczyk.workspace.out = out
 	}
 }
 
-func main() {
+func Run() {
 	if len(os.Args) < 2 {
 		Stanczyk.Welcome()
 	}

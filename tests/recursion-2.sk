@@ -1,14 +1,14 @@
-using "io"
+using io
 
-function fib int -> int do
-  if dup 2 < do
+fn fib int -> int (
+  if dup 2 < (
     ret
   else
      dup 1 - fib swap 2 - fib + ret
-  .
-.
+  )
+)
 
-function main do
+fn main (
   "Getting the 30th number on the Fibonacci sequence" println
   "832040  " print 30 fib println
-.
+)
