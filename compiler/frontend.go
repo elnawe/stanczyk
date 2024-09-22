@@ -672,7 +672,7 @@ func markFunctionsAsCalled() {
 
 func FrontendRun() {
 	// Core standard library
-	file.Open("basics")
+	file.Open("runtime")
 
 	// User entry file
 	file.Open(Stanczyk.workspace.entry)

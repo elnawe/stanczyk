@@ -48,7 +48,7 @@
 ; OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 ; WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-;; The Stańczyk Basics Library
+;; The Stańczyk Runtime Library
 ;
 
 ; const MIN_INT8   -128 .
@@ -120,7 +120,6 @@ fn str= ptr ptr -> bool (
       rotate = (
       ++
     )
-    ;; TODO = = should actually be "and", that checks that both are true
     dup l1 = swap l2 = = swap drop ret
   )
 )
