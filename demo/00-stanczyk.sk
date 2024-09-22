@@ -42,7 +42,7 @@
 ;; |___|_| |_|\__|_|  \___/ \__,_|\__,_|\___|\__|_|\___/|_| |_|
 
 
-;; As any stack-oriented programming language (a lot of them are), any expressions is
+;; As any stack-oriented programming language (a lot of them are), expressions are
 ;; pushed into the stack. And statements operate over whatever is in the stack.
 ;; RPN works really well here because we can understand right away what is happening
 ;; behind the scenes, making programming in Stańczyk a very transparent process.
@@ -72,9 +72,8 @@ print
 9
 
 ;; We have 4 and 9 on the first and second position respectively. Now, lets do the
-;; operation. If we say that in general mathematics we do 4 + 9 (infix sign),
-;; and we also say that Stańczyk uses RPN (postfix sign), then naturally we are just
-;; missing the operator sign here.
+;; operation. In general mathematics we do 4 + 9 (infix sign), but in Stanczyk, since
+;; we use RPN (postfix sign), then naturally we are just missing the operator sign here.
 +
 
 ;; Most operations in Stańczyk are binary. That means, it will take the last two
@@ -101,26 +100,28 @@ print
 
 ;; What is a programming language without variables? Imaginate having to look
 ;; into the stack all the time? Don't worry, Stańczyk does have variables.
-;; They do take advantance of the stack too! When you define one, the
+;; They do take advantage of the stack too! When you define one, the
 ;; expression is evaluated and push to the stack, then saved on a constant
 ;; table. When you ask for them (by just simply using it for their name),
 ;; the value will be put into the stack on demand.
 
 ;; If you don't define a value for a variable, we got you covered! The default
 ;; value is 'nil'. This is called "declaring".
-;; Note: Technically, variables in Stańczyk are called "symbols". You can call
-;; them whatever you want.
-;; Note: A symbol name starts with an alphabetic character (a-z or A-Z), or an
-;; `_` (underscore) character, but it can have numbers or `-` "dash" after the
-;; first character.
+;;;; Note: Technically, variables in Stańczyk are called "symbols". You can call
+;;;; them whatever you want.
+;;;; Note: A symbol name can start with pretty much whatever you want, except numbers,
+;;;; though numbers can be used after the first character.
 
 ;; You declare a variable by doing:
-:= declared-symbol .
+var declared-symbol
 ;; Note: don't forget the `.` (dot) at the end! It's telling the compiler that
 ;; the declaration ends there. The `.` (dot) is used a lot in Stańczyk.
 
 ;; And define one by doing
-:= defined-symbol 13 .
+var defined-symbol 13
+
+;; You can also use expressions when defining a variable like:
+var defined-symbol (4 9 +)
 
 ;; Symbols can store strings too! And after you declare a symbol, you can
 ;; assign values to it by doing

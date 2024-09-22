@@ -321,6 +321,7 @@ func generateLinuxX86() {
 
 				// Special
 			case OP_SYSCALL:
+				asm.WriteText(";; syscall (%s:%d:%d)", loc.f, loc.l, loc.c)
 				regs := []string{"rax", "rdi", "rsi", "rdx", "r10", "r8", "r9",}
 				length := len(value.([]DataType))
 				for i := 0; i < length; i++ {
