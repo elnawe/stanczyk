@@ -23,6 +23,7 @@ const (
 	OP_END_IF
 	OP_END_LOOP
 	OP_EQUAL
+	OP_EXTERN
 	OP_GREATER
 	OP_GREATER_EQUAL
 	OP_JUMP
@@ -45,7 +46,6 @@ const (
 	OP_STORE32
 	OP_STORE64
 	OP_SWAP
-	OP_SYSCALL
 	OP_TAKE
 
 	// Special
@@ -84,6 +84,12 @@ type Function struct {
 	polymorphic bool
 	called      bool
 	internal    bool
+}
+
+type Extern struct {
+	args []DataType
+	body []string
+	rets []DataType
 }
 
 type Code struct {

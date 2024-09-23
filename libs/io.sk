@@ -27,7 +27,7 @@
 ;                                                                      ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  The Stańczyk Programming Language  ;;
 
-; Copyright (c) 2023 Nahuel Jesús Sacchetti and Stańczyk contributors
+; Copyright (c) 2024 Nahuel Jesús Sacchetti and Stańczyk contributors
 
 ; Permission is hereby granted, free of charge, to any person obtaining
 ; a copy of this software and associated documentation files (the
@@ -67,69 +67,91 @@ const CREATE    64
 const TRUNCATE  512
 
 fn []argv int -> ptr (
-  8 * argv (int) + (ptr) ->64
-  if dup (int) 0 = (
-    dup print
-    "argv empty" error
-  )
+	8 * argv (int) + (ptr) ->64
+	if dup (int) 0 = (
+		dup print
+		"argv empty" error
+	)
 )
 
 fn clear (
-  "\e[H\e[2J" print
+	"\e[H\e[2J" print
 )
 
 fn eputs ptr (
-  dup strlen swap
-  STDERR LINUX_WRITE
-  syscall ( int ptr int int )
-)
-
-fn error ptr (
-  " ERROR: " eputs
-  eputs
-  "\n" eputs
-  1 exit
-)
-
-fn exit int (
-  LINUX_EXIT
-  syscall ( int int )
-)
-
-fn* print ptr (
-  dup strlen swap
-  STDOUT LINUX_WRITE
-  syscall ( int ptr int int )
-)
-
-fn* print int (
-  int->str print
-)
-
-fn* print bool (
-  if take 1 = (
-    "true" print
-  else
-    "false" print
+	dup strlen swap
+	STDERR LINUX_WRITE
+	extern int ptr int int (
+		pop rax
+		pop rdi
+		pop rsi
+		pop rdx
+		syscall
   )
 )
 
+fn error ptr (
+	" ERROR: " eputs
+	eputs
+	"\n" eputs
+	1 exit
+)
+
+fn exit int (
+	LINUX_EXIT
+	extern int int (
+		pop rax
+		pop rdi
+	)
+)
+
+fn* print ptr (
+	dup strlen swap
+	STDOUT LINUX_WRITE
+	extern int ptr int int (
+		pop rax
+		pop rdi
+		pop rsi
+		pop rdx
+		syscall
+	)
+)
+
+fn* print int (
+	int->str print
+)
+
+fn* print bool (
+	if take 1 = (
+		"true" print
+	else
+		"false" print
+	)
+)
+
 fn* println ptr (
-  print
-  "\n" print
+	print
+	"\n" print
 )
 
 fn* println int (
-  print
-  "\n" print
+	print
+	"\n" print
 )
 
 fn* println bool (
-  print
-  "\n" print
+	print
+	"\n" print
 )
 
 fn read int ptr -> int (
-  STDIN LINUX_READ
-  syscall ( int ptr int int )
+	STDIN LINUX_READ
+	extern int ptr int int -> int (
+		pop rax
+		pop rdi
+		pop rsi
+		pop rdx
+		syscall
+		push rax
+	)
 )

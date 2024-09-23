@@ -69,86 +69,86 @@ const MAX_UINT32 4294967295
 const MAX_UINT64 18446744073709551615
 
 fn and bool bool -> bool (
-  swap (int)
-  swap (int)
-  + 2 =
+	swap (int)
+	swap (int)
+	+ 2 =
 )
 
 fn* ++ int -> int (
-  1 +
+	1 +
 )
 
 fn* ++ ptr -> ptr (
-  1 +
+	1 +
 )
 
 fn -- int -> int (
-  1 -
+	1 -
 )
 
 fn / int int -> int (
-  div drop
+	div drop
 )
 
 fn % int int -> int (
-  div swap drop
+	div swap drop
 )
 
 fn ptrdiff ptr ptr -> int (
-  swap (int)
-  swap (int)
-  -
+	swap (int)
+	swap (int)
+	-
 )
 
 fn strlen ptr -> int (
-  dup
-  loop dup ->8 0 != (
-    ++
-  )
-  swap ptrdiff
+	dup
+	loop dup ->8 0 != (
+		++
+	)
+	swap ptrdiff
 )
 
 fn str= ptr ptr -> bool (
-  over strlen swap dup strlen
-  bind ( s1 l1 s2 l2 )
+	over strlen swap dup strlen
+	bind ( s1 l1 s2 l2 )
 
-  false
-  if l1 l2 = (
-    0
-    loop s1 over + ->8
-      swap s2 over + ->8
-      rotate = (
-      ++
-    )
-    dup l1 = swap l2 = = swap drop ret
-  )
+	false
+	if l1 l2 = (
+		0
+		loop s1 over + ->8
+			swap s2 over + ->8
+			rotate = (
+			++
+		)
+		dup l1 = swap l2 = = swap drop ret
+	)
 )
 
 fn intlen int -> int (
-  0 swap
-  loop dup 0 > (
-    swap ++ swap 10 /
-  ) drop
+	0 swap
+	loop dup 0 > (
+		swap ++ swap 10 /
+	) drop
 )
 
 const TO_STRING_CAP 19
 reserve TO_STRING_MEM TO_STRING_CAP
 
 fn int->str int -> ptr (
-  0 loop dup TO_STRING_CAP <= (
-    dup TO_STRING_MEM swap + '\0' <-8
-    ++
-  ) drop
+	0 loop dup TO_STRING_CAP <= (
+		dup TO_STRING_MEM swap + '\0' <-8
+		++
+	) drop
 
-  if dup intlen 0 = (
-    TO_STRING_MEM '0' <-8
-  )
+	if dup intlen 0 = (
+		TO_STRING_MEM '0' <-8
+	)
 
-  loop dup intlen 0 > (
-    dup 10 % 48 + (char)
-    over intlen 1 - TO_STRING_MEM swap + swap <-8
-    10 /
-  ) drop
+	loop dup intlen 0 > (
+		dup 10 % 48 + (char)
+		over intlen 1 - TO_STRING_MEM swap + swap <-8
+		10 /
+	) drop
 
-  TO_STRING_MEM
+	TO_STRING_MEM
 )

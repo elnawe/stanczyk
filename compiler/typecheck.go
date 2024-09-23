@@ -41,6 +41,7 @@ func getOperationName(code Code) string {
 	case OP_DROP: name = "drop"
 	case OP_DUP: name = "dup"
 	case OP_EQUAL: name = "= (equal)"
+	case OP_EXTERN: name = "extern"
 	case OP_GREATER: name = "> (greater)"
 	case OP_GREATER_EQUAL: name = ">= (greater equal)"
 	case OP_JUMP: name = "else"
@@ -56,7 +57,6 @@ func getOperationName(code Code) string {
 	case OP_STORE8, OP_STORE16, OP_STORE32, OP_STORE64: name = "store"
 	case OP_SUBSTRACT: name = "- (substract)"
 	case OP_SWAP: name = "swap"
-	case OP_SYSCALL: name = "syscall"
 	case OP_TAKE: name = "take"
 	case OP_WORD: name = code.value.(string)
 	}
@@ -186,6 +186,7 @@ func dtArray(values ...DataType) []DataType {
 
 func TypecheckRun() {
 	mainHandled := false
+
 	for ifunction, function := range TheProgram.chunks {
 		var binds []DataType
 		if function.name == "main" {
@@ -275,6 +276,20 @@ func TypecheckRun() {
 				a := tc.pop()
 				assertArgumentType(dtArray(a, b), dtArray(DATA_ANY, DATA_ANY), code, loc)
 				tc.push(DATA_BOOL)
+			case OP_EXTERN:
+				var have []DataType
+				value := code.value.(Extern)
+
+				for range value.args {
+					t := tc.pop()
+					have = append([]DataType{t}, have...)
+				}
+
+				assertArgumentType(have, value.args, code, loc)
+
+				for _, dt := range value.rets {
+					tc.push(dt)
+				}
 			case OP_JUMP_IF_FALSE:
 				a := tc.pop()
 				assertArgumentType(dtArray(a), dtArray(DATA_BOOL), code, loc)
@@ -336,20 +351,6 @@ func TypecheckRun() {
 				tc.scope--
 
 			// Special
-			case OP_SYSCALL:
-				var have []DataType
-				value := code.value.([]DataType)
-
-				for range value {
-					t := tc.pop()
-					have = append([]DataType{t}, have...)
-				}
-
-				assertArgumentType(have, value, code, loc)
-
-				for _, dt := range function.rets {
-					tc.push(dt)
-				}
 			case OP_WORD:
 				var have []DataType
 				var fnCall Function

@@ -65,12 +65,10 @@ const (
 	TOKEN_STORE32
 	TOKEN_STORE64
 	TOKEN_SWAP
-	TOKEN_SYSCALL
 	TOKEN_TAKE
 	TOKEN_THIS
 	TOKEN_USING
 	TOKEN_VAR
-	TOKEN_YIELD
 
 	// Specials
 	TOKEN_EOF
@@ -130,13 +128,11 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_STORE32,        word: "<-32"    },
 	reserved{typ: TOKEN_STORE64,        word: "<-64"    },
 	reserved{typ: TOKEN_SWAP,           word: "swap"    },
-	reserved{typ: TOKEN_SYSCALL,        word: "syscall" },
 	reserved{typ: TOKEN_TAKE,           word: "take"    },
 	reserved{typ: TOKEN_THIS,           word: "this"    },
 	reserved{typ: TOKEN_TRUE,           word: "true"    },
 	reserved{typ: TOKEN_VAR,            word: "var"     },
 	reserved{typ: TOKEN_USING,          word: "using"   },
-	reserved{typ: TOKEN_YIELD,          word: "yield"   },
 }
 
 type Location struct {
@@ -234,7 +230,7 @@ func makeChar(c byte, line string, index *int) {
 func makeWord(c byte, line string, index *int) {
 	word := string(c)
 
-	for Advance(&c, line, index) && c != ' ' {
+	for Advance(&c, line, index) && c != ' ' && c != '\t' {
 		word += string(c)
 	}
 
@@ -264,7 +260,7 @@ func TokenizeFile(f string, s string) []Token {
 		for index := 0; index < len(line); index++ {
 			c := line[index]
 			scanner.column = index
-			if (c == ' ') {
+			if (c == ' ' || c == '\t') {
 				continue
 			}
 

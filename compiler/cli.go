@@ -67,7 +67,8 @@ func logo() {
 ╚════██║   ██║   ██╔══██║██║╚██╗██║██║      ███╔╝    ╚██╔╝  ██╔═██╗
 ███████║   ██║   ██║  ██║██║ ╚████║╚██████╗███████╗   ██║   ██║  ██╗
 ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝   ╚═╝   ╚═╝  ╚═╝
-                                               The Stańczyk Compiler`
+                                               The Stańczyk Compiler
+`
 	fmt.Printf("\033[31m%s\n\033[0m", logo)
 }
 
@@ -89,6 +90,12 @@ func (this *CLI) Message(e string, val ...any) {
 		msg := fmt.Sprintf(e, val...)
 		fmt.Fprintf(os.Stdout, "%s", msg)
 	}
+}
+
+func (this *CLI) Version() {
+	logo()
+	fmt.Printf("Compiler version: %s (Release date: %s)\n", CompilerVersion, CompilerDate)
+	ExitWithError(CodeOK)
 }
 
 func (this *CLI) Welcome() {

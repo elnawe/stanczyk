@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-const CompilerVersion = "0.3"
+const CompilerDate = "2024-09-23"
+const CompilerVersion = "4"
 
 var Stanczyk CLI
 
@@ -49,14 +50,17 @@ func parseCommand() {
 	command := os.Args[1]
 
 	switch command {
-	case "run":
-		Stanczyk.options.run = true
-		Stanczyk.options.clean = true
-		Stanczyk.options.silent = true
 	case "build":
 		Stanczyk.options.debug = false
 	case "help":
 		Stanczyk.Help()
+	case "run":
+		Stanczyk.options.run = true
+		Stanczyk.options.clean = true
+		Stanczyk.options.silent = true
+	case "version":
+		Stanczyk.Version()
+
 	default:
 		Stanczyk.Error(MsgCliUnknownCommand, command)
 	}

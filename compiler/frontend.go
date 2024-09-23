@@ -2,6 +2,8 @@ package skc
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 type ScopeName int
@@ -211,7 +213,6 @@ func newFunction(token Token) {
 		}
 	}
 
-
 	for _, f := range TheProgram.chunks {
 		if f.name == function.name && (!f.polymorphic || !function.polymorphic) {
 			msg := fmt.Sprintf(MsgParseFunctionNotPolymorphic, function.name)
@@ -336,7 +337,7 @@ func newReserve(token Token) {
 	frontend.memories = append(frontend.memories, memory)
 }
 
-func compile(index int) {
+func compileFirstPass(index int) {
 	f := file.files[index]
 
 	startParser(f)
@@ -428,15 +429,13 @@ func addBind(token Token) {
 	emit(Code{op: OP_BIND, loc: token.loc, value: len(frontend.bindings)})
 }
 
-func newSyscall(token Token) {
-	var value []DataType
+func newExtern(token Token) {
+	var value Extern
 	var code Code
-	code.op = OP_SYSCALL
+	code.op = OP_EXTERN
 	code.loc = token.loc
 
-	consume(TOKEN_PAREN_OPEN, MsgParseSyscallMissingOpenStmt)
-
-	for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
+	for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
 		advance()
 		var arg DataType
 		t := parser.previous
@@ -446,16 +445,69 @@ func newSyscall(token Token) {
 		case TOKEN_DTYPE_CHAR: arg = DATA_CHAR
 		case TOKEN_DTYPE_INT:  arg = DATA_INT
 		case TOKEN_DTYPE_PTR:  arg = DATA_PTR
+
 		default:
+			// TODO: Make this message specific for `extend`
 			msg := fmt.Sprintf(MsgParseFunctionUnknownType, t.value)
 			errorAt(&t, msg)
 			ExitWithError(CodeParseError)
 		}
 
-		value = append(value, arg)
+		value.args = append(value.args, arg)
 	}
+
+	if match(TOKEN_RIGHT_ARROW) {
+		for !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
+			advance()
+			var arg DataType
+
+			t := parser.previous
+
+			switch t.typ {
+			case TOKEN_DTYPE_BOOL: arg = DATA_BOOL
+			case TOKEN_DTYPE_CHAR: arg = DATA_CHAR
+			case TOKEN_DTYPE_INT:  arg = DATA_INT
+			case TOKEN_DTYPE_PTR:  arg = DATA_PTR
+
+			default:
+				// TODO: Make this message specific for `extend`
+				msg := fmt.Sprintf(MsgParseFunctionUnknownType, t.value)
+				errorAt(&t, msg)
+				ExitWithError(CodeParseError)
+			}
+
+			value.rets = append(value.rets, arg)
+		}
+	}
+
+	consume(TOKEN_PAREN_OPEN, "TODO MESSAGE")
+
+	var line []string
+
+	for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
+		advance()
+		t := parser.previous
+		nt := parser.current
+
+		var val string
+
+		switch t.typ {
+		case TOKEN_WORD: val = t.value.(string)
+		case TOKEN_INT: val = strconv.Itoa(t.value.(int))
+		}
+
+		// TODO: Should be able to expand word
+		// TODO: Should check for instructions or registers
+		line = append(line, val)
+
+		if t.loc.l != nt.loc.l {
+			value.body = append(value.body, strings.Join(line, " "))
+			line = make([]string, 0, 0)
+		}
+	}
+
 	code.value = value
-	consume(TOKEN_PAREN_CLOSE, MsgParseSyscallMissingCloseStmt)
+	consume(TOKEN_PAREN_CLOSE, "TODO MESSAGE")
 	emit(code)
 }
 
@@ -525,6 +577,8 @@ func parseToken(token Token) {
 	case TOKEN_EQUAL:
 		code.op = OP_EQUAL
 		emit(code)
+	case TOKEN_EXTERN:
+		newExtern(token)
 	case TOKEN_GREATER:
 		code.op = OP_GREATER
 		emit(code)
@@ -583,8 +637,6 @@ func parseToken(token Token) {
 	case TOKEN_SWAP:
 		code.op = OP_SWAP
 		emit(code)
-	case TOKEN_SYSCALL:
-		newSyscall(token)
 	case TOKEN_TAKE:
 		code.op = OP_TAKE
 		emit(code)
@@ -651,21 +703,28 @@ func parseToken(token Token) {
 }
 
 func markFunctionsAsCalled() {
+	// TODO: BUG FOUND
+	// Code folding and dead code elimination here is breaking the
+	// functionality of libraries. The reason for it is that
+	// it's not going over lower levels.
+	// This is not the best approach as I should really go through registering functions
+	// first, and then go through each operation inside the function.
 	for x := 0; x < len(frontend.words); x++ {
-		word := frontend.words[x]
+		// word := frontend.words[x]
 
 		for y := 0; y < len(TheProgram.chunks); y++ {
 			f := &TheProgram.chunks[y]
+			f.called = true
 
-			if f.name == word {
-				f.called = true
+			// if f.name == word {
+			// 	f.called = true
 
-				for _, code := range f.code {
-					if code.op == OP_WORD {
-						addWord(code.value.(string))
-					}
-				}
-			}
+			// 	for _, code := range f.code {
+			// 		if code.op == OP_WORD {
+			// 			addWord(code.value.(string))
+			// 		}
+			// 	}
+			// }
 		}
 	}
 }
@@ -678,7 +737,7 @@ func FrontendRun() {
 	file.Open(Stanczyk.workspace.entry)
 
 	for index := 0; index < len(file.files); index++ {
-		compile(index)
+		compileFirstPass(index)
 	}
 
 	markFunctionsAsCalled()

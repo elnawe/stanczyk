@@ -17,8 +17,9 @@ const (
 		"Usage:\n" +
 			"\tskc <command> [arguments]\n" +
 			"Commands:\n" +
-			"\tbuild  compile the entry .sk file and it's includes.\n" +
-			"\trun    same as 'build', but it runs the result and cleans up the executable.\n\n" +
+			"\tbuild    compile the entry .sk file and it's includes.\n" +
+			"\trun      same as 'build', but it runs the result and cleans up the executable.\n" +
+			"\tversion  check the version of your installed compiler.\n\n" +
 			"For more information about what the compiler can do, you can use: skc help.\n"
 
 

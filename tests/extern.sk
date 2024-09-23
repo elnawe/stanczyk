@@ -1,0 +1,24 @@
+using io
+
+fn custom-linux-write ptr int (
+	swap 1 1
+	extern int ptr int int (
+		pop rax
+		pop rdi
+		pop rsi
+		pop rdx
+		syscall
+	)
+)
+
+fn return-13 -> int (
+  extern -> int (
+		mov rax, 13
+		push rax
+  )
+)
+
+fn main (
+  "Printing this text with extern\n" dup strlen custom-linux-write
+	return-13 println
+)

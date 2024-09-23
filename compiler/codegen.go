@@ -179,6 +179,14 @@ func generateLinuxX86() {
 				asm.WriteText("    cmp rax, rbx")
 				asm.WriteText("    cmove rcx, rdx")
 				asm.WriteText("    push rcx")
+			case OP_EXTERN:
+				val := value.(Extern)
+
+				asm.WriteText(";; extern (%s:%d:%d)", loc.f, loc.l, loc.c)
+
+				for _, s := range val.body {
+					asm.WriteText("    %s", s)
+				}
 			case OP_GREATER:
 				asm.WriteText(";; > (%s:%d:%d)", loc.f, loc.l, loc.c)
 				asm.WriteText("    xor rcx, rcx")
@@ -320,17 +328,6 @@ func generateLinuxX86() {
 				asm.WriteText("    push rax")
 
 				// Special
-			case OP_SYSCALL:
-				asm.WriteText(";; syscall (%s:%d:%d)", loc.f, loc.l, loc.c)
-				regs := []string{"rax", "rdi", "rsi", "rdx", "r10", "r8", "r9",}
-				length := len(value.([]DataType))
-				for i := 0; i < length; i++ {
-					asm.WriteText("    pop %s", regs[i])
-				}
-				asm.WriteText("    syscall")
-				for range function.rets {
-					asm.WriteText("    push rax")
-				}
 			case OP_WORD:
 				fnCall := value.(FunctionCall)
 
