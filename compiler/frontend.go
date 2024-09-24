@@ -176,7 +176,7 @@ func newConstant(token Token) {
 			constant.value = tokens[0].value.(int)
 		}
 
-		consume(TOKEN_PAREN_CLOSE, MsgParseConstMissingDot)
+		consume(TOKEN_PAREN_CLOSE, MsgParseConstMissingCloseStmt)
 	} else {
 		advance()
 		constant.value = parser.previous.value.(int)
@@ -275,7 +275,7 @@ func newFunction(token Token) {
 		}
 	}
 
-	consume(TOKEN_PAREN_OPEN, MsgParseFunctionMissingDo)
+	consume(TOKEN_PAREN_OPEN, MsgParseFunctionMissingOpenStmt)
 
 	frontend.sLevel++
 	frontend.scope[1].tt = TOKEN_FN
@@ -721,7 +721,7 @@ func parseToken(token Token) {
 			code.op = OP_JUMP_IF_FALSE
 			emit(code)
 		} else {
-			errorAt(&token, MsgParseDoOrphanTokenFound)
+			errorAt(&token, MsgParseOpenStmtOrphanTokenFound)
 		}
 	case TOKEN_PAREN_CLOSE:
 		if *sLevel > 0 {
@@ -746,7 +746,7 @@ func parseToken(token Token) {
 
 			*sLevel--
 		} else {
-			errorAt(&token, MsgParseDotOrphanTokenFound)
+			errorAt(&token, MsgParseCloseStmtOrphanTokenFound)
 		}
 	}
 }

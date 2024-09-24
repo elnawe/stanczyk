@@ -43,19 +43,19 @@ const (
 			"\t\t        ^^^"
 	MsgParseReserveMissingValue =
 		"invalid or missing value\n" +
-			"\t\treserve mem 1024 .\n" +
+			"\t\treserve mem 1024\n" +
 			"\t\t            ^^^^"
-	MsgParseReserveMissingDot =
+	MsgParseReserveMissingCloseStmt =
 		"missing '.'\n" +
-			"\t\treserve mem 1024 .\n" +
-			"\t\t                 ^"
+			"\t\treserve mem ( 1024 )\n" +
+			"\t\t                   ^"
 
 	MsgParseBindAlreadyBound =
 		"function has bindings already"
 	MsgParseBindEmptyBody =
 		"missing or invalid bind content\n" +
-			"\t\tbind a b c .\n" +
-			"\t\t     ^^^^^"
+			"\t\tbind ( a b c )\n" +
+			"\t\t       ^^^^^"
 	MsgParseBindMissingCloseStmt =
 		"missing ')'\n" +
 			"\t\tbind ( a b c )\n" +
@@ -65,26 +65,24 @@ const (
 			"\t\tbind ( a b c )\n" +
 			"\t\t     ^"
 
-	MsgParseSyscallMissingCloseStmt =
-		"missing ')'\n" +
-			"\t\tsyscall ( int int )\n" +
-			"\t\t                  ^"
-	MsgParseSyscallMissingOpenStmt =
-		"missing '('\n" +
-			"\t\tsyscall ( int int )\n" +
-			"\t\t        ^"
-
-	MsgParseDoOrphanTokenFound =
-		"only use 'do' when starting a block statement\nE.g.:\n\tif [condition] do [...] else [...] .\n\t^^             ^^\n'do' can be used in other blocks like function and loops"
+	MsgParseOpenStmtOrphanTokenFound =
+		"only use '(' when starting a block statement\n" +
+			"E.g.:\n" +
+			"\tif [condition] ( [...] else [...] )\n" +
+			"\t^^             ^\n" +
+			"'(' can be used in other blocks like function and loops."
 
 	MsgParseElseOrphanTokenFound =
-		"only use 'else' after starting an 'if' statement\nE.g.:\n\tif [condition] do [...] else [...] .\n\t^^                      ^^^^"
-
-	MsgParseDotOrphanTokenFound =
-		"'.' must have an associated block\n" +
+		"only use 'else' after starting an 'if' statement\n" +
 			"E.g.:\n" +
-			"\t\tif [condition] do [...] else [...] .\n" +
-			"\t\t^^                                 ^\n"
+			"\tif [condition] ( [...] else [...] )\n" +
+			"\t^^                     ^^^^"
+
+	MsgParseCloseStmtOrphanTokenFound =
+		"')' must have an associated block\n" +
+			"E.g.:\n" +
+			"\t\tif [condition] ( [...] else [...] )\n" +
+			"\t\t^^                                ^\n"
 
 	MsgParseCallMainFunctionMissing =
 		"entry point is not defined\n" +
@@ -98,22 +96,22 @@ const (
 
 	MsgParseFunctionMissingName =
 		"invalid or missing function name\n" +
-			"\t\tfunction my-func do [...] .\n" +
-			"\t\t         ^^^^^^^"
+			"\t\fn my-func ( [...] )\n" +
+			"\t\t  ^^^^^^^"
 	MsgParseFunctionUnknownType =
 		"type '%s' is unknown"
 	MsgParseFunctionNoReturnSpecified =
 		"no return values specified after '->'\n" +
-			"\t\tfunction my-func -> do [...] .\n" +
-			"\t\t                 ^^"
-	MsgParseFunctionMissingDo =
-		"missing 'do' keyword\n" +
-			"\t\tfunction my-func do [...] .\n" +
-			"\t\t                 ^^"
-	MsgParseFunctionMissingDot =
-		"missing '.'\n" +
-			"\t\tfunction my-func do [...] .\n" +
-			"\t\t                          ^"
+			"\t\fn my-func -> ( [...] )\n" +
+			"\t\t          ^^"
+	MsgParseFunctionMissingOpenStmt =
+		"missing '(' keyword\n" +
+			"\t\fn my-func ( [...] )\n" +
+			"\t\t          ^"
+	MsgParseFunctionMissingCloseStmt =
+		"missing ')'\n" +
+			"\t\fn my-func ( [...] )\n" +
+			"\t\t                  ^"
 	MsgParseFunctionMainAlreadyDefined =
 		"function main already defined at %s:%d"
 	MsgParseFunctionNotPolymorphic =
@@ -121,20 +119,20 @@ const (
 
 	MsgParseConstMissingWord =
 		"invalid or missing word\n" +
-			"\t\tconst my-const [...] .\n" +
+			"\t\tconst my-const [...]\n" +
 			"\t\t      ^^^^^^^^"
 	MsgParseConstMissingContent =
 		"const cannot be empty\n" +
-			"\t\tconst my-const [...] .\n" +
+			"\t\tconst my-const [...]\n" +
 			"\t\t               ^^^^^"
 	MsgParseConstInvalidContent =
 		"const %s can only have int or simple arithmetic operations (+ or *)\n" +
 			"\t\tconst my-const 32 1024 * .\n" +
 			"\t\t               ^^^^^^^^^"
-	MsgParseConstMissingDot =
-		"missing '.'\n" +
-			"\t\tconst my-const [...] .\n" +
-			"\t\t                     ^"
+	MsgParseConstMissingCloseStmt =
+		"missing ')'\n" +
+			"\t\tconst my-const ( [...] )\n" +
+			"\t\t                       ^"
 	MsgParseConstOverrideNotAllowed =
 		"const %s already exists\n"
 

@@ -1,11 +1,13 @@
-function fib int -> int do
-  if dup 2 < do
-    ret
-  else
-     dup 1 - fib swap 2 - fib + ret
-  .
-.
+using io
 
-function main do
-  30 fib print
-.
+fn fib int -> int (
+	if dup 2 < (
+		ret
+	else
+		dup 1 - fib swap 2 - fib + ret
+	)
+)
+
+fn main (
+  30 fib println
+)
