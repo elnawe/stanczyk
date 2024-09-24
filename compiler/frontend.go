@@ -337,6 +337,55 @@ func newReserve(token Token) {
 	frontend.memories = append(frontend.memories, memory)
 }
 
+// Include all files
+func compilationFirstPass(index int) {
+	f := file.files[index]
+
+	startParser(f)
+
+	for !check(TOKEN_EOF) {
+		advance()
+		token := parser.previous
+
+		if token.typ == TOKEN_USING {
+			advance()
+			file.Open(parser.previous.value.(string))
+		}
+	}
+}
+
+// Read constants and memories
+func compilationSecondPass(index int) {
+	f := file.files[index]
+
+	startParser(f)
+
+	for !check(TOKEN_EOF) {
+		advance()
+		token := parser.previous
+
+		switch token.typ {
+		case TOKEN_CONST: newConstant(token)
+		case TOKEN_RESERVE: newReserve(token)
+		}
+	}
+}
+
+func compilationThirdPass(index int) {
+	f := file.files[index]
+
+	startParser(f)
+
+	for !check(TOKEN_EOF) {
+		advance()
+		token := parser.previous
+
+		if token.typ == TOKEN_FN || token.typ == TOKEN_FN_STAR {
+			newFunction(token)
+		}
+	}
+}
+
 func compileFirstPass(index int) {
 	f := file.files[index]
 
@@ -736,8 +785,16 @@ func FrontendRun() {
 	// User entry file
 	file.Open(Stanczyk.workspace.entry)
 
-	for index := 0; index < len(file.files); index++ {
-		compileFirstPass(index)
+	for index, _ := range file.files {
+		compilationFirstPass(index)
+	}
+
+	for index, _ := range file.files {
+		compilationSecondPass(index)
+	}
+
+	for index, _ := range file.files {
+		compilationThirdPass(index)
 	}
 
 	markFunctionsAsCalled()

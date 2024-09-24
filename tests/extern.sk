@@ -1,7 +1,7 @@
 using io
 
 fn custom-linux-write ptr int (
-	swap 1 1
+	swap STDOUT LINUX_WRITE
 	extern int ptr int int (
 		pop rax
 		pop rdi
