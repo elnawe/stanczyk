@@ -7,10 +7,10 @@ import (
 )
 
 func BackendRun() {
-	compilerArgs := strings.Split("-f elf64 -g dwarf2 output.asm", " ")
-	linkerArgs := strings.Split("-o output output.o -lc -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2", " ")
+	compilerArgs := strings.Split("-f elf64 -g output.asm", " ")
+	linkerArgs := strings.Split("-o output output.o -m elf_x86_64", " ")
 
-	_, err := exec.Command("yasm", compilerArgs...).Output()
+	_, err := exec.Command("nasm", compilerArgs...).Output()
 	CheckError(err, "backend.go-1")
 	_, err = exec.Command("ld", linkerArgs...).Output()
 	CheckError(err, "backend.go-2")
