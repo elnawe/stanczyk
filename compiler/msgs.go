@@ -65,6 +65,15 @@ const (
 			"\t\tbind ( a b c )\n" +
 			"\t\t     ^"
 
+	MsgParseExternMissingCloseStmt =
+		"missing '('\n" +
+			"\t\textern ( ... )\n" +
+			"\t\t             ^"
+	MsgParseExternMissingOpenStmt =
+		"missing '('\n" +
+			"\t\textern ( ... )\n" +
+			"\t\t       ^"
+
 	MsgParseOpenStmtOrphanTokenFound =
 		"only use '(' when starting a block statement\n" +
 			"E.g.:\n" +

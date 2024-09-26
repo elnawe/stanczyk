@@ -529,7 +529,7 @@ func newExtern(token Token) {
 		}
 	}
 
-	consume(TOKEN_PAREN_OPEN, "TODO MESSAGE")
+	consume(TOKEN_PAREN_OPEN, MsgParseExternMissingOpenStmt)
 
 	var line []string
 
@@ -556,7 +556,7 @@ func newExtern(token Token) {
 	}
 
 	code.value = value
-	consume(TOKEN_PAREN_CLOSE, "TODO MESSAGE")
+	consume(TOKEN_PAREN_CLOSE, MsgParseExternMissingCloseStmt)
 	emit(code)
 }
 
