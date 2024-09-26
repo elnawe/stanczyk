@@ -241,7 +241,7 @@ func newFunction(token Token) {
 			case TOKEN_DTYPE_INT:  targ = DATA_INT
 			case TOKEN_DTYPE_PTR:  targ = DATA_PTR
 			default:
-				msg := fmt.Sprintf(MsgParseFunctionUnknownType, t.value)
+				msg := fmt.Sprintf(MsgParseTypeUnknown, t.value)
 				errorAt(&t, msg)
 				ExitWithError(CodeParseError)
 			}
@@ -266,7 +266,7 @@ func newFunction(token Token) {
 			case TOKEN_DTYPE_INT: tret = DATA_INT
 			case TOKEN_DTYPE_PTR: tret = DATA_PTR
 			default:
-				msg := fmt.Sprintf(MsgParseFunctionUnknownType, t.value)
+				msg := fmt.Sprintf(MsgParseTypeUnknown, t.value)
 				errorAt(&t, msg)
 				ExitWithError(CodeParseError)
 			}
@@ -337,80 +337,6 @@ func newReserve(token Token) {
 	frontend.memories = append(frontend.memories, memory)
 }
 
-// Include all files
-func compilationFirstPass(index int) {
-	f := file.files[index]
-
-	startParser(f)
-
-	for !check(TOKEN_EOF) {
-		advance()
-		token := parser.previous
-
-		if token.typ == TOKEN_USING {
-			advance()
-			file.Open(parser.previous.value.(string))
-		}
-	}
-}
-
-// Read constants and memories
-func compilationSecondPass(index int) {
-	f := file.files[index]
-
-	startParser(f)
-
-	for !check(TOKEN_EOF) {
-		advance()
-		token := parser.previous
-
-		switch token.typ {
-		case TOKEN_CONST: newConstant(token)
-		case TOKEN_RESERVE: newReserve(token)
-		}
-	}
-}
-
-func compilationThirdPass(index int) {
-	f := file.files[index]
-
-	startParser(f)
-
-	for !check(TOKEN_EOF) {
-		advance()
-		token := parser.previous
-
-		if token.typ == TOKEN_FN || token.typ == TOKEN_FN_STAR {
-			newFunction(token)
-		}
-	}
-}
-
-func compileFirstPass(index int) {
-	f := file.files[index]
-
-	startParser(f)
-
-	for !check(TOKEN_EOF) {
-		advance()
-		token := parser.previous
-		switch token.typ {
-		case TOKEN_CONST:
-			newConstant(token)
-		case TOKEN_FN, TOKEN_FN_STAR:
-			newFunction(token)
-		case TOKEN_RESERVE:
-			newReserve(token)
-		case TOKEN_USING:
-			advance()
-			file.Open(parser.previous.value.(string))
-		default:
-			ReportErrorAtLocation(MsgParseErrorProgramScope, token.loc)
-			ExitWithError(CodeParseError)
-		}
-	}
-}
-
 /*    ___ ___  __  __ ___ ___ _      _ _____ ___ ___  _  _
  *   / __/ _ \|  \/  | _ \_ _| |    /_\_   _|_ _/ _ \| \| |
  *  | (_| (_) | |\/| |  _/| || |__ / _ \| |  | | (_) | .` |
@@ -478,7 +404,7 @@ func addBind(token Token) {
 	emit(Code{op: OP_BIND, loc: token.loc, value: len(frontend.bindings)})
 }
 
-func newExtern(token Token) {
+func addExtern(token Token) {
 	var value Extern
 	var code Code
 	code.op = OP_EXTERN
@@ -496,8 +422,7 @@ func newExtern(token Token) {
 		case TOKEN_DTYPE_PTR:  arg = DATA_PTR
 
 		default:
-			// TODO: Make this message specific for `extend`
-			msg := fmt.Sprintf(MsgParseFunctionUnknownType, t.value)
+			msg := fmt.Sprintf(MsgParseTypeUnknown, t.value)
 			errorAt(&t, msg)
 			ExitWithError(CodeParseError)
 		}
@@ -519,8 +444,7 @@ func newExtern(token Token) {
 			case TOKEN_DTYPE_PTR:  arg = DATA_PTR
 
 			default:
-				// TODO: Make this message specific for `extend`
-				msg := fmt.Sprintf(MsgParseFunctionUnknownType, t.value)
+				msg := fmt.Sprintf(MsgParseTypeUnknown, t.value)
 				errorAt(&t, msg)
 				ExitWithError(CodeParseError)
 			}
@@ -627,7 +551,7 @@ func parseToken(token Token) {
 		code.op = OP_EQUAL
 		emit(code)
 	case TOKEN_EXTERN:
-		newExtern(token)
+		addExtern(token)
 	case TOKEN_GREATER:
 		code.op = OP_GREATER
 		emit(code)
@@ -777,6 +701,72 @@ func markFunctionsAsCalled() {
 		}
 	}
 }
+
+/*
+ * Compilation: First Pass
+ *   This step goes through the files and check for the TOKEN_USING, adding those
+ *   files to the compilation queue.
+ */
+func compilationFirstPass(index int) {
+	f := file.files[index]
+
+	startParser(f)
+
+	for !check(TOKEN_EOF) {
+		advance()
+		token := parser.previous
+
+		if token.typ == TOKEN_USING {
+			advance()
+			file.Open(parser.previous.value.(string))
+		}
+	}
+}
+
+/*
+ * Compilation: Second Pass
+ *   The second step checks for TOKEN_CONST and TOKEN_RESERVE. Saves all the words
+ *   being used so it can be reused in the functions later.
+ */
+func compilationSecondPass(index int) {
+	f := file.files[index]
+
+	startParser(f)
+
+	for !check(TOKEN_EOF) {
+		advance()
+		token := parser.previous
+
+		switch token.typ {
+		case TOKEN_CONST: newConstant(token)
+		case TOKEN_RESERVE: newReserve(token)
+		}
+	}
+}
+
+/*
+ * Compilation: Third Pass
+ *   The third step goes through each function and compiles the code for each one
+ *   of them. Register and make all the OP codes for these functions.
+ */
+func compilationThirdPass(index int) {
+	f := file.files[index]
+
+	startParser(f)
+
+	for !check(TOKEN_EOF) {
+		advance()
+		token := parser.previous
+
+		if token.typ == TOKEN_FN || token.typ == TOKEN_FN_STAR {
+			newFunction(token)
+		}
+	}
+}
+
+// TODO: Add error checking for non-allowed tokens in the global scope
+// ReportErrorAtLocation(MsgParseErrorProgramScope, token.loc)
+// ExitWithError(CodeParseError)
 
 func FrontendRun() {
 	// Core standard library

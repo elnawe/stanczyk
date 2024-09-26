@@ -107,8 +107,6 @@ const (
 		"invalid or missing function name\n" +
 			"\t\fn my-func ( [...] )\n" +
 			"\t\t  ^^^^^^^"
-	MsgParseFunctionUnknownType =
-		"type '%s' is unknown"
 	MsgParseFunctionNoReturnSpecified =
 		"no return values specified after '->'\n" +
 			"\t\fn my-func -> ( [...] )\n" +
@@ -144,6 +142,9 @@ const (
 			"\t\t                       ^"
 	MsgParseConstOverrideNotAllowed =
 		"const %s already exists\n"
+
+	MsgParseTypeUnknown =
+		"unknown type: '%s'"
 
 
 	/*   _______   _____ ___ ___ _  _ ___ ___ _  __
