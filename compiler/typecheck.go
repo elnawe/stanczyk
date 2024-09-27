@@ -2,6 +2,7 @@ package skc
 
 import (
 	"fmt"
+	"reflect"
 )
 
 const STACK_SIZE = 10
@@ -42,6 +43,7 @@ func getOperationName(code Code) string {
 	case OP_DUP: name = "dup"
 	case OP_EQUAL: name = "= (equal)"
 	case OP_EXTERN: name = "extern"
+	case OP_FUNCTION_CALL: name = "function call: " + code.value.([]FunctionCall)[0].name
 	case OP_GREATER: name = "> (greater)"
 	case OP_GREATER_EQUAL: name = ">= (greater equal)"
 	case OP_JUMP: name = "else"
@@ -58,7 +60,6 @@ func getOperationName(code Code) string {
 	case OP_SUBSTRACT: name = "- (substract)"
 	case OP_SWAP: name = "swap"
 	case OP_TAKE: name = "take"
-	case OP_WORD: name = code.value.(string)
 	}
 
 	return name
@@ -290,6 +291,55 @@ func TypecheckRun() {
 				for _, dt := range value.rets {
 					tc.push(dt)
 				}
+			case OP_FUNCTION_CALL:
+				var have []DataType
+				calls := code.value.([]FunctionCall)
+				var funcRef Function
+				var fns []Function
+
+				for _, c := range calls {
+					fns = append(fns, FindFunctionByIP(c.ip))
+				}
+
+				if len(fns) == 1 {
+					// We have found only one function with this signature.
+					funcRef = fns[0]
+				} else {
+					// The function call is polymorphistic, we need to find the
+					// one with the same signature and calling convention.
+					for _, f := range fns {
+						// To easily match the stack behavior, we first reverse it
+						// (simulating we pop from it) and then shrink it to the number
+						// of values expected in arguments (since stack simulation in
+						// typechecking is not a dynamic array).
+						reverseStackOrder := tc.stackCount - len(f.args)
+					    stackReversed := tc.stack[reverseStackOrder:]
+						stackReducedToArgsLen := stackReversed[:len(f.args)]
+
+						if reflect.DeepEqual(f.args, stackReducedToArgsLen) {
+							funcRef = f
+							break
+						}
+					}
+				}
+
+				// NOTE: We redefine the chunk value to match the function accordingly.
+				// We do this while typechecking, so we can allow for polymorphism in
+				// the parameters of the functions. Once we get here, we have found the
+				// exact function according to the stack values provided.
+				TheProgram.chunks[ifunction].code[icode].value =
+					FunctionCall{name: funcRef.name, ip: funcRef.ip}
+
+				for range funcRef.args {
+					t := tc.pop()
+					have = append([]DataType{t}, have...)
+				}
+
+				assertArgumentType(have, funcRef.args, code, loc)
+
+				for _, dt := range funcRef.rets {
+					tc.push(dt)
+				}
 			case OP_JUMP_IF_FALSE:
 				a := tc.pop()
 				assertArgumentType(dtArray(a), dtArray(DATA_BOOL), code, loc)
@@ -349,63 +399,6 @@ func TypecheckRun() {
 					ExitWithError(CodeTypecheckError)
 				}
 				tc.scope--
-
-			// Special
-			case OP_WORD:
-				var have []DataType
-				var fnCall Function
-				fns := FindFunctionsByName(code)
-
-				if len(fns) == 1 {
-					fnCall = fns[0]
-				} else {
-					paramsMsg := ""
-					for index, f := range fns {
-						if index > 0 {
-							paramsMsg += " or "
-						}
-
-						paramsMsg += "(" + getDataTypeNames(f.args) + ")"
-
-						lastInStack := tc.stackCount - len(f.args)
-					    stackCopy := tc.stack[lastInStack:]
-						found := false
-						for i, _ := range f.args {
-							if f.args[i] != stackCopy[i] {
-								found = false
-								break
-							}
-
-							found = true
-						}
-
-						if found {
-							fnCall = f
-							break
-						}
-					}
-
-					if !fnCall.called {
-						msg := fmt.Sprintf(MsgTypecheckFunctionPolymorphicMatchNotFound, code.value, getStackValues(), paramsMsg)
-						ReportErrorAtLocation(msg, function.loc)
-						ExitWithError(CodeTypecheckError)
-					}
-				}
-
-				ChangeValueOfFunction(ifunction, icode,
-					FunctionCall{name: fnCall.name, ip: fnCall.ip})
-
-				for range fnCall.args {
-					t := tc.pop()
-					have = append([]DataType{t}, have...)
-				}
-
-				assertArgumentType(have, fnCall.args, code, loc)
-
-				for _, dt := range fnCall.rets {
-					tc.push(dt)
-				}
-
 			case OP_JUMP, OP_LOOP, OP_RET:
 
 			default:

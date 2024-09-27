@@ -24,6 +24,7 @@ const (
 	OP_END_LOOP
 	OP_EQUAL
 	OP_EXTERN
+	OP_FUNCTION_CALL
 	OP_GREATER
 	OP_GREATER_EQUAL
 	OP_JUMP
@@ -49,7 +50,6 @@ const (
 	OP_TAKE
 
 	// Special
-	OP_WORD
 	OP_EOC
 )
 
@@ -81,6 +81,7 @@ type Function struct {
 	args        []DataType
 	rets        []DataType
 	code        []Code
+	parsed      bool
 	polymorphic bool
 	called      bool
 	internal    bool

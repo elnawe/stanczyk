@@ -105,7 +105,7 @@ fn exit int (
 	)
 )
 
-fn* print ptr (
+fn print ptr (
 	dup strlen swap
 	STDOUT LINUX_WRITE
 	extern int ptr int int (
@@ -117,11 +117,11 @@ fn* print ptr (
 	)
 )
 
-fn* print int (
+fn print int (
 	int->str print
 )
 
-fn* print bool (
+fn print bool (
 	if take 1 = (
 		"true" print
 	else
@@ -129,17 +129,17 @@ fn* print bool (
 	)
 )
 
-fn* println ptr (
+fn println ptr (
 	print
 	"\n" print
 )
 
-fn* println int (
+fn println int (
 	print
 	"\n" print
 )
 
-fn* println bool (
+fn println bool (
 	print
 	"\n" print
 )

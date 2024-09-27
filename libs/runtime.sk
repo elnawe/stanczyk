@@ -74,11 +74,11 @@ fn and bool bool -> bool (
 	+ 2 =
 )
 
-fn* ++ int -> int (
+fn ++ int -> int (
 	1 +
 )
 
-fn* ++ ptr -> ptr (
+fn ++ ptr -> ptr (
 	1 +
 )
 

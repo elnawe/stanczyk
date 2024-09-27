@@ -1,14 +1,14 @@
 using io
 
-fn* equal int int -> bool (
+fn equal int int -> bool (
   =
 )
 
-fn* equal bool bool -> bool (
+fn equal bool bool -> bool (
   =
 )
 
-fn* equal ptr ptr -> bool (
+fn equal ptr ptr -> bool (
   str=
 )
 

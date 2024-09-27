@@ -39,7 +39,6 @@ const (
 	TOKEN_EQUAL
 	TOKEN_EXTERN
 	TOKEN_FN
-	TOKEN_FN_STAR
 	TOKEN_GREATER
 	TOKEN_GREATER_EQUAL
 	TOKEN_IF
@@ -102,7 +101,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_EXTERN,         word: "extern"  },
 	reserved{typ: TOKEN_FALSE,          word: "false"   },
 	reserved{typ: TOKEN_FN,             word: "fn"      },
-	reserved{typ: TOKEN_FN_STAR,        word: "fn*"     },
 	reserved{typ: TOKEN_GREATER,        word: ">"       },
 	reserved{typ: TOKEN_GREATER_EQUAL,  word: ">="      },
 	reserved{typ: TOKEN_IF,             word: "if"      },

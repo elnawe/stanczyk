@@ -1,7 +1,6 @@
 package skc
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -31,30 +30,6 @@ func Contains[T comparable](s []T, e T) bool {
     return false
 }
 
-func FindFunctionsByName(code Code) []Function {
-	var result []Function
-	name := code.value.(string)
-
-	for _, f := range TheProgram.chunks {
-		if f.name == name {
-			result = append(result, f)
-		}
-	}
-
-	if len(result) == 0 {
-		msg := fmt.Sprintf(MsgParseWordNotFound, name)
-		ReportErrorAtLocation(msg, code.loc)
-		ExitWithError(CodeCodegenError)
-	}
-
-	return result
-}
-
-func FindFunctionByIP(code Code) Function {
-	ip := code.value.(int)
+func FindFunctionByIP(ip int) Function {
 	return TheProgram.chunks[ip]
-}
-
-func ChangeValueOfFunction(functionIP, codeIP int, value FunctionCall) {
-	TheProgram.chunks[functionIP].code[codeIP].value = value
 }

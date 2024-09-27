@@ -105,20 +105,20 @@ const (
 
 	MsgParseFunctionMissingName =
 		"invalid or missing function name\n" +
-			"\t\fn my-func ( [...] )\n" +
-			"\t\t  ^^^^^^^"
+			"\t\tfn my-func ( [...] )\n" +
+			"\t\t   ^^^^^^^"
 	MsgParseFunctionNoReturnSpecified =
 		"no return values specified after '->'\n" +
-			"\t\fn my-func -> ( [...] )\n" +
-			"\t\t          ^^"
+			"\t\tfn my-func -> ( [...] )\n" +
+			"\t\t           ^^"
 	MsgParseFunctionMissingOpenStmt =
 		"missing '(' keyword\n" +
-			"\t\fn my-func ( [...] )\n" +
-			"\t\t          ^"
+			"\t\tfn my-func ( [...] )\n" +
+			"\t\t           ^"
 	MsgParseFunctionMissingCloseStmt =
 		"missing ')'\n" +
-			"\t\fn my-func ( [...] )\n" +
-			"\t\t                  ^"
+			"\t\tfn my-func ( [...] )\n" +
+			"\t\t                   ^"
 	MsgParseFunctionMainAlreadyDefined =
 		"function main already defined at %s:%d"
 	MsgParseFunctionNotPolymorphic =

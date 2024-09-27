@@ -70,6 +70,7 @@ func generateLinuxX86() {
 			}
 			continue
 		}
+
 		if function.name == "main" {
 			mainFuncIP = function.ip
 		}
@@ -187,6 +188,15 @@ func generateLinuxX86() {
 				for _, s := range val.body {
 					asm.WriteText("    %s", s)
 				}
+			case OP_FUNCTION_CALL:
+				fnCall := value.(FunctionCall)
+
+				asm.WriteText(";; call function %s (%s:%d:%d)", fnCall.name, loc.f, loc.l, loc.c)
+				asm.WriteText("    mov rax, rsp")
+				asm.WriteText("    mov rsp, [return_stack_rsp]")
+				asm.WriteText("    call fn%d", fnCall.ip)
+				asm.WriteText("    mov [return_stack_rsp], rsp")
+				asm.WriteText("    mov rsp, rax")
 			case OP_GREATER:
 				asm.WriteText(";; > (%s:%d:%d)", loc.f, loc.l, loc.c)
 				asm.WriteText("    xor rcx, rcx")
@@ -327,30 +337,21 @@ func generateLinuxX86() {
 				asm.WriteText("    pop rax")
 				asm.WriteText("    push rax")
 
-				// Special
-			case OP_WORD:
-				fnCall := value.(FunctionCall)
-
-				asm.WriteText(";; call function %s (%s:%d:%d)", fnCall.name, loc.f, loc.l, loc.c)
-				asm.WriteText("    mov rax, rsp")
-				asm.WriteText("    mov rsp, [return_stack_rsp]")
-				asm.WriteText("    call fn%d", fnCall.ip)
-				asm.WriteText("    mov [return_stack_rsp], rsp")
-				asm.WriteText("    mov rsp, rax")
+			// Special
 			case OP_END_IF:
-				asm.WriteText(";; . [if] (%s:%d:%d)", loc.f, loc.l, loc.c)
+				asm.WriteText(";; ) [if] (%s:%d:%d)", loc.f, loc.l, loc.c)
 			case OP_END_LOOP:
-				asm.WriteText(";; . [loop] (%s:%d:%d)", loc.f, loc.l, loc.c)
+				asm.WriteText(";; ) [loop] (%s:%d:%d)", loc.f, loc.l, loc.c)
 			case OP_JUMP:
-				asm.WriteText(";; else (%s:%d:%d)", loc.f, loc.l, loc.c)
+				asm.WriteText(";; ) else ( (%s:%d:%d)", loc.f, loc.l, loc.c)
 				asm.WriteText("    jmp .ip%d", value)
 			case OP_JUMP_IF_FALSE:
-				asm.WriteText(";; do (%s:%d:%d)", loc.f, loc.l, loc.c)
+				asm.WriteText(";; then ( (%s:%d:%d)", loc.f, loc.l, loc.c)
 				asm.WriteText("    pop rax")
 				asm.WriteText("    test rax, rax")
 				asm.WriteText("    jz .ip%d", value)
 			case OP_LOOP:
-				asm.WriteText(";; loop (%s:%d:%d)", loc.f, loc.l, loc.c)
+				asm.WriteText(";; loop ( (%s:%d:%d)", loc.f, loc.l, loc.c)
 				asm.WriteText("    jmp .ip%d", value)
 			}
 		}

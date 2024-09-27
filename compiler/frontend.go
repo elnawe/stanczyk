@@ -2,6 +2,7 @@ package skc
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -129,7 +130,7 @@ func emitReturn() {
  *  |  _/   / _||  _/   / (_) | (__| _|\__ \__ \ (_) |   /
  *  |_| |_|_\___|_| |_|_\\___/ \___|___|___/___/\___/|_|_\
  */
-func newConstant(token Token) {
+func registerConstant(token Token) {
 	var constant Object
 	var tokens []Token
 
@@ -185,13 +186,13 @@ func newConstant(token Token) {
 	frontend.constants = append(frontend.constants, constant)
 }
 
-func newFunction(token Token) {
+func registerFunction(token Token) {
 	var function Function
-	function.polymorphic = token.typ == TOKEN_FN_STAR
+
+	function.internal = parser.internal
 	function.ip = len(TheProgram.chunks)
 	function.loc = token.loc
-	function.internal = parser.internal
-	frontend.current = &function
+	function.parsed = false
 
 	if !match(TOKEN_WORD) {
 		errorAt(&token, MsgParseFunctionMissingName)
@@ -199,33 +200,17 @@ func newFunction(token Token) {
 	}
 
 	word := parser.previous
-	name := word.value.(string)
-	function.name = name
+	function.name = word.value.(string)
 
-	if name == "main" {
+	if function.name == "main" {
 		function.called = true
+
 		for _, f := range TheProgram.chunks {
 			if f.name == "main" {
 				msg := fmt.Sprintf(MsgParseFunctionMainAlreadyDefined, f.loc.f, f.loc.l)
 				errorAt(&token, msg)
 				ExitWithError(CodeParseError)
 			}
-		}
-	}
-
-	for _, f := range TheProgram.chunks {
-		if f.name == function.name && (!f.polymorphic || !function.polymorphic) {
-			msg := fmt.Sprintf(MsgParseFunctionNotPolymorphic, function.name)
-			var loc Location
-
-			if !f.polymorphic {
-				loc = f.loc
-			} else {
-				loc = token.loc
-			}
-
-			ReportErrorAtLocation(msg, loc)
-			ExitWithError(CodeParseError)
 		}
 	}
 
@@ -277,21 +262,32 @@ func newFunction(token Token) {
 
 	consume(TOKEN_PAREN_OPEN, MsgParseFunctionMissingOpenStmt)
 
+	// Skip the function content, since we're just registering it.
+	// Since we need to care about scope, we're increasing the scope every time we see
+	// a code block is being opened, and then we decrease the scope when it's closed.
+	// This allows us to have as many code blocks inside a function as we want to.
 	frontend.sLevel++
-	frontend.scope[1].tt = TOKEN_FN
 
+	// BUG: Empty function will break the code registering here.
+	// On an empty file, compile `fn main ()`
 	for frontend.sLevel > 0 && !check(TOKEN_EOF) {
 		advance()
-		parseToken(parser.previous)
+
+		if check(TOKEN_PAREN_OPEN) {
+			frontend.sLevel++
+		}
+
+		if check(TOKEN_PAREN_CLOSE) {
+			frontend.sLevel--
+		}
 	}
 
-	emitReturn()
+	consume(TOKEN_PAREN_CLOSE, MsgParseFunctionMissingCloseStmt)
 
 	TheProgram.chunks = append(TheProgram.chunks, function)
-	frontend.bindings = make([]Bound, 0, 0)
 }
 
-func newReserve(token Token) {
+func registerReserve(token Token) {
 	var memory Object
 	if !match(TOKEN_WORD) {
 		errorAt(&token, MsgParseReserveMissingWord)
@@ -343,18 +339,21 @@ func newReserve(token Token) {
  *   \___\___/|_|  |_|_| |___|____/_/ \_\_| |___\___/|_|\_|
  */
 func expandWord(token Token) {
-	if !parser.internal {
-		addWord(token.value.(string))
-	}
 	word := token.value
 
+	if !parser.internal {
+		addWord(word.(string))
+	}
+
+	// Find the word in bindings
 	for _, b := range frontend.bindings {
-		if word == b.word {
+		if b.word == word {
 			emit(Code{op: OP_PUSH_BOUND, loc: token.loc, value: b})
 			return
 		}
 	}
 
+	// Find the word in constants
 	for _, c := range frontend.constants {
 		if c.word == word {
 			emit(Code{op: OP_PUSH_INT, loc: token.loc, value: c.value})
@@ -362,6 +361,7 @@ func expandWord(token Token) {
 		}
 	}
 
+	// Find the word in memories
 	for _, m := range frontend.memories {
 		if m.word == word {
 			emit(Code{op: OP_PUSH_PTR, loc: token.loc, value: m})
@@ -369,7 +369,23 @@ func expandWord(token Token) {
 		}
 	}
 
-	emit(Code{op: OP_WORD, loc: token.loc, value: word})
+	// Find the word in functions
+	var val []FunctionCall
+
+	for _, f := range TheProgram.chunks {
+		if f.name == word.(string) {
+			val = append(val, FunctionCall{name: f.name, ip: f.ip})
+		}
+	}
+
+	if len(val) > 0 {
+		emit(Code{op: OP_FUNCTION_CALL, loc: token.loc, value: val})
+		return
+	}
+
+	msg := fmt.Sprintf(MsgParseWordNotFound, word.(string))
+	ReportErrorAtLocation(msg, token.loc)
+	ExitWithError(CodeCodegenError)
 }
 
 func addWord(word string) {
@@ -687,6 +703,88 @@ func parseToken(token Token) {
 	}
 }
 
+func parseFunction(token Token) {
+	// Recreate a temporary function entry to match with the already registered
+	// function in TheProgram. That's why this step doesn't have any error checking.
+	var testFunc Function
+
+	advance()
+
+	testFunc.name = parser.previous.value.(string)
+
+	if !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) {
+		for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
+			advance()
+			t := parser.previous
+			targ := DATA_EMPTY
+
+			switch t.typ {
+			case TOKEN_DTYPE_BOOL: targ = DATA_BOOL
+			case TOKEN_DTYPE_CHAR: targ = DATA_CHAR
+			case TOKEN_DTYPE_INT:  targ = DATA_INT
+			case TOKEN_DTYPE_PTR:  targ = DATA_PTR
+			}
+
+			testFunc.args = append(testFunc.args, targ)
+		}
+	}
+
+	if match(TOKEN_RIGHT_ARROW) {
+		for !check(TOKEN_PAREN_OPEN) {
+			advance()
+			t := parser.previous
+			tret := DATA_EMPTY
+
+			switch t.typ {
+			case TOKEN_DTYPE_BOOL: tret = DATA_BOOL
+			case TOKEN_DTYPE_CHAR: tret = DATA_CHAR
+			case TOKEN_DTYPE_INT: tret = DATA_INT
+			case TOKEN_DTYPE_PTR: tret = DATA_PTR
+			}
+
+			testFunc.rets = append(testFunc.rets, tret)
+		}
+	}
+
+	consume(TOKEN_PAREN_OPEN, MsgParseFunctionMissingOpenStmt)
+
+	// NOTE: The safest way to match the current function to parse with the existing
+	// one in TheProgram, is to check for the parsed flag, the name, the arguments
+	// and the returns.
+	for index, f := range TheProgram.chunks {
+		if !f.parsed && f.name == testFunc.name &&
+			reflect.DeepEqual(f.args, testFunc.args) &&
+			reflect.DeepEqual(f.rets, testFunc.rets) {
+			frontend.current = &TheProgram.chunks[index]
+			break
+		}
+	}
+
+	if frontend.current != nil {
+		frontend.sLevel++
+		frontend.scope[1].tt = TOKEN_FN
+
+		for frontend.sLevel > 0 && !check(TOKEN_EOF) {
+			advance()
+			parseToken(parser.previous)
+		}
+
+		emitReturn()
+
+		// Marking the function as "parsed", then clearing out the bindings, and
+		// removing the pointer to this function, so we can safely check for the next one.
+		frontend.current.parsed = true
+		frontend.bindings = make([]Bound, 0, 0)
+		frontend.current = nil
+	} else {
+		// This would be a catastrophic issue. Since we already registered functions,
+		// there's no way we don't find a function with the same name that has not been
+		// parsed yet.
+		panic(fmt.Sprintf("FUNCTION %s NOT FOUND", testFunc.name))
+		// TODO: Add error
+	}
+}
+
 func markFunctionsAsCalled() {
 	// TODO: BUG FOUND
 	// Code folding and dead code elimination here is breaking the
@@ -737,8 +835,7 @@ func compilationFirstPass(index int) {
 
 /*
  * Compilation: Second Pass
- *   The second step checks for TOKEN_CONST and TOKEN_RESERVE. Saves all the words
- *   being used so it can be reused in the functions later.
+ *   The second step registers the words the program will use.
  */
 func compilationSecondPass(index int) {
 	f := file.files[index]
@@ -750,8 +847,21 @@ func compilationSecondPass(index int) {
 		token := parser.previous
 
 		switch token.typ {
-		case TOKEN_CONST: newConstant(token)
-		case TOKEN_RESERVE: newReserve(token)
+		// The second pass will care about the following tokens:
+		case TOKEN_CONST: registerConstant(token)
+		case TOKEN_RESERVE: registerReserve(token)
+		case TOKEN_FN: registerFunction(token)
+
+		// But it needs to do nothing when it sees the followings:
+		//   TOKEN_USING: advance over the string, then continue back to the loop.
+		case TOKEN_USING:
+			advance()
+			continue
+
+		// Now, if it matches with something else, then error.
+		default:
+			ReportErrorAtLocation(MsgParseErrorProgramScope, token.loc)
+			ExitWithError(CodeParseError)
 		}
 	}
 }
@@ -770,15 +880,12 @@ func compilationThirdPass(index int) {
 		advance()
 		token := parser.previous
 
-		if token.typ == TOKEN_FN || token.typ == TOKEN_FN_STAR {
-			newFunction(token)
+		if token.typ == TOKEN_FN {
+			parseFunction(token)
 		}
 	}
 }
 
-// TODO: Add error checking for non-allowed tokens in the global scope
-// ReportErrorAtLocation(MsgParseErrorProgramScope, token.loc)
-// ExitWithError(CodeParseError)
 
 func FrontendRun() {
 	// Core standard library
