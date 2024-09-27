@@ -200,8 +200,8 @@ func newFunction(token Token) {
 
 	word := parser.previous
 	name := word.value.(string)
-
 	function.name = name
+
 	if name == "main" {
 		function.called = true
 		for _, f := range TheProgram.chunks {
@@ -420,7 +420,6 @@ func addExtern(token Token) {
 		case TOKEN_DTYPE_CHAR: arg = DATA_CHAR
 		case TOKEN_DTYPE_INT:  arg = DATA_INT
 		case TOKEN_DTYPE_PTR:  arg = DATA_PTR
-
 		default:
 			msg := fmt.Sprintf(MsgParseTypeUnknown, t.value)
 			errorAt(&t, msg)
@@ -442,7 +441,6 @@ func addExtern(token Token) {
 			case TOKEN_DTYPE_CHAR: arg = DATA_CHAR
 			case TOKEN_DTYPE_INT:  arg = DATA_INT
 			case TOKEN_DTYPE_PTR:  arg = DATA_PTR
-
 			default:
 				msg := fmt.Sprintf(MsgParseTypeUnknown, t.value)
 				errorAt(&t, msg)
@@ -465,15 +463,29 @@ func addExtern(token Token) {
 		var val string
 
 		switch t.typ {
-		case TOKEN_WORD: val = t.value.(string)
+		case TOKEN_WORD:
+			val = t.value.(string)
+			// TODO: Check for what kind of word this is
+			// if IsValidAssemblyRegister(val) || IsValidAssemblyInstruction(val) {
+			// 	val = word
+			// } else {
+			// 	// TODO: handle word custom
+			// }
+
 		case TOKEN_INT: val = strconv.Itoa(t.value.(int))
 		}
 
-		// TODO: Should be able to expand word
-		// TODO: Should check for instructions or registers
 		line = append(line, val)
 
+		// If current parsed token (parser.previous) is not on the same line than
+		// the next token, consider it an ASM line and push it over the Extend.value OP,
+		// then reset the line variable, so we can safely construct the next ASM line.
 		if t.loc.l != nt.loc.l {
+			// TODO: Should validate line construction here, with a function in extern.go
+			// The validation should check for the following:
+			//   1. Validate line[0] is a valid instruction
+			//   2. Validate the next elements in the array (1, 2, ...) matches the
+			//      rules for the instruction in line[0]
 			value.body = append(value.body, strings.Join(line, " "))
 			line = make([]string, 0, 0)
 		}
