@@ -341,10 +341,6 @@ func registerReserve(token Token) {
 func expandWord(token Token) {
 	word := token.value
 
-	if !parser.internal {
-		addWord(word.(string))
-	}
-
 	// Find the word in bindings
 	for _, b := range frontend.bindings {
 		if b.word == word {
@@ -374,6 +370,7 @@ func expandWord(token Token) {
 
 	for _, f := range TheProgram.chunks {
 		if f.name == word.(string) {
+			addWord(word.(string))
 			val = append(val, FunctionCall{name: f.name, ip: f.ip})
 		}
 	}
@@ -785,33 +782,6 @@ func parseFunction(token Token) {
 	}
 }
 
-func markFunctionsAsCalled() {
-	// TODO: BUG FOUND
-	// Code folding and dead code elimination here is breaking the
-	// functionality of libraries. The reason for it is that
-	// it's not going over lower levels.
-	// This is not the best approach as I should really go through registering functions
-	// first, and then go through each operation inside the function.
-	for x := 0; x < len(frontend.words); x++ {
-		// word := frontend.words[x]
-
-		for y := 0; y < len(TheProgram.chunks); y++ {
-			f := &TheProgram.chunks[y]
-			f.called = true
-
-			// if f.name == word {
-			// 	f.called = true
-
-			// 	for _, code := range f.code {
-			// 		if code.op == OP_WORD {
-			// 			addWord(code.value.(string))
-			// 		}
-			// 	}
-			// }
-		}
-	}
-}
-
 /*
  * Compilation: First Pass
  *   This step goes through the files and check for the TOKEN_USING, adding those
@@ -886,6 +856,21 @@ func compilationThirdPass(index int) {
 	}
 }
 
+func markFunctionsAsCalled() {
+	// TODO: BUG FOUND ::
+	// Code folding and dead code elimination does not work well with polymorphic functions.
+	// I need to mark each type of this function for the code to work, hence adding extra
+	// functionality that is not needed.
+	// To change this, and since I pick the correct function in typechecking, I need to
+	// make sure this check exists in that step somehow.
+	for _, w := range frontend.words {
+		for ifunc, f := range TheProgram.chunks {
+			if f.name == w {
+				TheProgram.chunks[ifunc].called = true
+			}
+		}
+	}
+}
 
 func FrontendRun() {
 	// Core standard library

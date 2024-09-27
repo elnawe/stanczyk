@@ -5,14 +5,16 @@ import (
 )
 
 type Assembly struct {
-	text []string
-	data []string
-	bss  []string
+	bss    []string
+	data   []string
+	rodata []string
+	text   []string
 }
 
-func (this *Assembly) WriteText(s string, values ...any) {
+
+func (this *Assembly) WriteBss(s string, values ...any) {
 	newLine := fmt.Sprintf(s + "\n", values...)
-	this.text = append(this.text, newLine)
+	this.bss = append(this.bss, newLine)
 }
 
 func (this *Assembly) WriteData(s string, values ...any) {
@@ -20,7 +22,12 @@ func (this *Assembly) WriteData(s string, values ...any) {
 	this.data = append(this.data, newLine)
 }
 
-func (this *Assembly) WriteBss(s string, values ...any) {
+func (this *Assembly) WriteRodata(s string, values ...any) {
 	newLine := fmt.Sprintf(s + "\n", values...)
-	this.bss = append(this.bss, newLine)
+	this.text = append(this.rodata, newLine)
+}
+
+func (this *Assembly) WriteText(s string, values ...any) {
+	newLine := fmt.Sprintf(s + "\n", values...)
+	this.text = append(this.text, newLine)
 }

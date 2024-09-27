@@ -323,7 +323,7 @@ func TypecheckRun() {
 					}
 				}
 
-				// NOTE: We redefine the chunk value to match the function accordingly.
+				// We redefine the chunk value to match the function accordingly.
 				// We do this while typechecking, so we can allow for polymorphism in
 				// the parameters of the functions. Once we get here, we have found the
 				// exact function according to the stack values provided.
