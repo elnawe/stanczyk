@@ -76,7 +76,6 @@ func (this *CLI) Error(e string, val ...any) {
 	errorMessage := fmt.Sprintf(e, val...)
 
 	fmt.Fprintf(os.Stderr, "ERROR: %s\n", errorMessage)
-	this.Welcome()
 	ExitWithError(CodeCliError)
 }
 

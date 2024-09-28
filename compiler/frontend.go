@@ -27,7 +27,6 @@ type Scope struct {
 }
 
 type Frontend struct {
-	bindings   []Bound
 	constants  []Object
 	variables  []Object
 	current	   *Function
@@ -35,7 +34,6 @@ type Frontend struct {
 	sLevel     int
 	sName      ScopeName
 	scope      [10]Scope
-	words      []string
 }
 
 type Parser struct {
@@ -341,7 +339,7 @@ func registerVar(token Token) {
 func getBinding(token Token) (Code, bool) {
 	word := token.value.(string)
 
-	for _, b := range frontend.bindings {
+	for _, b := range frontend.current.bindings {
 		if b.word == word {
 			return Code{op: OP_PUSH_BOUND, loc: token.loc, value: b}, true
 		}
@@ -380,7 +378,6 @@ func getFunction(token Token) (Code, bool) {
 
 	for _, f := range TheProgram.chunks {
 		if f.name == word {
-			addWord(word)
 			val = append(val, FunctionCall{name: f.name, ip: f.ip})
 		}
 	}
@@ -432,36 +429,38 @@ func expandWord(token Token) {
 	ExitWithError(CodeCodegenError)
 }
 
-func addWord(word string) {
-	for _, w := range frontend.words {
-		if w == word {
-			return
-		}
-	}
-	frontend.words = append(frontend.words, word)
-}
-
 func addBind(token Token) {
-	startingBoundIndex := len(frontend.bindings)
+	error_found := false
+	startingBoundIndex := len(frontend.current.bindings)
 
 	consume(TOKEN_PAREN_OPEN, MsgParseBindMissingOpenStmt)
 
 	for match(TOKEN_WORD) {
 		t := parser.previous
-		frontend.bindings = append(frontend.bindings, Bound{
-			word: t.value.(string),
-			id: len(frontend.bindings),
+		word := t.value.(string)
+
+		_, found := getBinding(t)
+
+		if found {
+			error_found = true
+			errorAt(&token, MsgParseBindCannotOverrideWord, word)
+			break
+		}
+
+		frontend.current.bindings = append(frontend.current.bindings, Bound{
+			word: word,
+			id: len(frontend.current.bindings),
 		})
 	}
 
-	if len(frontend.bindings) == startingBoundIndex {
+	if error_found || len(frontend.current.bindings) == startingBoundIndex {
 		errorAt(&token, MsgParseBindEmptyBody)
 		for !match(TOKEN_PAREN_CLOSE) { advance() }
 		return
 	}
 
 	consume(TOKEN_PAREN_CLOSE, MsgParseBindMissingCloseStmt)
-	emit(Code{op: OP_BIND, loc: token.loc, value: len(frontend.bindings)})
+	emit(Code{op: OP_BIND, loc: token.loc, value: len(frontend.current.bindings)})
 }
 
 func addExtern(token Token) {
@@ -531,12 +530,6 @@ func addExtern(token Token) {
 			if ok_c {
 				val = strconv.Itoa(code_c.value.(int))
 			}
-			// TODO: Check for what kind of word this is
-			// if IsValidAssemblyRegister(val) || IsValidAssemblyInstruction(val) {
-			// 	val = word
-			// } else {
-			// 	// TODO: handle word custom
-			// }
 
 		case TOKEN_INT: val = strconv.Itoa(t.value.(int))
 		}
@@ -824,7 +817,6 @@ func parseFunction(token Token) {
 		// Marking the function as "parsed", then clearing out the bindings, and
 		// removing the pointer to this function, so we can safely check for the next one.
 		frontend.current.parsed = true
-		frontend.bindings = make([]Bound, 0, 0)
 		frontend.current = nil
 	} else {
 		// This would be a catastrophic issue. Since we already registered functions,

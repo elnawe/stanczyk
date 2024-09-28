@@ -78,11 +78,11 @@ type Function struct {
 	ip          int
 	name        string
 	loc         Location
+	bindings    []Bound
 	args        []DataType
 	rets        []DataType
 	code        []Code
 	parsed      bool
-	polymorphic bool
 	called      bool
 	internal    bool
 }

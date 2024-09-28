@@ -27,7 +27,7 @@
 ;                                                                      ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  The Stańczyk Programming Language  ;;
 
-;; The Stańczyk Test Library
+;; The Stańczyk Testing Library
 
 using io
 

@@ -51,12 +51,12 @@ const (
 			"\t\tvar mem ( 1024 )\n" +
 			"\t\t               ^"
 
-	MsgParseBindAlreadyBound =
-		"function has bindings already"
 	MsgParseBindEmptyBody =
 		"missing or invalid bind content\n" +
 			"\t\tbind ( a b c )\n" +
 			"\t\t       ^^^^^"
+	MsgParseBindCannotOverrideWord =
+		"%s already bound in this current scope. Use a different name."
 	MsgParseBindMissingCloseStmt =
 		"missing ')'\n" +
 			"\t\tbind ( a b c )\n" +
