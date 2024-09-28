@@ -1,66 +1,44 @@
-;;;;;;;;;;;;;;;;;;  The Stańczyk Programming Language  ;;;;;;;;;;;;;;;;;;
-;                                                                       ;
-;            ¿«fº"└└-.`└└*∞▄_              ╓▄∞╙╙└└└╙╙*▄▄                ;
-;         J^. ,▄▄▄▄▄▄_      └▀████▄ç    JA▀            └▀v              ;
-;       ,┘ ▄████████████▄¿     ▀██████▄▀└      ╓▄██████▄¿ "▄_           ;
-;      ,─╓██▀└└└╙▀█████████      ▀████╘      ▄████████████_`██▄         ;
-;     ;"▄█└      ,██████████-     ▐█▀      ▄███████▀▀J█████▄▐▀██▄       ;
-;     ▌█▀      _▄█▀▀█████████      █      ▄██████▌▄▀╙     ▀█▐▄,▀██▄     ;
-;    ▐▄▀     A└-▀▌  █████████      ║     J███████▀         ▐▌▌╙█µ▀█▄    ;
-;  A╙└▀█∩   [    █  █████████      ▌     ███████H          J██ç ▀▄╙█_   ;
-; █    ▐▌    ▀▄▄▀  J█████████      H    ████████          █    █  ▀▄▌   ;
-;  ▀▄▄█▀.          █████████▌           ████████          █ç__▄▀ ╓▀└ ╙%_;
-;                 ▐█████████      ▐    J████████▌          .└╙   █¿   ,▌;
-;                 █████████▀╙╙█▌└▐█╙└██▀▀████████                 ╙▀▀▀▀ ;
-;                ▐██▀┘Å▀▄A └▓█╓▐█▄▄██▄J▀@└▐▄Å▌▀██▌                      ;
-;                █▄▌▄█M╨╙└└-           .└└▀**▀█▄,▌                      ;
-;                ²▀█▄▄L_                  _J▄▄▄█▀└                      ;
-;                     └╙▀▀▀▀▀MMMR████▀▀▀▀▀▀▀└                           ;
-;                                                                       ;
-;                                                                       ;
-; ███████╗████████╗ █████╗ ███╗   ██╗ ██████╗███████╗██╗   ██╗██╗  ██╗  ;
-; ██╔════╝╚══██╔══╝██╔══██╗████╗  ██║██╔════╝╚══███╔╝╚██╗ ██╔╝██║ ██╔╝  ;
-; ███████╗   ██║   ███████║██╔██╗ ██║██║       ███╔╝  ╚████╔╝ █████╔╝   ;
-; ╚════██║   ██║   ██╔══██║██║╚██╗██║██║      ███╔╝    ╚██╔╝  ██╔═██╗   ;
-; ███████║   ██║   ██║  ██║██║ ╚████║╚██████╗███████╗   ██║   ██║  ██╗  ;
-; ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝   ╚═╝   ╚═╝  ╚═╝  ;
-;                                                                       ;
-;;;;;;;;;;;;;;;;;;  The Stańczyk Programming Language  ;;;;;;;;;;;;;;;;;;
-
-; Copyright (c) 2023 Nahuel Jesús Sacchetti and Stańczyk contributors
-
-; Permission is hereby granted, free of charge, to any person obtaining
-; a copy of this software and associated documentation files (the
-; "Software"), to deal in the Software without restriction, including
-; without limitation the rights to use, copy, modify, merge, publish,
-; distribute, sublicense, and/or sell copies of the Software, and to
-; permit persons to whom the Software is furnished to do so, subject to
-; the following conditions:
-
-; The above copyright notice and this permission notice shall be
-; included in all copies or substantial portions of the Software.
-
-; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-; NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-; LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-; OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-; WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+;;  The Stańczyk Programming Language  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                                                                      ;
+;            ¿«fº"└└-.`└└*∞▄_              ╓▄∞╙╙└└└╙╙*▄▄               ;
+;         J^. ,▄▄▄▄▄▄_      └▀████▄ç    JA▀            └▀v             ;
+;       ,┘ ▄████████████▄¿     ▀██████▄▀└      ╓▄██████▄¿ "▄_          ;
+;      ,─╓██▀└└└╙▀█████████      ▀████╘      ▄████████████_`██▄        ;
+;     ;"▄█└      ,██████████-     ▐█▀      ▄███████▀▀J█████▄▐▀██▄      ;
+;     ▌█▀      _▄█▀▀█████████      █      ▄██████▌▄▀╙     ▀█▐▄,▀██▄    ;
+;    ▐▄▀     A└-▀▌  █████████      ║     J███████▀         ▐▌▌╙█µ▀█▄   ;
+;  A╙└▀█∩   [    █  █████████      ▌     ███████H          J██ç ▀▄╙█_  ;
+; █    ▐▌    ▀▄▄▀  J█████████      H    ████████          █    █  ▀▄▌  ;
+;  ▀▄▄█▀.          █████████▌           ████████          █ç__▄▀ ╓▀└╙%_;
+;                 ▐█████████      ▐    J████████▌          .└╙   █¿  ,▌;
+;                 █████████▀╙╙█▌└▐█╙└██▀▀████████                 ╙▀▀▀ ;
+;                ▐██▀┘Å▀▄A └▓█╓▐█▄▄██▄J▀@└▐▄Å▌▀██▌                     ;
+;                █▄▌▄█M╨╙└└-           .└└▀**▀█▄,▌                     ;
+;                ²▀█▄▄L_                  _J▄▄▄█▀└                     ;
+;                     └╙▀▀▀▀▀MMMR████▀▀▀▀▀▀▀└                          ;
+;                                                                      ;
+;                                                                      ;
+; ███████╗████████╗ █████╗ ███╗   ██╗ ██████╗███████╗██╗   ██╗██╗  ██╗ ;
+; ██╔════╝╚══██╔══╝██╔══██╗████╗  ██║██╔════╝╚══███╔╝╚██╗ ██╔╝██║ ██╔╝ ;
+; ███████╗   ██║   ███████║██╔██╗ ██║██║       ███╔╝  ╚████╔╝ █████╔╝  ;
+; ╚════██║   ██║   ██╔══██║██║╚██╗██║██║      ███╔╝    ╚██╔╝  ██╔═██╗  ;
+; ███████║   ██║   ██║  ██║██║ ╚████║╚██████╗███████╗   ██║   ██║  ██╗ ;
+; ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ;
+;                                                                      ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  The Stańczyk Programming Language  ;;
 
 ;; The Stańczyk Runtime Library
-;
 
-; const MIN_INT8   -128 .
+; const MIN_INT8   -128
 const MAX_INT8     127
 
-; const MIN_INT16  -32768 .
+; const MIN_INT16  -32768
 const MAX_INT16   32767
 
-; const MIN_INT32  -2147483648 .
+; const MIN_INT32  -2147483648
 const MAX_INT32   2147483647
 
-; const MIN_INT64  -9223372036854775808 .
+; const MIN_INT64  -9223372036854775808
 const MAX_INT64   9223372036854775807
 
 const MAX_UINT8  255
@@ -99,56 +77,3 @@ fn ptrdiff ptr ptr -> int (
 	swap (int)
 	-
 )
-
-; fn strlen ptr -> int (
-; 	dup
-; 	loop dup ->8 0 != (
-; 		++
-; 	)
-; 	swap ptrdiff
-; )
-
-; fn str= ptr ptr -> bool (
-; 	over strlen swap dup strlen
-; 	bind ( s1 l1 s2 l2 )
-
-; 	false
-; 	if l1 l2 = (
-; 		0
-; 		loop s1 over + ->8
-; 			swap s2 over + ->8
-; 			rotate = (
-; 			++
-; 		)
-; 		dup l1 = swap l2 = = swap drop ret
-; 	)
-; )
-
-; fn intlen int -> int (
-; 	0 swap
-; 	loop dup 0 > (
-; 		swap ++ swap 10 /
-; 	) drop
-; )
-
-; const TO_STRING_CAP 19
-; reserve TO_STRING_MEM TO_STRING_CAP
-
-; fn int->str int -> ptr (
-; 	0 loop dup TO_STRING_CAP <= (
-; 		dup TO_STRING_MEM swap + '\0' <-8
-; 		++
-; 	) drop
-
-; 	if dup intlen 0 = (
-; 		TO_STRING_MEM '0' <-8
-; 	)
-
-; 	loop dup intlen 0 > (
-; 		dup 10 % 48 + (char)
-; 		over intlen 1 - TO_STRING_MEM swap + swap <-8
-; 		10 /
-; 	) drop
-
-; 	TO_STRING_MEM
-; )
