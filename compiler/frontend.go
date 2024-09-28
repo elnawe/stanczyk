@@ -27,15 +27,15 @@ type Scope struct {
 }
 
 type Frontend struct {
-	bindings  []Bound
-	constants []Object
-	memories  []Object
-	current	  *Function
-	error     bool
-	sLevel    int
-	sName     ScopeName
-	scope     [10]Scope
-	words     []string
+	bindings   []Bound
+	constants  []Object
+	variables  []Object
+	current	   *Function
+	error      bool
+	sLevel     int
+	sName      ScopeName
+	scope      [10]Scope
+	words      []string
 }
 
 type Parser struct {
@@ -288,17 +288,17 @@ func registerFunction(token Token) {
 }
 
 func registerVar(token Token) {
-	var memory Object
+	var variable Object
 	if !match(TOKEN_WORD) {
 		errorAt(&token, MsgParseVarMissingWord)
 		ExitWithError(CodeParseError)
 	}
-	memory.id = len(frontend.memories)
-	memory.word = parser.previous.value.(string)
+	variable.id = len(frontend.variables)
+	variable.word = parser.previous.value.(string)
 
-	for _, m := range frontend.memories {
-		if m.word == memory.word {
-			msg := fmt.Sprintf(MsgParseVarOverrideNotAllowed, memory.word)
+	for _, v := range frontend.variables {
+		if v.word == variable.word {
+			msg := fmt.Sprintf(MsgParseVarOverrideNotAllowed, variable.word)
 			errorAt(&parser.previous, msg)
 			ExitWithError(CodeParseError)
 		}
@@ -313,7 +313,7 @@ func registerVar(token Token) {
 		for _, c := range frontend.constants {
 			if c.word == vt.value {
 				found = true
-				memory.value = c.value
+				variable.value = c.value
 				break
 			}
 		}
@@ -324,13 +324,13 @@ func registerVar(token Token) {
 			ExitWithError(CodeParseError)
 		}
 	case TOKEN_INT:
-		memory.value = vt.value.(int)
+		variable.value = vt.value.(int)
 	default:
 		errorAt(&parser.previous, MsgParseVarMissingValue)
 		ExitWithError(CodeParseError)
 	}
 
-	frontend.memories = append(frontend.memories, memory)
+	frontend.variables = append(frontend.variables, variable)
 }
 
 /*    ___ ___  __  __ ___ ___ _      _ _____ ___ ___  _  _
@@ -338,49 +338,96 @@ func registerVar(token Token) {
  *  | (_| (_) | |\/| |  _/| || |__ / _ \| |  | | (_) | .` |
  *   \___\___/|_|  |_|_| |___|____/_/ \_\_| |___\___/|_|\_|
  */
-func expandWord(token Token) {
-	word := token.value
+func getBinding(token Token) (Code, bool) {
+	word := token.value.(string)
 
-	// Find the word in bindings
 	for _, b := range frontend.bindings {
 		if b.word == word {
-			emit(Code{op: OP_PUSH_BOUND, loc: token.loc, value: b})
-			return
+			return Code{op: OP_PUSH_BOUND, loc: token.loc, value: b}, true
 		}
 	}
 
-	// Find the word in constants
+	return Code{}, false
+}
+
+func getConstant(token Token) (Code, bool) {
+	word := token.value.(string)
+
 	for _, c := range frontend.constants {
 		if c.word == word {
-			emit(Code{op: OP_PUSH_INT, loc: token.loc, value: c.value})
-			return
+			return Code{op: OP_PUSH_INT, loc: token.loc, value: c.value}, true
 		}
 	}
 
-	// Find the word in memories
-	for _, m := range frontend.memories {
-		if m.word == word {
-			emit(Code{op: OP_PUSH_PTR, loc: token.loc, value: m})
-			return
+	return Code{}, false
+}
+
+func getVariable(token Token) (Code, bool) {
+	word := token.value.(string)
+
+	for _, v := range frontend.variables {
+		if v.word == word {
+			return Code{op: OP_PUSH_PTR, loc: token.loc, value: v}, true
 		}
 	}
 
-	// Find the word in functions
+	return Code{}, false
+}
+
+func getFunction(token Token) (Code, bool) {
 	var val []FunctionCall
+	word := token.value.(string)
 
 	for _, f := range TheProgram.chunks {
-		if f.name == word.(string) {
-			addWord(word.(string))
+		if f.name == word {
+			addWord(word)
 			val = append(val, FunctionCall{name: f.name, ip: f.ip})
 		}
 	}
 
 	if len(val) > 0 {
-		emit(Code{op: OP_FUNCTION_CALL, loc: token.loc, value: val})
+		return Code{op: OP_FUNCTION_CALL, loc: token.loc, value: val}, true
+	}
+
+	return Code{}, false
+}
+
+func expandWord(token Token) {
+	// Find the word in bindings. If it returns one, emit it.
+	code_b, ok_b := getBinding(token)
+
+	if ok_b {
+		emit(code_b)
 		return
 	}
 
-	msg := fmt.Sprintf(MsgParseWordNotFound, word.(string))
+
+	// Find the word in constants. If it returns one, emit it.
+	code_c, ok_c := getConstant(token)
+
+	if ok_c {
+		emit(code_c)
+		return
+	}
+
+	// Find the word in variables. If it returns one, emit it.
+	code_v, ok_v := getVariable(token)
+
+	if ok_v {
+		emit(code_v)
+		return
+	}
+
+	// Find the word in functions. If it returns one, emit it
+	code_f, ok_f := getFunction(token)
+
+	if ok_f {
+		emit(code_f)
+		return
+	}
+
+	// If nothing has been found, emit the error.
+	msg := fmt.Sprintf(MsgParseWordNotFound, token.value.(string))
 	ReportErrorAtLocation(msg, token.loc)
 	ExitWithError(CodeCodegenError)
 }
@@ -478,6 +525,12 @@ func addExtern(token Token) {
 		switch t.typ {
 		case TOKEN_WORD:
 			val = t.value.(string)
+
+			code_c, ok_c := getConstant(t)
+
+			if ok_c {
+				val = strconv.Itoa(code_c.value.(int))
+			}
 			// TODO: Check for what kind of word this is
 			// if IsValidAssemblyRegister(val) || IsValidAssemblyInstruction(val) {
 			// 	val = word
@@ -491,7 +544,7 @@ func addExtern(token Token) {
 		line = append(line, val)
 
 		// If current parsed token (parser.previous) is not on the same line than
-		// the next token, consider it an ASM line and push it over the Extend.value OP,
+		// the next token, consider it an ASM line and push it over the Extern.value OP,
 		// then reset the line variable, so we can safely construct the next ASM line.
 		if t.loc.l != nt.loc.l {
 			// TODO: Should validate line construction here, with a function in extern.go
@@ -896,7 +949,7 @@ func FrontendRun() {
 
 	markFunctionsAsCalled()
 
-	TheProgram.memories = frontend.memories
+	TheProgram.variables = frontend.variables
 
 	if frontend.error {
 		ExitWithError(CodeParseError)

@@ -1,10 +1,10 @@
 using io
 
 fn custom-linux-write ptr int (
-	swap STDOUT LINUX_WRITE
-	extern int ptr int int (
-		pop rax
-		pop rdi
+	swap
+	extern int ptr (
+		mov rax, LINUX_WRITE
+		mov rdi, STDOUT
 		pop rsi
 		pop rdx
 		syscall

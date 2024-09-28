@@ -60,10 +60,9 @@ fn clear (
 
 fn eputs ptr (
 	dup strlen swap
-	STDERR LINUX_WRITE
-	extern int ptr int int (
-		pop rax
-		pop rdi
+	extern int ptr (
+		mov rax, LINUX_WRITE
+		mov rdi, STDERR
 		pop rsi
 		pop rdx
 		syscall
@@ -78,19 +77,17 @@ fn error ptr (
 )
 
 fn exit int (
-	LINUX_EXIT
-	extern int int (
-		pop rax
+	extern int (
+		mov rax, LINUX_EXIT
 		pop rdi
 	)
 )
 
 fn print ptr (
 	dup strlen swap
-	STDOUT LINUX_WRITE
-	extern int ptr int int (
-		pop rax
-		pop rdi
+	extern int ptr (
+		mov rax, LINUX_WRITE
+		mov rdi, STDOUT
 		pop rsi
 		pop rdx
 		syscall
@@ -125,10 +122,9 @@ fn println bool (
 )
 
 fn read int ptr -> int (
-	STDIN LINUX_READ
-	extern int ptr int int -> int (
-		pop rax
-		pop rdi
+	extern int ptr -> int (
+		mov rax, LINUX_READ
+		mov rdi, STDIN
 		pop rsi
 		pop rdx
 		syscall

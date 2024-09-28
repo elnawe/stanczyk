@@ -25,6 +25,12 @@ func OutputRun(asm Assembly) {
 
 	f.WriteString("\n")
 
+	for _, line := range asm.rodata {
+		f.WriteString(line)
+	}
+
+	f.WriteString("\n")
+
 	for _, line := range asm.bss {
 		f.WriteString(line)
 	}

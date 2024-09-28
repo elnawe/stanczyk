@@ -370,8 +370,8 @@ func generateLinuxX64() {
 	asm.WriteText("    mov rdi, 0")
 	asm.WriteText("    syscall")
 
-	for _, m := range TheProgram.memories {
-		asm.WriteBss("mem_%d: resb %d", m.id, m.value)
+	for _, v := range TheProgram.variables {
+		asm.WriteBss("mem_%d: resb %d", v.id, v.value)
 	}
 }
 

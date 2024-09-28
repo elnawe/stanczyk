@@ -70,8 +70,8 @@ type Bound struct {
 }
 
 type Program struct {
-	chunks   []Function
-	memories []Object
+	chunks    []Function
+	variables []Object
 }
 
 type Function struct {
