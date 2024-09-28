@@ -28,50 +28,128 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  The Stańczyk Programming Language  ;;
 
 ;; The Stańczyk Runtime Library
+; Note: The Runtime library is automatically loaded into any program created
+; with Stańczyk by the compiler. Some definitions and documentation provided
+; are also defined within the compiler itself.
 
-; const MIN_INT8   -128
+;;; Compiler-Defined Constants
+
+;; Operating System
+; bool OS_LINUX   - True if program is running on Linux.
+; bool OS_MAC     - True if program is running on Mac.
+; bool OS_WINDOWS - True if program is running on Windows.
+
+;; Stańczyk Internals
+; bool SK_DEBUG   - True if program is compiled with `-debug` switch.
+; bool SK_TEST    - True if program is running in test mode (`skc test`)
+; str  SK_VERSION - The Stańczyk Compiler version (`skc version`)
+
+;; Maximum Values for Signed Integers (int).
 const MAX_INT8     127
+const MAX_INT16    32767
+const MAX_INT32    2147483647
+const MAX_INT64    9223372036854775807
 
-; const MIN_INT16  -32768
-const MAX_INT16   32767
+;; Minimum Values for Signed Integers (int).
+; const MIN_INT8     -128
+; const MIN_INT16    -32768
+; const MIN_INT32    -2147483648
+; const MIN_INT64    -9223372036854775808
 
-; const MIN_INT32  -2147483648
-const MAX_INT32   2147483647
-
-; const MIN_INT64  -9223372036854775808
-const MAX_INT64   9223372036854775807
-
+;; Maximum Values for Unsigned Integers (uint).
 const MAX_UINT8  255
 const MAX_UINT16 65535
 const MAX_UINT32 4294967295
 const MAX_UINT64 18446744073709551615
 
+; Helper function to increment a number by 1.
+; Calling:
+;   - <int> ++
+; Returns:
+;   - The given <int> + 1.
+fn ++ int -> int (
+	1 +
+)
+
+; Helper function to increment a pointer position by 1.
+; Calling:
+;   - <pointer> ++
+; Returns:
+;   - The given <pointer> + 1.
+fn ++ ptr -> ptr (
+	1 +
+)
+
+; Helper function to decrement a number position by 1.
+; Calling:
+;   - <int> --
+; Returns:
+;   - The given <int> - 1.
+fn -- int -> int (
+	1 -
+)
+
+; Helper function to decrement a pointer position by 1.
+; Calling:
+;   - <pointer> --
+; Returns:
+;   - The given <pointer> - 1.
+fn -- ptr -> ptr (
+	1 -
+)
+
+; Helper function to get a result of a division.
+; Note: Assembly's `DIV` instruction returns both the result
+; and the modulo. This function drops the modulo and returns
+; only the result.
+; Calling:
+;   - <int1> <int2> /
+; Returns:
+;   - The result of <int1> / <int2>.
+fn / int int -> int (
+	div drop
+)
+
+; Helper function to get the modulo of a division.
+; Note: Assembly's `DIV` instruction returns both the result
+; and the modulo. This function drops the result and returns
+; only the modulo.
+; Calling:
+;   - <int1> <int2> %
+; Returns:
+;   - The result of <int1> % <int2>.
+fn % int int -> int (
+	div swap drop
+)
+
+; Helper function for Logical And operator (&&).
+; Calling:
+;   - <bool1> <bool2> and
+; Returns:
+;   - A boolean value. `true` if both given values are true, `false` if one or
+;     more are false.
 fn and bool bool -> bool (
 	swap (int)
 	swap (int)
 	+ 2 =
 )
 
-fn ++ int -> int (
-	1 +
+; Helper function for Logical Or operator (||).
+; Calling:
+;   - <bool1> <bool2> or
+; Returns:
+;   - A boolean value. `true` if at least of the given values is true.
+fn or bool bool -> bool (
+	swap (int)
+	swap (int)
+	+ 0 >
 )
 
-fn ++ ptr -> ptr (
-	1 +
-)
-
-fn -- int -> int (
-	1 -
-)
-
-fn / int int -> int (
-	div drop
-)
-
-fn % int int -> int (
-	div swap drop
-)
-
+; Helper function to calculate the difference between 2 pointers.
+; Calling:
+;   - <pointer1> <pointer2> ptrdiff
+; Returns:
+;   - <int> with the difference between the given pointers.
 fn ptrdiff ptr ptr -> int (
 	swap (int)
 	swap (int)

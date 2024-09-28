@@ -5,37 +5,37 @@ using io
 ;    Comparing values and checking the results
 fn main (
   "equal" println
-  "2 2 = -> 1 " print 2 2 = (int) println
-  "2 3 = -> 0 " print 2 3 = (int) println
-  "3 2 = -> 0 " print 3 2 = (int) println
+  "2 2 = -> true " print 2 2 = println
+  "2 3 = -> false " print 2 3 = println
+  "3 2 = -> false " print 3 2 = println
   "-----------" println
 
   "not equal" println
-  "2 3 != -> 1 " print 2 3 != (int) println
-  "3 2 != -> 1 " print 3 2 != (int) println
-  "2 2 != -> 0 " print 2 2 != (int) println
+  "2 3 != -> true " print 2 3 != println
+  "3 2 != -> true " print 3 2 != println
+  "2 2 != -> false " print 2 2 != println
   "-----------" println
 
   "less" println
-  "3 2 > -> 1 " print 3 2 > (int) println
-  "2 3 > -> 0 " print 2 3 > (int) println
-  "3 3 > -> 0 " print 3 3 > (int) println
+  "3 2 > -> true " print 3 2 > println
+  "2 3 > -> false " print 2 3 > println
+  "3 3 > -> false " print 3 3 > println
   "-----------" println
 
   "less equal" println
-  "3 3 >= -> 1 " print 3 3 >= (int) println
-  "3 2 >= -> 1 " print 3 2 >= (int) println
-  "2 3 >= -> 0 " print 2 3 >= (int) println
+  "3 3 >= -> true " print 3 3 >= println
+  "3 2 >= -> true " print 3 2 >= println
+  "2 3 >= -> false " print 2 3 >= println
   "-----------" println
 
   "greater" println
-  "2 3 < -> 1 " print 2 3 < (int) println
-  "3 2 < -> 0 " print 3 2 < (int) println
-  "2 2 < -> 0 " print 2 2 < (int) println
+  "2 3 < -> true " print 2 3 < println
+  "3 2 < -> false " print 3 2 < println
+  "2 2 < -> false " print 2 2 < println
   "-----------" println
 
   "greater equal" println
-  "2 2 <= -> 1 " print 2 2 <= (int) println
-  "2 3 <= -> 1 " print 2 3 <= (int) println
-  "3 2 <= -> 0 " print 3 2 <= (int) println
+  "2 2 <= -> true " print 2 2 <= println
+  "2 3 <= -> true " print 2 3 <= println
+  "3 2 <= -> false " print 3 2 <= println
 )

@@ -37,9 +37,9 @@ const NAME_CAP 32
 var name NAME_CAP
 
 fn main (
-	"What's your name? " print ; []
-	NAME_CAP name read ; int
-	name over + 1 - ->8 ; int ptr
+	"What's your name? " print
+	NAME_CAP name read
+	name over + 1 - ->8
 	if take '\n' = (
 		name swap 1 - + '\0' <-8
 	)

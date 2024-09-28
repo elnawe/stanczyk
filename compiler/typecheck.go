@@ -47,7 +47,7 @@ func getOperationName(code Code) string {
 	case OP_GREATER: name = "> (greater)"
 	case OP_GREATER_EQUAL: name = ">= (greater equal)"
 	case OP_JUMP: name = "else"
-	case OP_JUMP_IF_FALSE: name = "do"
+	case OP_JUMP_IF_FALSE: name = "then"
 	case OP_LESS: name = "< (less)"
 	case OP_LESS_EQUAL: name = "<= (less equal)"
 	case OP_LOAD8, OP_LOAD16, OP_LOAD32, OP_LOAD64: name = "load"

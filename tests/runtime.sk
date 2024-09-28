@@ -1,0 +1,27 @@
+using io
+
+;; Test: runtime library
+;; Description:
+;    Test all runtime library functions.
+fn main (
+  "2  " print
+  1 ++ println
+
+  "1  " print
+	2 -- println
+
+  ;; TODO: Add tests for ++ and -- with pointers
+
+	"1  " print
+	3 2 / println
+
+  "1  " print
+	3 2 % println
+
+	"false " print 2 3 = 3 2 = and println
+	"false " print 2 2 = 3 2 = and println
+	"true  " print 2 2 = 3 3 = and println
+	"true  " print 2 2 = 3 2 = or  println
+	"true  " print 2 3 = 3 3 = or  println
+	"false " print 2 3 = 3 2 = or  println
+)
