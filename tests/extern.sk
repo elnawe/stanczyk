@@ -3,7 +3,7 @@ using io
 fn custom-linux-write ptr int (
 	swap
 	extern int ptr (
-		mov rax, LINUX_WRITE
+		mov rax, SYS_WRITE
 		mov rdi, STDOUT
 		pop rsi
 		pop rdx

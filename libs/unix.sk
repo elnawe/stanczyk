@@ -1,0 +1,195 @@
+;;  The Stańczyk Programming Language  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                                                                      ;
+;            ¿«fº"└└-.`└└*∞▄_              ╓▄∞╙╙└└└╙╙*▄▄               ;
+;         J^. ,▄▄▄▄▄▄_      └▀████▄ç    JA▀            └▀v             ;
+;       ,┘ ▄████████████▄¿     ▀██████▄▀└      ╓▄██████▄¿ "▄_          ;
+;      ,─╓██▀└└└╙▀█████████      ▀████╘      ▄████████████_`██▄        ;
+;     ;"▄█└      ,██████████-     ▐█▀      ▄███████▀▀J█████▄▐▀██▄      ;
+;     ▌█▀      _▄█▀▀█████████      █      ▄██████▌▄▀╙     ▀█▐▄,▀██▄    ;
+;    ▐▄▀     A└-▀▌  █████████      ║     J███████▀         ▐▌▌╙█µ▀█▄   ;
+;  A╙└▀█∩   [    █  █████████      ▌     ███████H          J██ç ▀▄╙█_  ;
+; █    ▐▌    ▀▄▄▀  J█████████      H    ████████          █    █  ▀▄▌  ;
+;  ▀▄▄█▀.          █████████▌           ████████          █ç__▄▀ ╓▀└╙%_;
+;                 ▐█████████      ▐    J████████▌          .└╙   █¿  ,▌;
+;                 █████████▀╙╙█▌└▐█╙└██▀▀████████                 ╙▀▀▀ ;
+;                ▐██▀┘Å▀▄A └▓█╓▐█▄▄██▄J▀@└▐▄Å▌▀██▌                     ;
+;                █▄▌▄█M╨╙└└-           .└└▀**▀█▄,▌                     ;
+;                ²▀█▄▄L_                  _J▄▄▄█▀└                     ;
+;                     └╙▀▀▀▀▀MMMR████▀▀▀▀▀▀▀└                          ;
+;                                                                      ;
+;                                                                      ;
+; ███████╗████████╗ █████╗ ███╗   ██╗ ██████╗███████╗██╗   ██╗██╗  ██╗ ;
+; ██╔════╝╚══██╔══╝██╔══██╗████╗  ██║██╔════╝╚══███╔╝╚██╗ ██╔╝██║ ██╔╝ ;
+; ███████╗   ██║   ███████║██╔██╗ ██║██║       ███╔╝  ╚████╔╝ █████╔╝  ;
+; ╚════██║   ██║   ██╔══██║██║╚██╗██║██║      ███╔╝    ╚██╔╝  ██╔═██╗  ;
+; ███████║   ██║   ██║  ██║██║ ╚████║╚██████╗███████╗   ██║   ██║  ██╗ ;
+; ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ;
+;                                                                      ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  The Stańczyk Programming Language  ;;
+
+;; The Stańczyk Unix Library
+
+using strings
+
+;; Unix File Descriptors (fd)
+; File descriptors used in Unix system calls. STDIN correspond to the standard
+;	entry file (usually the console), STDOUT is the standard output (also,
+; usually the console), STDERR is the standard error buffer (usually the
+;	console, not always available).
+;
+; See more at: `man 3 stdin`
+const STDIN  0
+const STDOUT 1
+const STDERR 2
+
+;; Unix x64 Syscall Table
+; Code for system calls directive used in 64-bit x86 Unix.
+; Note: If you intend to use 32-bit, `extern` with interrupt 0x80 manually.
+;
+; See more at: `man syscall`
+const SYS_READ      0
+const SYS_WRITE     1
+const SYS_OPEN      2
+const SYS_CLOSE     3
+const SYS_SOCKET    41
+const SYS_BIND      49
+const SYS_EXIT      60
+
+;; Unix File Flags
+; Flags to tell the system which access we need when opening a file.
+;
+; See more at: `man open`
+const O_READONLY     0
+const O_WRITEONLY    1
+const O_READWRITE    2
+const O_CREATE       64
+
+; Helper function to access the arguments Array (passed through when calling
+; the program).
+; Calling:
+;   - <index> []argv
+; Returns:
+;   - A pointer to the element in the Array. If element is out of reach,
+;     throws an error and stops execution.
+fn []argv int -> ptr (
+	8 * argv (int) + (ptr) ->64
+	if dup (int) 0 = (
+		dup print
+		"argv empty" panic
+	)
+)
+
+; Helper function to clear the console screen. Widely supported, but not for
+; all terminals.
+fn clear (
+	"\e[H\e[2J" print
+)
+
+; Helper function to print text on the standard error output for the system.
+; Calling:
+;   - <string> eputs
+fn eputs ptr (
+	dup strlen swap
+	extern int ptr (
+		mov rax, SYS_WRITE
+		mov rdi, STDERR
+		pop rsi
+		pop rdx
+		syscall
+  )
+)
+
+; Helper function to quit the program execution with an specific error code.
+; Note: If code is '0', it will terminate in a succesful execution (no error).
+; Calling
+;   - <error-code> exit
+fn exit int (
+	extern int (
+		mov rax, SYS_EXIT
+		pop rdi
+	)
+)
+
+; Helper function to show an error, prefixed with "ERROR:" and terminates the
+; program after printing the message.
+; Calling:
+;   - <string> panic
+fn panic ptr (
+	" ERROR: " eputs
+	eputs
+	"\n" eputs
+	1 exit
+)
+
+; Helper function to print a string on the standard output.
+; Calling:
+;   - <string> print
+fn print ptr (
+	dup strlen swap
+	extern int ptr (
+		mov rax, SYS_WRITE
+		mov rdi, STDOUT
+		pop rsi
+		pop rdx
+		syscall
+	)
+)
+
+; Helper function to print an integer on the standard output.
+; Calling:
+;   - <int> print
+fn print int (
+	itoa print
+)
+
+; Helper function to print a boolean value on the standard output.
+; Calling:
+;   - <bool> print
+fn print bool (
+	if take 1 = (
+		"true" print
+	else
+		"false" print
+	)
+)
+
+; Helper function internally calling "print", but adds a newline after printing.
+; Calling:
+;   - <string> println
+fn println ptr (
+	print
+	"\n" print
+)
+
+; Helper function internally calling "print", but adds a newline after printing.
+; Calling:
+;   - <int> println
+fn println int (
+	print
+	"\n" print
+)
+
+; Helper function internally calling "print", but adds a newline after printing.
+; Calling:
+;   - <bool> println
+fn println bool (
+	print
+	"\n" print
+)
+
+; Helper function to read from standard input.
+; Note: Requires a pointer buffer with sufficient capacity.
+; Calling:
+;   - <buffer-capacity> <buffer-pointer> read
+; Returns:
+;   - Amount of characters read from standard input.
+fn read int ptr -> int (
+	extern int ptr -> int (
+		mov rax, SYS_READ
+		mov rdi, STDIN
+		pop rsi
+		pop rdx
+		syscall
+		push rax
+	)
+)
