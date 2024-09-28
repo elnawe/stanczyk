@@ -465,9 +465,8 @@ func addBind(token Token) {
 
 func addExtern(token Token) {
 	var value Extern
-	var code Code
-	code.op = OP_EXTERN
-	code.loc = token.loc
+
+	code := Code{op: OP_EXTERN, loc: token.loc}
 
 	for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
 		advance()
@@ -550,8 +549,8 @@ func addExtern(token Token) {
 		}
 	}
 
-	code.value = value
 	consume(TOKEN_PAREN_CLOSE, MsgParseExternMissingCloseStmt)
+	code.value = value
 	emit(code)
 }
 

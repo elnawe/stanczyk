@@ -169,11 +169,25 @@ func makeToken(t TokenType, value ...any) {
 	scanner.tokens = append(scanner.tokens, token)
 }
 
+// TODO: Find a better name for this function. Since I want to allow things like "2dup",
+// I need this function to be able to post a WORD token if the number is followed by
+// alpha characters.
 func makeNumber(c byte, line string, index *int) {
 	result := string(c)
 
 	for Advance(&c, line, index) && IsDigit(c) {
 		result += string(c)
+	}
+
+	if !IsSpace(c) {
+		result += string(c)
+
+		for Advance(&c, line, index) && !IsSpace(c) {
+			result += string(c)
+		}
+
+		makeToken(TOKEN_WORD, result)
+		return
 	}
 
 	value, _ := strconv.Atoi(result)
@@ -226,7 +240,7 @@ func makeChar(c byte, line string, index *int) {
 func makeWord(c byte, line string, index *int) {
 	word := string(c)
 
-	for Advance(&c, line, index) && c != ' ' && c != '\t' {
+	for Advance(&c, line, index) && !IsSpace(c) {
 		word += string(c)
 	}
 
@@ -256,7 +270,7 @@ func TokenizeFile(f string, s string) []Token {
 		for index := 0; index < len(line); index++ {
 			c := line[index]
 			scanner.column = index
-			if (c == ' ' || c == '\t') {
+			if (IsSpace(c)) {
 				continue
 			}
 

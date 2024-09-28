@@ -4,6 +4,10 @@ import (
 	"strconv"
 )
 
+func IsSpace(c byte) bool {
+	return c == ' ' || c == '\t'
+}
+
 func IsDigit(c byte) bool {
 	if _, err := strconv.Atoi(string(c)); err == nil {
 		return true;
