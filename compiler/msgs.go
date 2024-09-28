@@ -33,22 +33,23 @@ const (
 	MsgParseInvalidCharacter =
 		"char should only be 1 character"
 
-	MsgParseReserveValueIsNotConst =
+	MsgParseVarValueIsNotConst =
 		"%s is not a const"
-	MsgParseReserveOverrideNotAllowed =
+
+	MsgParseVarOverrideNotAllowed =
 		"memory %s already exists"
-	MsgParseReserveMissingWord =
+	MsgParseVarMissingWord =
 		"invalid or missing word\n" +
-			"\t\treserve mem 1024 .\n" +
-			"\t\t        ^^^"
-	MsgParseReserveMissingValue =
+			"\t\tvar mem 1024 .\n" +
+			"\t\t    ^^^"
+	MsgParseVarMissingValue =
 		"invalid or missing value\n" +
-			"\t\treserve mem 1024\n" +
-			"\t\t            ^^^^"
-	MsgParseReserveMissingCloseStmt =
-		"missing '.'\n" +
-			"\t\treserve mem ( 1024 )\n" +
-			"\t\t                   ^"
+			"\t\tvar mem 1024\n" +
+			"\t\t        ^^^^"
+	MsgParseVarMissingCloseStmt =
+		"missing ')'\n" +
+			"\t\tvar mem ( 1024 )\n" +
+			"\t\t               ^"
 
 	MsgParseBindAlreadyBound =
 		"function has bindings already"

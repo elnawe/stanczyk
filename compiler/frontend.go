@@ -287,10 +287,10 @@ func registerFunction(token Token) {
 	TheProgram.chunks = append(TheProgram.chunks, function)
 }
 
-func registerReserve(token Token) {
+func registerVar(token Token) {
 	var memory Object
 	if !match(TOKEN_WORD) {
-		errorAt(&token, MsgParseReserveMissingWord)
+		errorAt(&token, MsgParseVarMissingWord)
 		ExitWithError(CodeParseError)
 	}
 	memory.id = len(frontend.memories)
@@ -298,7 +298,7 @@ func registerReserve(token Token) {
 
 	for _, m := range frontend.memories {
 		if m.word == memory.word {
-			msg := fmt.Sprintf(MsgParseReserveOverrideNotAllowed, memory.word)
+			msg := fmt.Sprintf(MsgParseVarOverrideNotAllowed, memory.word)
 			errorAt(&parser.previous, msg)
 			ExitWithError(CodeParseError)
 		}
@@ -319,14 +319,14 @@ func registerReserve(token Token) {
 		}
 
 		if !found {
-			msg := fmt.Sprintf(MsgParseReserveValueIsNotConst, vt.value)
+			msg := fmt.Sprintf(MsgParseVarValueIsNotConst, vt.value)
 			errorAt(&vt, msg)
 			ExitWithError(CodeParseError)
 		}
 	case TOKEN_INT:
 		memory.value = vt.value.(int)
 	default:
-		errorAt(&parser.previous, MsgParseReserveMissingValue)
+		errorAt(&parser.previous, MsgParseVarMissingValue)
 		ExitWithError(CodeParseError)
 	}
 
@@ -819,7 +819,7 @@ func compilationSecondPass(index int) {
 		switch token.typ {
 		// The second pass will care about the following tokens:
 		case TOKEN_CONST: registerConstant(token)
-		case TOKEN_RESERVE: registerReserve(token)
+		case TOKEN_VAR: registerVar(token)
 		case TOKEN_FN: registerFunction(token)
 
 		// But it needs to do nothing when it sees the followings:
@@ -879,15 +879,18 @@ func FrontendRun() {
 	// User entry file
 	file.Open(Stanczyk.workspace.entry)
 
-	for index, _ := range file.files {
+	// I'm not using "range" because Go creates a copy of the Array
+	// (turning it into a slice), so if I find a new file while
+	// going through the compilation, it will not update the `for` statement.
+	for index := 0; index < len(file.files); index++ {
 		compilationFirstPass(index)
 	}
 
-	for index, _ := range file.files {
+	for index := 0; index < len(file.files); index++ {
 		compilationSecondPass(index)
 	}
 
-	for index, _ := range file.files {
+	for index := 0; index < len(file.files); index++ {
 		compilationThirdPass(index)
 	}
 

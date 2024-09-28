@@ -54,7 +54,6 @@ const (
 	TOKEN_PAREN_CLOSE
 	TOKEN_PAREN_OPEN
 	TOKEN_PLUS
-	TOKEN_RESERVE
 	TOKEN_RET
 	TOKEN_RIGHT_ARROW
 	TOKEN_ROTATE
@@ -116,7 +115,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_PAREN_CLOSE,    word: ")"       },
 	reserved{typ: TOKEN_PAREN_OPEN,     word: "("       },
 	reserved{typ: TOKEN_PLUS,           word: "+"       },
-	reserved{typ: TOKEN_RESERVE,        word: "reserve" },
 	reserved{typ: TOKEN_RET,            word: "ret"     },
 	reserved{typ: TOKEN_RIGHT_ARROW,    word: "->"      },
 	reserved{typ: TOKEN_ROTATE,         word: "rotate"  },
@@ -129,8 +127,8 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_TAKE,           word: "take"    },
 	reserved{typ: TOKEN_THIS,           word: "this"    },
 	reserved{typ: TOKEN_TRUE,           word: "true"    },
-	reserved{typ: TOKEN_VAR,            word: "var"     },
 	reserved{typ: TOKEN_USING,          word: "using"   },
+	reserved{typ: TOKEN_VAR,            word: "var"     },
 }
 
 type Location struct {

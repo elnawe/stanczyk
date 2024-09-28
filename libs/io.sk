@@ -51,6 +51,8 @@
 ;; UNIX I/O Library
 ;; TODO: Add descriptions
 
+using strings
+
 ; File descriptor (fd)
 const STDIN  0
 const STDOUT 1
@@ -118,7 +120,7 @@ fn print ptr (
 )
 
 fn print int (
-	int->str print
+	itoa print
 )
 
 fn print bool (

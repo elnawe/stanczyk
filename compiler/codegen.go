@@ -44,7 +44,7 @@ func getAsciiValues(s string) string {
 	return ascii
 }
 
-func generateLinuxX86() {
+func generateLinuxX64() {
 	mainFuncIP := -1
 	asm := codegen.asm
 
@@ -380,7 +380,7 @@ func CodegenRun(asm *Assembly) {
 
 	switch runtime.GOOS {
 	case "linux":
-		generateLinuxX86()
+		generateLinuxX64()
 	default:
 		Stanczyk.Error("OS currently not supported")
 	}

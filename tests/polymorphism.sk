@@ -9,7 +9,7 @@ fn equal bool bool -> bool (
 )
 
 fn equal ptr ptr -> bool (
-  str=
+  strequal
 )
 
 fn main (

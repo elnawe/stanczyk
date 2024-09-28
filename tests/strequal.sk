@@ -7,19 +7,19 @@ fn get-str -> ptr (
 fn main (
   "Testing strings in Stańczyk is a little bit more complicated" println
 
-  if "Stańczyk" "Stańczyk" str= (
+  if "Stańczyk" "Stańczyk" strequal (
     "1- test success" println
   else
     "1- test failed!" println
   )
 
-  if get-str get-str str= (
+  if get-str get-str strequal (
     "2- test success" println
   else
     "2- test failed!" println
   )
 
-  if "Stańczyk" "Nope" str= (
+  if "Stańczyk" "Nope" strequal (
     "3- test failed!" println
   else
     "3- test success" println
