@@ -29,7 +29,3 @@ func Contains[T comparable](s []T, e T) bool {
     }
     return false
 }
-
-func FindFunctionByIP(ip int) Function {
-	return TheProgram.chunks[ip]
-}

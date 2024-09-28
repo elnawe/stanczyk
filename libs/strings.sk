@@ -30,8 +30,7 @@
 ;; The Stańczyk Strings Library
 
 fn strlen ptr -> int (
-	dup
-	loop dup ->8 0 != (
+	dup loop dup ->8 0 != (
 		++
 	)
 	swap ptrdiff
@@ -70,7 +69,7 @@ fn itoa int -> ptr (
 
 	loop dup intlen 0 > (
 		dup 10 % 48 + (char)
-		over intlen 1 - itoa-buffer swap + swap <-8
+		over intlen -- itoa-buffer swap + swap <-8
 		10 /
 	) drop
 

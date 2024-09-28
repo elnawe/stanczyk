@@ -909,22 +909,6 @@ func compilationThirdPass(index int) {
 	}
 }
 
-func markFunctionsAsCalled() {
-	// TODO: BUG FOUND ::
-	// Code folding and dead code elimination does not work well with polymorphic functions.
-	// I need to mark each type of this function for the code to work, hence adding extra
-	// functionality that is not needed.
-	// To change this, and since I pick the correct function in typechecking, I need to
-	// make sure this check exists in that step somehow.
-	for _, w := range frontend.words {
-		for ifunc, f := range TheProgram.chunks {
-			if f.name == w {
-				TheProgram.chunks[ifunc].called = true
-			}
-		}
-	}
-}
-
 func FrontendRun() {
 	// Core standard library
 	file.Open("runtime")
@@ -946,8 +930,6 @@ func FrontendRun() {
 	for index := 0; index < len(file.files); index++ {
 		compilationThirdPass(index)
 	}
-
-	markFunctionsAsCalled()
 
 	TheProgram.variables = frontend.variables
 

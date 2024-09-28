@@ -8,13 +8,18 @@ import (
 const STACK_SIZE = 10
 
 type Typecheck struct {
-	stack      [STACK_SIZE]DataType
-	stackCount int
-	scope      int
+	stack       [STACK_SIZE]DataType
+	stackCount  int
+	scope       int
+}
+
+type DeadCodeElim struct {
+	funcsCalled []int
 }
 
 var tc Typecheck
 var snapshots [10]Typecheck
+var dce DeadCodeElim
 
 func getStackValues() string {
 	r := ""
@@ -157,6 +162,29 @@ func assertArgumentType(test []DataType, want []DataType, code Code, loc Locatio
 	}
 }
 
+func dtArray(values ...DataType) []DataType {
+	var r []DataType
+	for _, t := range values {
+		r = append(r, t)
+	}
+	return r
+}
+
+func findFunctionByIP(ip int) Function {
+	return TheProgram.chunks[ip]
+}
+
+func (this *DeadCodeElim) push(i int) {
+	this.funcsCalled = append(this.funcsCalled, i)
+}
+
+func (this *DeadCodeElim) pop() int {
+	var x int
+	x = this.funcsCalled[len(this.funcsCalled) - 1]
+	this.funcsCalled = this.funcsCalled[:len(this.funcsCalled) - 1]
+	return x
+}
+
 func (this *Typecheck) reset() {
 	this.stack = [STACK_SIZE]DataType{}
 	this.stackCount = 0
@@ -177,23 +205,20 @@ func (this *Typecheck) pop() DataType {
 	return v
 }
 
-func dtArray(values ...DataType) []DataType {
-	var r []DataType
-	for _, t := range values {
-		r = append(r, t)
-	}
-	return r
-}
-
-func TypecheckRun() {
+func ValidateRun() {
 	mainHandled := false
 
 	for ifunction, function := range TheProgram.chunks {
 		var binds []DataType
 		if function.name == "main" {
 			mainHandled = true
+			dce.push(function.ip)
+
 			if len(function.args) > 0 || len(function.rets) > 0 {
-				ReportErrorAtLocation(MsgTypecheckMainFunctionNoArgumentsOrReturn, function.loc)
+				ReportErrorAtLocation(
+					MsgTypecheckMainFunctionNoArgumentsOrReturn,
+					function.loc,
+				)
 				ExitWithError(CodeTypecheckError)
 			}
 		}
@@ -298,7 +323,7 @@ func TypecheckRun() {
 				var fns []Function
 
 				for _, c := range calls {
-					fns = append(fns, FindFunctionByIP(c.ip))
+					fns = append(fns, findFunctionByIP(c.ip))
 				}
 
 				if len(fns) == 1 {
@@ -419,5 +444,28 @@ func TypecheckRun() {
 	if !mainHandled {
 		ReportErrorAtEOF(MsgTypecheckMissingEntryPoint)
 		ExitWithError(CodeTypecheckError)
+	}
+
+	for len(dce.funcsCalled) > 0 {
+		ip := dce.pop()
+
+		for i, _ := range TheProgram.chunks {
+			function := &TheProgram.chunks[i]
+
+			if function.ip == ip {
+				function.called = true
+
+				for _, c := range function.code {
+					if c.op == OP_FUNCTION_CALL {
+						newCall := c.value.(FunctionCall)
+						f := findFunctionByIP(newCall.ip)
+
+						if !f.called {
+							dce.push(newCall.ip)
+						}
+					}
+				}
+			}
+		}
 	}
 }
