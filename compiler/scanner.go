@@ -27,6 +27,7 @@ const (
 	// Reserved Words
 	TOKEN_ARGC
 	TOKEN_ARGV
+	TOKEN_ASM
 	TOKEN_BANG_EQUAL
 	TOKEN_BIND
 	TOKEN_CAST_BOOL
@@ -37,7 +38,6 @@ const (
 	TOKEN_DIV
 	TOKEN_ELSE
 	TOKEN_EQUAL
-	TOKEN_EXTERN
 	TOKEN_FN
 	TOKEN_GREATER
 	TOKEN_GREATER_EQUAL
@@ -81,6 +81,7 @@ var reservedWords = []reserved{
 
 	reserved{typ: TOKEN_ARGC,           word: "argc"    },
 	reserved{typ: TOKEN_ARGV,           word: "argv"    },
+	reserved{typ: TOKEN_ASM,            word: "asm"     },
 	reserved{typ: TOKEN_BANG_EQUAL,     word: "!="      },
 	reserved{typ: TOKEN_BIND,           word: "bind"    },
 	reserved{typ: TOKEN_CAST_BOOL,      word: "(bool)"  },
@@ -96,7 +97,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_DTYPE_PTR,      word: "ptr"     },
 	reserved{typ: TOKEN_ELSE,           word: "else"    },
 	reserved{typ: TOKEN_EQUAL,          word: "="       },
-	reserved{typ: TOKEN_EXTERN,         word: "extern"  },
 	reserved{typ: TOKEN_FALSE,          word: "false"   },
 	reserved{typ: TOKEN_FN,             word: "fn"      },
 	reserved{typ: TOKEN_GREATER,        word: ">"       },

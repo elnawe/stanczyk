@@ -459,10 +459,10 @@ func addBind(token Token) {
 	emit(Code{op: OP_BIND, loc: token.loc, value: len(frontend.current.bindings)})
 }
 
-func addExtern(token Token) {
-	var value Extern
+func addAssembly(token Token) {
+	var value AssemblyCode
 
-	code := Code{op: OP_EXTERN, loc: token.loc}
+	code := Code{op: OP_ASSEMBLY, loc: token.loc}
 
 	for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
 		advance()
@@ -476,7 +476,7 @@ func addExtern(token Token) {
 		}
 	}
 
-	consume(TOKEN_PAREN_OPEN, MsgParseExternMissingOpenStmt)
+	consume(TOKEN_PAREN_OPEN, MsgParseAssemblyMissingOpenStmt)
 
 	var line []string
 
@@ -503,7 +503,7 @@ func addExtern(token Token) {
 		line = append(line, val)
 
 		// If current parsed token (parser.previous) is not on the same line than
-		// the next token, consider it an ASM line and push it over the Extern.value OP,
+		// the next token, consider it an ASM line and push it over the Assembly.value OP,
 		// then reset the line variable, so we can safely construct the next ASM line.
 		if t.loc.l != nt.loc.l {
 			// TODO: Should validate line construction here, with a function in extern.go
@@ -516,7 +516,7 @@ func addExtern(token Token) {
 		}
 	}
 
-	consume(TOKEN_PAREN_CLOSE, MsgParseExternMissingCloseStmt)
+	consume(TOKEN_PAREN_CLOSE, MsgParseAssemblyMissingCloseStmt)
 	code.value = value
 	emit(code)
 }
@@ -554,6 +554,8 @@ func parseToken(token Token) {
 	case TOKEN_ARGV:
 		code.op = OP_ARGV
 		emit(code)
+	case TOKEN_ASM:
+		addAssembly(token)
 	case TOKEN_BANG_EQUAL:
 		code.op = OP_NOT_EQUAL
 		emit(code)
@@ -581,8 +583,6 @@ func parseToken(token Token) {
 	case TOKEN_EQUAL:
 		code.op = OP_EQUAL
 		emit(code)
-	case TOKEN_EXTERN:
-		addExtern(token)
 	case TOKEN_GREATER:
 		code.op = OP_GREATER
 		emit(code)

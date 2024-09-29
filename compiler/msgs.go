@@ -89,11 +89,11 @@ const (
 			"\t\tbind ( a b c )\n" +
 			"\t\t     ^"
 
-	MsgParseExternMissingCloseStmt =
+	MsgParseAssemblyMissingCloseStmt =
 		"missing '('\n" +
 			"\t\textern ( ... )\n" +
 			"\t\t             ^"
-	MsgParseExternMissingOpenStmt =
+	MsgParseAssemblyMissingOpenStmt =
 		"missing '('\n" +
 			"\t\textern ( ... )\n" +
 			"\t\t       ^"

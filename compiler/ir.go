@@ -15,13 +15,13 @@ const (
 	OP_ADD
 	OP_ARGC
 	OP_ARGV
+	OP_ASSEMBLY
 	OP_BIND
 	OP_CAST
 	OP_DIVIDE
 	OP_END_IF
 	OP_END_LOOP
 	OP_EQUAL
-	OP_EXTERN
 	OP_FUNCTION_CALL
 	OP_GREATER
 	OP_GREATER_EQUAL
@@ -94,7 +94,7 @@ type Function struct {
 	internal    bool
 }
 
-type Extern struct {
+type AssemblyCode struct {
 	arguments Arity
 	returns   Arity
 	body      []string

@@ -2,7 +2,7 @@ using io
 
 fn custom-linux-write ptr int (
 	swap
-	extern int ptr (
+	asm int ptr (
 		mov rax, SYS_WRITE
 		mov rdi, STDOUT
 		pop rsi
@@ -12,13 +12,13 @@ fn custom-linux-write ptr int (
 )
 
 fn return-13 -> int (
-  extern -> int (
+  asm -> int (
 		mov rax, 13
 		push rax
   )
 )
 
 fn main (
-  "Printing this text with extern\n" dup strlen custom-linux-write
+  "Printing this text with asm\n" dup strlen custom-linux-write
 	return-13 println
 )

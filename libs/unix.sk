@@ -44,7 +44,7 @@ const STDERR 2
 
 ;; Unix x64 Syscall Table
 ; Code for system calls directive used in 64-bit x86 Unix.
-; Note: If you intend to use 32-bit, `extern` with interrupt 0x80 manually.
+; Note: If you intend to use 32-bit, `asm` with interrupt 0x80 manually.
 ;
 ; See more at: `man syscall`
 const SYS_READ      0
@@ -90,7 +90,7 @@ fn clear (
 ;   - <string> eputs
 fn eputs ptr (
 	dup strlen swap
-	extern int ptr (
+	asm int ptr (
 		mov rax, SYS_WRITE
 		mov rdi, STDERR
 		pop rsi
@@ -104,7 +104,7 @@ fn eputs ptr (
 ; Calling
 ;   - <error-code> exit
 fn exit int (
-	extern int (
+	asm int (
 		mov rax, SYS_EXIT
 		pop rdi
 	)
@@ -126,7 +126,7 @@ fn panic ptr (
 ;   - <string> print
 fn print ptr (
 	dup strlen swap
-	extern int ptr (
+	asm int ptr (
 		mov rax, SYS_WRITE
 		mov rdi, STDOUT
 		pop rsi
@@ -184,7 +184,7 @@ fn println bool (
 ; Returns:
 ;   - Amount of characters read from standard input.
 fn read int ptr -> int (
-	extern int ptr -> int (
+	asm int ptr -> int (
 		mov rax, SYS_READ
 		mov rdi, STDIN
 		pop rsi

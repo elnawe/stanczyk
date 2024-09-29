@@ -1,2 +1,0 @@
-Printing this text with extern
-13

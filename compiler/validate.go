@@ -41,11 +41,11 @@ func getOperationName(code Code) string {
 	case OP_ADD: name = "+ (add)"
 	case OP_ARGC: name = "argc"
 	case OP_ARGV: name = "argv"
+	case OP_ASSEMBLY: name = "asm"
 	case OP_BIND: name = "bind"
 	case OP_CAST: name = "cast to " + getDataTypeName(code.value.(DataType))
 	case OP_DIVIDE: name = "div"
 	case OP_EQUAL: name = "= (equal)"
-	case OP_EXTERN: name = "extern"
 	case OP_FUNCTION_CALL: name = "function: " + code.value.([]FunctionCall)[0].name
 	case OP_GREATER: name = "> (greater)"
 	case OP_GREATER_EQUAL: name = ">= (greater equal)"
@@ -251,6 +251,22 @@ func ValidateRun() {
 				tc.push(DATA_PTR)
 
 			// Intrinsics
+			case OP_ASSEMBLY:
+				var have []DataType
+				var want []DataType
+				value := code.value.(AssemblyCode)
+
+				for _, d := range value.arguments.types {
+					t := tc.pop()
+					have = append([]DataType{t}, have...)
+					want = append(want, d.typ)
+				}
+
+				assertArgumentType(have, want, code, loc)
+
+				for _, dt := range value.returns.types {
+					tc.push(dt.typ)
+				}
 			case OP_ADD, OP_SUBSTRACT:
 				// TODO: Current supporting any as first argument, this might have to
 				// change for type safety. But it allows to use parapoly.
@@ -293,22 +309,6 @@ func ValidateRun() {
 				a := tc.pop()
 				assertArgumentType(dtArray(a, b), dtArray(DATA_ANY, DATA_ANY), code, loc)
 				tc.push(DATA_BOOL)
-			case OP_EXTERN:
-				var have []DataType
-				var want []DataType
-				value := code.value.(Extern)
-
-				for _, d := range value.arguments.types {
-					t := tc.pop()
-					have = append([]DataType{t}, have...)
-					want = append(want, d.typ)
-				}
-
-				assertArgumentType(have, want, code, loc)
-
-				for _, dt := range value.returns.types {
-					tc.push(dt.typ)
-				}
 			case OP_FUNCTION_CALL:
 				var have []DataType
 				var want []DataType

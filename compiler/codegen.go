@@ -172,8 +172,8 @@ func generateLinuxX64() {
 				asm.WriteText("    cmp rax, rbx")
 				asm.WriteText("    cmove rcx, rdx")
 				asm.WriteText("    push rcx")
-			case OP_EXTERN:
-				val := value.(Extern)
+			case OP_ASSEMBLY:
+				val := value.(AssemblyCode)
 
 				asm.WriteText(";; extern (%s:%d:%d)", loc.f, loc.l, loc.c)
 
