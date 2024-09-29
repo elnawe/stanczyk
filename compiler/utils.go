@@ -1,8 +1,16 @@
 package skc
 
 import (
+	"os"
+	"path/filepath"
 	"strconv"
 )
+
+func GetRelativePath(to string) string {
+	cwd, _ := os.Getwd()
+	relPath, _ := filepath.Rel(cwd, to)
+	return relPath
+}
 
 func IsSpace(c byte) bool {
 	return c == ' ' || c == '\t'

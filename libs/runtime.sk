@@ -62,39 +62,21 @@ const MAX_UINT16 65535
 const MAX_UINT32 4294967295
 const MAX_UINT64 18446744073709551615
 
-; Helper function to increment a number by 1.
+; Helper function to increment a number or a pointer position by 1.
 ; Calling:
-;   - <int> ++
+;   - <int/pointer> ++
 ; Returns:
-;   - The given <int> + 1.
-fn ++ int -> int (
+;   - The given argument + 1
+fn ++ $T -> T (
 	1 +
 )
 
-; Helper function to increment a pointer position by 1.
+; Helper function to decrement a number or a pointer position by 1.
 ; Calling:
-;   - <pointer> ++
+;   - <int/pointer> --
 ; Returns:
-;   - The given <pointer> + 1.
-fn ++ ptr -> ptr (
-	1 +
-)
-
-; Helper function to decrement a number position by 1.
-; Calling:
-;   - <int> --
-; Returns:
-;   - The given <int> - 1.
-fn -- int -> int (
-	1 -
-)
-
-; Helper function to decrement a pointer position by 1.
-; Calling:
-;   - <pointer> --
-; Returns:
-;   - The given <pointer> - 1.
-fn -- ptr -> ptr (
+;   - The given argument - 1.
+fn -- $T -> T (
 	1 -
 )
 

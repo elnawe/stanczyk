@@ -17,10 +17,10 @@ const (
 		"Usage:\n" +
 			"\tskc <command> [arguments]\n" +
 			"Commands:\n" +
-			"\tbuild    compile the entry .sk file and it's includes.\n" +
-			"\trun      same as 'build', but it runs the result and cleans up the executable.\n" +
-			"\tversion  check the version of your installed compiler.\n\n" +
-			"For more information about what the compiler can do, you can use: skc help.\n"
+			"\tbuild    compile the entry .sk file and it's includes\n" +
+			"\trun      same as 'build', but it runs the result and cleans up the executable\n" +
+			"\tversion  check the version of your installed compiler\n\n" +
+			"For more information about what the compiler can do, you can use: skc help\n"
 
 
 	/*    ___ ___  __  __ ___ ___ _      _ _____ ___ ___  _  _
@@ -28,6 +28,29 @@ const (
 	 *  | (_| (_) | |\/| |  _/| || |__ / _ \| |  | | (_) | .` |
 	 *   \___\___/|_|  |_|_| |___|____/_/ \_\_| |___\___/|_|\_|
 	 */
+	MsgParseArityArgumentSameSignatureError =
+		"polymorphic function with the same signature found at %s:%d\n" +
+			"you must use different signature for polymorphic functions\n" +
+			"\t\tfn func-1 int ( ... )\n" +
+			"\t\tfn func-1 ptr ( ... )\n"
+	MsgParseArityReturnDifferentSignatureError =
+		"polymorphic function should always return the same type of elements\n" +
+			"different return signature found at %s:%d\n" +
+			"\t\tfn func-1 int -> ptr ( ... )\n" +
+			"\t\tfn func-1 ptr -> ptr ( ... )\n"
+	MsgParseArityArgumentAnyOnlyInternal =
+		"argument of type 'any' is only available on Stańczyk internal libraries"
+	MsgParseArityReturnParapolyNotAllowed =
+		"parapoly symbols are not allowed in return statement\n" +
+			"use the name of the argument instead\n" +
+			"\t\tfn my-func $T -> T ( ... )\n" +
+			"\t\t                 ^"
+	MsgParseArityReturnParapolyNotFound =
+		"parapoly value for '%s' not found on this function declaration\n" +
+			"make sure your function parapoly symbol argument matches the value used in the return statement\n" +
+			"\t\tfn my-func $T -> T ( ... )\n" +
+			"\t\t           ^^    ^"
+
 	MsgParseInvalidEmptyCharacter =
 		"char cannot be empty"
 	MsgParseInvalidCharacter =
@@ -40,7 +63,7 @@ const (
 		"memory %s already exists"
 	MsgParseVarMissingWord =
 		"invalid or missing word\n" +
-			"\t\tvar mem 1024 .\n" +
+			"\t\tvar mem 1024\n" +
 			"\t\t    ^^^"
 	MsgParseVarMissingValue =
 		"invalid or missing value\n" +
@@ -56,7 +79,7 @@ const (
 			"\t\tbind ( a b c )\n" +
 			"\t\t       ^^^^^"
 	MsgParseBindCannotOverrideWord =
-		"%s already bound in this current scope. Use a different name."
+		"%s already bound in this current scope. Use a different name"
 	MsgParseBindMissingCloseStmt =
 		"missing ')'\n" +
 			"\t\tbind ( a b c )\n" +
@@ -80,7 +103,7 @@ const (
 			"E.g.:\n" +
 			"\tif [condition] ( [...] else [...] )\n" +
 			"\t^^             ^\n" +
-			"'(' can be used in other blocks like function and loops."
+			"'(' can be used in other blocks like function and loops"
 
 	MsgParseElseOrphanTokenFound =
 		"only use 'else' after starting an 'if' statement\n" +
@@ -103,6 +126,9 @@ const (
 
 	MsgParseErrorProgramScope =
 		"cannot do this in global scope"
+
+	MsgParseFunctionSignatureNotFound =
+		"function signature (arguments) with name '%s' has not been found"
 
 	MsgParseFunctionMissingName =
 		"invalid or missing function name\n" +
@@ -135,7 +161,7 @@ const (
 			"\t\t               ^^^^^"
 	MsgParseConstInvalidContent =
 		"const %s can only have int or simple arithmetic operations (+ or *)\n" +
-			"\t\tconst my-const 32 1024 * .\n" +
+			"\t\tconst my-const 32 1024 *\n" +
 			"\t\t               ^^^^^^^^^"
 	MsgParseConstMissingCloseStmt =
 		"missing ')'\n" +

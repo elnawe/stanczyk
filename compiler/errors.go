@@ -20,7 +20,7 @@ func ReportErrorAtEOF(msg string) {
 }
 
 func ReportErrorAtLocation(msg string, loc Location) {
-	prefix := fmt.Sprintf(MsgErrorPrefix, loc.f, loc.l, loc.c)
+	prefix := fmt.Sprintf(MsgErrorPrefix, GetRelativePath(loc.f), loc.l, loc.c)
 	fmt.Fprintf(os.Stderr, "%s %s\n", prefix, msg);
 }
 

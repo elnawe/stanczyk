@@ -197,15 +197,14 @@ func registerFunction(token Token) {
 		ExitWithError(CodeParseError)
 	}
 
-	word := parser.previous
-	function.name = word.value.(string)
+	tokenWord := parser.previous
+	function.name = tokenWord.value.(string)
 
 	if function.name == "main" {
-		function.called = true
-
 		for _, f := range TheProgram.chunks {
 			if f.name == "main" {
-				msg := fmt.Sprintf(MsgParseFunctionMainAlreadyDefined, f.loc.f, f.loc.l)
+				msg := fmt.Sprintf(MsgParseFunctionMainAlreadyDefined,
+					GetRelativePath(f.loc.f), f.loc.l)
 				errorAt(&token, msg)
 				ExitWithError(CodeParseError)
 			}
@@ -227,6 +226,31 @@ func registerFunction(token Token) {
 		for !check(TOKEN_PAREN_OPEN) {
 			advance()
 			parseArityInFunction(parser.previous, &function, "return")
+		}
+	}
+
+	// Verify if the function signature is different from a previous function declared
+	// with the same name. Error out if it matches signature arguments, or if it has different
+	// return values.
+	fcode, found := getFunction(tokenWord)
+
+	if found {
+		for _, fc := range fcode.value.([]FunctionCall) {
+			f := TheProgram.chunks[fc.ip]
+
+			if reflect.DeepEqual(f.arguments, function.arguments) {
+				msg := fmt.Sprintf(MsgParseArityArgumentSameSignatureError,
+					GetRelativePath(f.loc.f), f.loc.l)
+				errorAt(&tokenWord, msg)
+				ExitWithError(CodeParseError)
+			}
+
+			if !reflect.DeepEqual(f.returns, function.returns) {
+				msg := fmt.Sprintf(MsgParseArityReturnDifferentSignatureError,
+					GetRelativePath(f.loc.f), f.loc.l)
+				errorAt(&tokenWord, msg)
+				ExitWithError(CodeParseError)
+			}
 		}
 	}
 
@@ -717,7 +741,7 @@ func parseArityInFunction(token Token, function *Function, parsing string) {
 	switch token.typ {
 	case TOKEN_DTYPE_ANY:
 		if !parser.internal {
-			errorAt(&token, "TODO: ERROR MESSAGE. CANT USE ANY IN CUSTOM CODE")
+			errorAt(&token, MsgParseArityArgumentAnyOnlyInternal)
 			ExitWithError(CodeParseError)
 		}
 
@@ -732,7 +756,7 @@ func parseArityInFunction(token Token, function *Function, parsing string) {
 		newArg.typ = DATA_PTR
 	case TOKEN_DTYPE_PARAPOLY:
 		if !parsingArguments {
-			errorAt(&token, "TODO: CANT USE THIS TYPE IN RETURNS")
+			errorAt(&token, MsgParseArityReturnParapolyNotAllowed)
 			ExitWithError(CodeParseError)
 		}
 
@@ -753,10 +777,11 @@ func parseArityInFunction(token Token, function *Function, parsing string) {
 
 		if funcArgs.parapoly && Contains(funcArgs.types, argTest) {
 			newArg.typ = DATA_INFER
-			newArg.name = token.value.(string)
+			newArg.name = w
 			function.returns.parapoly = true
 		} else {
-			errorAt(&token, "TODO: Definition for this type doesn't exist")
+			msg := fmt.Sprintf(MsgParseArityReturnParapolyNotFound, w)
+			errorAt(&token, msg)
 			ExitWithError(CodeParseError)
 		}
 	default:
@@ -787,22 +812,26 @@ func parseFunction(token Token) {
 		}
 	}
 
-	if match(TOKEN_RIGHT_ARROW) {
-		for !check(TOKEN_PAREN_OPEN) {
-			advance()
-			parseArityInFunction(parser.previous, &testFunc, "return")
-		}
+	// TODO: Returns shouldn't be part of a function signature. When registering
+	// a function, arguments can be different, but returns should always be the same.
+	for !match(TOKEN_PAREN_OPEN) {
+		advance()
 	}
+	// if match(TOKEN_RIGHT_ARROW) {
+	// 	for !check(TOKEN_PAREN_OPEN) {
+	// 		advance()
+	// 		parseArityInFunction(parser.previous, &testFunc, "return")
+	// 	}
+	// }
 
-	consume(TOKEN_PAREN_OPEN, MsgParseFunctionMissingOpenStmt)
+	// consume(TOKEN_PAREN_OPEN, MsgParseFunctionMissingOpenStmt)
 
 	// NOTE: The safest way to match the current function to parse with the existing
 	// one in TheProgram, is to check for the parsed flag, the name, the arguments
 	// and the returns.
 	for index, f := range TheProgram.chunks {
 		if !f.parsed && f.name == testFunc.name &&
-			reflect.DeepEqual(f.arguments, testFunc.arguments) &&
-			reflect.DeepEqual(f.returns, testFunc.returns) {
+			reflect.DeepEqual(f.arguments, testFunc.arguments) {
 			frontend.current = &TheProgram.chunks[index]
 			break
 		}
@@ -826,9 +855,10 @@ func parseFunction(token Token) {
 	} else {
 		// This would be a catastrophic issue. Since we already registered functions,
 		// there's no way we don't find a function with the same name that has not been
-		// parsed yet.
-		panic(fmt.Sprintf("FUNCTION %s NOT FOUND", testFunc.name))
-		// TODO: Add error
+		// parsed yet. Since we can't recover from this error, we must exit.
+		msg := fmt.Sprintf(MsgParseFunctionSignatureNotFound, testFunc.name)
+		errorAt(&parser.previous, msg)
+		ExitWithError(CodeParseError)
 	}
 }
 

@@ -256,13 +256,11 @@ func ValidateRun() {
 
 			// Intrinsics
 			case OP_ADD, OP_SUBSTRACT:
-				allowedTypes := [][]DataType{
-					dtArray(DATA_INT, DATA_INT),
-					dtArray(DATA_PTR, DATA_INT),
-				}
+				// TODO: Current supporting any as first argument, this might have to
+				// change for type safety. But it allows to use parapoly.
 				b := tc.pop()
 				a := tc.pop()
-				assertArgumentTypes(dtArray(a, b), allowedTypes, code, loc)
+				assertArgumentType(dtArray(a, b), dtArray(DATA_ANY, DATA_INT), code, loc)
 				if a == DATA_INT && b == DATA_INT {
 					tc.push(DATA_INT)
 				} else {
@@ -369,26 +367,38 @@ func ValidateRun() {
 				TheProgram.chunks[ifunction].code[icode].value =
 					FunctionCall{name: funcRef.name, ip: funcRef.ip}
 
-				var inferredDataType DataType
+				// Doing parapoly initial checks. We go over the parameters, if parapoly
+				// is enabled in this function, and then map each type of parameter that
+				// expects inferred data. Once the correct types are mapped, we allow the
+				// user to return a different order of definition from the original call,
+				// and we make sure we maintain the type safety.
+				var inferredTypes map[string]DataType
+				inferredTypes = make(map[string]DataType)
+
+				if funcRef.arguments.parapoly {
+					reverseStackOrder := tc.stackCount - len(funcRef.arguments.types)
+					stackReversed := tc.stack[reverseStackOrder:]
+
+					for i, d := range funcRef.arguments.types {
+						if d.typ == DATA_INFER {
+							if inferredTypes[d.name] == DATA_NONE {
+								inferredTypes[d.name] = stackReversed[i]
+							}
+						}
+					}
+				}
 
 				for _, d := range funcRef.arguments.types {
 					t := tc.pop()
 					have = append([]DataType{t}, have...)
 					want = append(want, d.typ)
-
-					if d.typ == DATA_INFER && inferredDataType == DATA_NONE {
-						inferredDataType = t
-					}
 				}
 
 				assertArgumentType(have, want, code, loc)
 
 				for _, d := range funcRef.returns.types {
-					if d.typ == DATA_INFER && inferredDataType == DATA_NONE {
-						ReportErrorAtLocation("TODO ERROR MESSAGE", funcRef.loc)
-						ExitWithError(CodeTypecheckError)
-					} else if d.typ == DATA_INFER {
-						tc.push(inferredDataType)
+					if d.typ == DATA_INFER {
+						tc.push(inferredTypes[d.name])
 					} else {
 						tc.push(d.typ)
 					}
