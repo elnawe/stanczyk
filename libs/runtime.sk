@@ -104,18 +104,6 @@ fn % int int -> int (
 	div swap drop
 )
 
-; Helper function for Logical And operator (&&).
-; Calling:
-;   - <bool1> <bool2> and
-; Returns:
-;   - A boolean value. `true` if both given values are true, `false` if one or
-;     more are false.
-fn and bool bool -> bool (
-	swap (int)
-	swap (int)
-	+ 2 =
-)
-
 ; Removes one value from the stack
 ; Calling
 ;   - <any value> drop
@@ -128,6 +116,36 @@ fn drop any (
 ;   - <any> <any> 2drop
 fn 2drop any any (
 	bind ( x y )
+)
+
+; Duplicate the last value on the stack
+; Calling:
+;   - <any> dup
+; Returns:
+;   - The given argument, twice
+fn dup $X -> X X (
+	bind ( x ) x x
+)
+
+; Duplicate the last 2 values on the stack
+; Calling:
+;   - <any> <any> 2dup
+; Returns:
+;   - The 2 given arguments, twice
+fn 2dup $X $Y -> X Y X Y (
+	bind ( x y ) x y x y
+)
+
+; Helper function for Logical And operator (&&).
+; Calling:
+;   - <bool1> <bool2> and
+; Returns:
+;   - A boolean value. `true` if both given values are true, `false` if one or
+;     more are false.
+fn and bool bool -> bool (
+	swap (int)
+	swap (int)
+	+ 2 =
 )
 
 ; Helper function for Logical Or operator (||).

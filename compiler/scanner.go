@@ -35,7 +35,6 @@ const (
 	TOKEN_CAST_PTR
 	TOKEN_CONST
 	TOKEN_DIV
-	TOKEN_DUP
 	TOKEN_ELSE
 	TOKEN_EQUAL
 	TOKEN_EXTERN
@@ -80,7 +79,6 @@ type reserved struct {
 }
 
 var reservedWords = []reserved{
-	reserved{typ: TOKEN_DUP,            word: "dup"     },
 	reserved{typ: TOKEN_OVER,           word: "over"    },
 	reserved{typ: TOKEN_ROTATE,         word: "rotate"  },
 	reserved{typ: TOKEN_SWAP,           word: "swap"    },

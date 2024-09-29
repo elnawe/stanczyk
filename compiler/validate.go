@@ -44,10 +44,9 @@ func getOperationName(code Code) string {
 	case OP_BIND: name = "bind"
 	case OP_CAST: name = "cast to " + getDataTypeName(code.value.(DataType))
 	case OP_DIVIDE: name = "div"
-	case OP_DUP: name = "dup"
 	case OP_EQUAL: name = "= (equal)"
 	case OP_EXTERN: name = "extern"
-	case OP_FUNCTION_CALL: name = "function call: " + code.value.([]FunctionCall)[0].name
+	case OP_FUNCTION_CALL: name = "function: " + code.value.([]FunctionCall)[0].name
 	case OP_GREATER: name = "> (greater)"
 	case OP_GREATER_EQUAL: name = ">= (greater equal)"
 	case OP_JUMP: name = "else"
@@ -291,11 +290,6 @@ func ValidateRun() {
 				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
 				tc.push(DATA_INT)
 				tc.push(DATA_INT)
-			case OP_DUP:
-				a := tc.pop()
-				assertArgumentType(dtArray(a), dtArray(DATA_ANY), code, loc)
-				tc.push(a)
-				tc.push(a)
 			case OP_EQUAL, OP_NOT_EQUAL, OP_GREATER, OP_GREATER_EQUAL, OP_LESS, OP_LESS_EQUAL:
 				b := tc.pop()
 				a := tc.pop()

@@ -163,11 +163,6 @@ func generateLinuxX64() {
 				asm.WriteText("    div rbx")
 				asm.WriteText("    push rax")
 				asm.WriteText("    push rdx")
-			case OP_DUP:
-				asm.WriteText(";; dup (%s:%d:%d)", loc.f, loc.l, loc.c)
-				asm.WriteText("    pop rax")
-				asm.WriteText("    push rax")
-				asm.WriteText("    push rax")
 			case OP_EQUAL:
 				asm.WriteText(";; = (%s:%d:%d)", loc.f, loc.l, loc.c)
 				asm.WriteText("    xor rcx, rcx")
