@@ -460,7 +460,7 @@ func addBind(token Token) {
 }
 
 func addAssembly(token Token) {
-	var value AssemblyCode
+	var value Assembly
 
 	code := Code{op: OP_ASSEMBLY, loc: token.loc}
 

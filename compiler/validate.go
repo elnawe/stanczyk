@@ -254,7 +254,7 @@ func ValidateRun() {
 			case OP_ASSEMBLY:
 				var have []DataType
 				var want []DataType
-				value := code.value.(AssemblyCode)
+				value := code.value.(Assembly)
 
 				for _, d := range value.arguments.types {
 					t := tc.pop()

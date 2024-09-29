@@ -94,7 +94,7 @@ type Function struct {
 	internal    bool
 }
 
-type AssemblyCode struct {
+type Assembly struct {
 	arguments Arity
 	returns   Arity
 	body      []string

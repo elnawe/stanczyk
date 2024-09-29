@@ -62,9 +62,7 @@ func timedFunction(step CompilationStep) {
 }
 
 func RunTasks() {
-	var (
-		asm   Assembly
-	)
+	var out OutputCode
 
 	timedFunction(stepFrontend)
 	FrontendRun()
@@ -73,10 +71,10 @@ func RunTasks() {
 	ValidateRun()
 
 	timedFunction(stepCodegen)
-	CodegenRun(&asm)
+	CodegenRun(&out)
 
 	timedFunction(stepOutput)
-	OutputRun(asm)
+	OutputRun(out)
 
 	timedFunction(stepBackend)
 	BackendRun()
