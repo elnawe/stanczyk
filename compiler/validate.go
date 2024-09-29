@@ -73,9 +73,10 @@ func getOperationName(code Code) string {
 func getDataTypeName(v DataType) string {
 	r := ""
 	switch v {
-	case DATA_EMPTY: r = ""
+	case DATA_NONE:  r = ""
 	case DATA_BOOL:  r = "bool"
 	case DATA_CHAR:  r = "char"
+	case DATA_INFER: r = "$type"
 	case DATA_INT:	 r = "int"
 	case DATA_PTR:   r = "ptr"
 	case DATA_ANY:   r = "any"
@@ -88,7 +89,7 @@ func getDataTypeNames(dt []DataType) string {
 
 	for i, v := range dt {
 		r += getDataTypeName(v)
-		if i != len(dt) -1 && v != DATA_EMPTY {
+		if i != len(dt) -1 && v != DATA_NONE {
 			r += " "
 		}
 	}
@@ -104,7 +105,7 @@ func assertArgumentTypes(test []DataType, want [][]DataType, code Code, loc Loca
 
 		for i, t := range test {
 			if w[i] == DATA_ANY {
-				if t == DATA_EMPTY {
+				if t == DATA_NONE {
 					err = true
 					break
 				}
@@ -141,8 +142,8 @@ func assertArgumentType(test []DataType, want []DataType, code Code, loc Locatio
 	errFound := false
 
 	for i, t := range test {
-		if want[i] == DATA_ANY {
-			if t == DATA_EMPTY {
+		if want[i] == DATA_ANY || want[i] == DATA_INFER {
+			if t == DATA_NONE {
 				errFound = true
 				break
 			}
@@ -197,11 +198,11 @@ func (this *Typecheck) push(t DataType) {
 
 func (this *Typecheck) pop() DataType {
 	if this.stackCount == 0 {
-		return DATA_EMPTY
+		return DATA_NONE
 	}
 	this.stackCount--
 	v := this.stack[this.stackCount]
-	this.stack[this.stackCount] = DATA_EMPTY
+	this.stack[this.stackCount] = DATA_NONE
 	return v
 }
 
@@ -210,11 +211,15 @@ func ValidateRun() {
 
 	for ifunction, function := range TheProgram.chunks {
 		var binds []DataType
+		argumentTypes := function.arguments.types
+		returnTypes := function.returns.types
+
+
 		if function.name == "main" {
 			mainHandled = true
 			dce.push(function.ip)
 
-			if len(function.args) > 0 || len(function.rets) > 0 {
+			if len(argumentTypes) > 0 || len(returnTypes) > 0 {
 				ReportErrorAtLocation(
 					MsgTypecheckMainFunctionNoArgumentsOrReturn,
 					function.loc,
@@ -223,10 +228,10 @@ func ValidateRun() {
 			}
 		}
 
-		expectedReturnCount := len(function.rets)
+		expectedReturnCount := len(returnTypes)
 
-		for _, dt := range function.args {
-			tc.push(dt)
+		for _, t := range argumentTypes {
+			tc.push(t.typ)
 		}
 
 		for icode, code := range function.code {
@@ -304,23 +309,27 @@ func ValidateRun() {
 				tc.push(DATA_BOOL)
 			case OP_EXTERN:
 				var have []DataType
+				var want []DataType
 				value := code.value.(Extern)
 
-				for range value.args {
+				for _, d := range value.arguments.types {
 					t := tc.pop()
 					have = append([]DataType{t}, have...)
+					want = append(want, d.typ)
 				}
 
-				assertArgumentType(have, value.args, code, loc)
+				assertArgumentType(have, want, code, loc)
 
-				for _, dt := range value.rets {
-					tc.push(dt)
+				for _, dt := range value.returns.types {
+					tc.push(dt.typ)
 				}
 			case OP_FUNCTION_CALL:
 				var have []DataType
-				calls := code.value.([]FunctionCall)
+				var want []DataType
 				var funcRef Function
 				var fns []Function
+
+				calls := code.value.([]FunctionCall)
 
 				for _, c := range calls {
 					fns = append(fns, findFunctionByIP(c.ip))
@@ -337,11 +346,16 @@ func ValidateRun() {
 						// (simulating we pop from it) and then shrink it to the number
 						// of values expected in arguments (since stack simulation in
 						// typechecking is not a dynamic array).
-						reverseStackOrder := tc.stackCount - len(f.args)
+						var argTypes []DataType
+						reverseStackOrder := tc.stackCount - len(f.arguments.types)
 					    stackReversed := tc.stack[reverseStackOrder:]
-						stackReducedToArgsLen := stackReversed[:len(f.args)]
+						stackReducedToArgsLen := stackReversed[:len(f.arguments.types)]
 
-						if reflect.DeepEqual(f.args, stackReducedToArgsLen) {
+						for _, d := range f.arguments.types {
+							argTypes = append(argTypes, d.typ)
+						}
+
+						if reflect.DeepEqual(argTypes, stackReducedToArgsLen) {
 							funcRef = f
 							break
 						}
@@ -355,15 +369,29 @@ func ValidateRun() {
 				TheProgram.chunks[ifunction].code[icode].value =
 					FunctionCall{name: funcRef.name, ip: funcRef.ip}
 
-				for range funcRef.args {
+				var inferredDataType DataType
+
+				for _, d := range funcRef.arguments.types {
 					t := tc.pop()
 					have = append([]DataType{t}, have...)
+					want = append(want, d.typ)
+
+					if d.typ == DATA_INFER && inferredDataType == DATA_NONE {
+						inferredDataType = t
+					}
 				}
 
-				assertArgumentType(have, funcRef.args, code, loc)
+				assertArgumentType(have, want, code, loc)
 
-				for _, dt := range funcRef.rets {
-					tc.push(dt)
+				for _, d := range funcRef.returns.types {
+					if d.typ == DATA_INFER && inferredDataType == DATA_NONE {
+						ReportErrorAtLocation("TODO ERROR MESSAGE", funcRef.loc)
+						ExitWithError(CodeTypecheckError)
+					} else if d.typ == DATA_INFER {
+						tc.push(inferredDataType)
+					} else {
+						tc.push(d.typ)
+					}
 				}
 			case OP_JUMP_IF_FALSE:
 				a := tc.pop()

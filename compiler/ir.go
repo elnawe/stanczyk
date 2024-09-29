@@ -56,12 +56,13 @@ const (
 type DataType int
 
 const (
-	DATA_EMPTY DataType = iota
+	DATA_NONE DataType = iota
+	DATA_ANY
 	DATA_BOOL
 	DATA_CHAR
+	DATA_INFER
 	DATA_INT
 	DATA_PTR
-	DATA_ANY
 )
 
 type Bound struct {
@@ -74,13 +75,23 @@ type Program struct {
 	variables []Object
 }
 
+type Argument struct {
+	name  string
+	typ   DataType
+}
+
+type Arity struct {
+	parapoly     bool
+	types        []Argument
+}
+
 type Function struct {
 	ip          int
 	name        string
+	arguments   Arity
+	returns     Arity
 	loc         Location
 	bindings    []Bound
-	args        []DataType
-	rets        []DataType
 	code        []Code
 	parsed      bool
 	called      bool
@@ -88,9 +99,9 @@ type Function struct {
 }
 
 type Extern struct {
-	args []DataType
-	body []string
-	rets []DataType
+	arguments Arity
+	returns   Arity
+	body      []string
 }
 
 type Code struct {

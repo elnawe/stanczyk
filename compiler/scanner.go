@@ -17,9 +17,11 @@ const (
 	TOKEN_TRUE
 
 	// Types
+	TOKEN_DTYPE_ANY
 	TOKEN_DTYPE_BOOL
 	TOKEN_DTYPE_CHAR
 	TOKEN_DTYPE_INT
+	TOKEN_DTYPE_PARAPOLY
 	TOKEN_DTYPE_PTR
 
 	// Reserved Words
@@ -90,6 +92,7 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_CONST,          word: "const"   },
 	reserved{typ: TOKEN_DIV,            word: "div"	    },
 	reserved{typ: TOKEN_DROP,           word: "drop"    },
+	reserved{typ: TOKEN_DTYPE_ANY,      word: "any"     },
 	reserved{typ: TOKEN_DTYPE_BOOL,     word: "bool"    },
 	reserved{typ: TOKEN_DTYPE_CHAR,     word: "char"    },
 	reserved{typ: TOKEN_DTYPE_INT,      word: "int"     },
@@ -254,6 +257,16 @@ func makeWord(c byte, line string, index *int) {
 	makeToken(TOKEN_WORD, word)
 }
 
+func makeParapolyToken(c byte, line string, index *int) {
+	word := ""
+
+	for Advance(&c, line, index) && !IsSpace(c) {
+		word += string(c)
+	}
+
+	makeToken(TOKEN_DTYPE_PARAPOLY, word)
+}
+
 func TokenizeFile(f string, s string) []Token {
 	scanner.filename = f
 	scanner.source = s
@@ -275,6 +288,8 @@ func TokenizeFile(f string, s string) []Token {
 			}
 
 			switch {
+			case c == '$':
+				makeParapolyToken(c, line, &index)
 			case c == '"':
 				makeString(c, line, &index)
 			case c == '\'':

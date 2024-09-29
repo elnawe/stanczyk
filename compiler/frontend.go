@@ -215,21 +215,7 @@ func registerFunction(token Token) {
 	if !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) {
 		for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
 			advance()
-			t := parser.previous
-			targ := DATA_EMPTY
-
-			switch t.typ {
-			case TOKEN_DTYPE_BOOL: targ = DATA_BOOL
-			case TOKEN_DTYPE_CHAR: targ = DATA_CHAR
-			case TOKEN_DTYPE_INT:  targ = DATA_INT
-			case TOKEN_DTYPE_PTR:  targ = DATA_PTR
-			default:
-				msg := fmt.Sprintf(MsgParseTypeUnknown, t.value)
-				errorAt(&t, msg)
-				ExitWithError(CodeParseError)
-			}
-
-			function.args = append(function.args, targ)
+			parseArityInFunction(parser.previous, &function, "argument")
 		}
 	}
 
@@ -240,21 +226,7 @@ func registerFunction(token Token) {
 
 		for !check(TOKEN_PAREN_OPEN) {
 			advance()
-			t := parser.previous
-			tret := DATA_EMPTY
-
-			switch t.typ {
-			case TOKEN_DTYPE_BOOL: tret = DATA_BOOL
-			case TOKEN_DTYPE_CHAR: tret = DATA_CHAR
-			case TOKEN_DTYPE_INT: tret = DATA_INT
-			case TOKEN_DTYPE_PTR: tret = DATA_PTR
-			default:
-				msg := fmt.Sprintf(MsgParseTypeUnknown, t.value)
-				errorAt(&t, msg)
-				ExitWithError(CodeParseError)
-			}
-
-			function.rets = append(function.rets, tret)
+			parseArityInFunction(parser.previous, &function, "return")
 		}
 	}
 
@@ -470,42 +442,13 @@ func addExtern(token Token) {
 
 	for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
 		advance()
-		var arg DataType
-		t := parser.previous
-
-		switch t.typ {
-		case TOKEN_DTYPE_BOOL: arg = DATA_BOOL
-		case TOKEN_DTYPE_CHAR: arg = DATA_CHAR
-		case TOKEN_DTYPE_INT:  arg = DATA_INT
-		case TOKEN_DTYPE_PTR:  arg = DATA_PTR
-		default:
-			msg := fmt.Sprintf(MsgParseTypeUnknown, t.value)
-			errorAt(&t, msg)
-			ExitWithError(CodeParseError)
-		}
-
-		value.args = append(value.args, arg)
+		parseArityInAssembly(parser.previous, &value.arguments)
 	}
 
 	if match(TOKEN_RIGHT_ARROW) {
 		for !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
 			advance()
-			var arg DataType
-
-			t := parser.previous
-
-			switch t.typ {
-			case TOKEN_DTYPE_BOOL: arg = DATA_BOOL
-			case TOKEN_DTYPE_CHAR: arg = DATA_CHAR
-			case TOKEN_DTYPE_INT:  arg = DATA_INT
-			case TOKEN_DTYPE_PTR:  arg = DATA_PTR
-			default:
-				msg := fmt.Sprintf(MsgParseTypeUnknown, t.value)
-				errorAt(&t, msg)
-				ExitWithError(CodeParseError)
-			}
-
-			value.rets = append(value.rets, arg)
+			parseArityInAssembly(parser.previous, &value.returns)
 		}
 	}
 
@@ -745,46 +688,109 @@ func parseToken(token Token) {
 	}
 }
 
+func parseArityInAssembly(token Token, args *Arity) {
+	var newArg Argument
+
+	switch token.typ {
+	case TOKEN_DTYPE_BOOL:
+		newArg.typ = DATA_BOOL
+	case TOKEN_DTYPE_CHAR:
+		newArg.typ = DATA_CHAR
+	case TOKEN_DTYPE_INT:
+		newArg.typ = DATA_INT
+	case TOKEN_DTYPE_PTR:
+		newArg.typ = DATA_PTR
+	default:
+		msg := fmt.Sprintf(MsgParseTypeUnknown, token.value.(string))
+		errorAt(&token, msg)
+		ExitWithError(CodeParseError)
+	}
+
+	args.types = append(args.types, newArg)
+}
+
+func parseArityInFunction(token Token, function *Function, parsing string) {
+	var newArg Argument
+
+	parsingArguments := parsing == "argument"
+
+	switch token.typ {
+	case TOKEN_DTYPE_ANY:
+		if !parser.internal {
+			errorAt(&token, "TODO: ERROR MESSAGE. CANT USE ANY IN CUSTOM CODE")
+			ExitWithError(CodeParseError)
+		}
+
+		newArg.typ = DATA_ANY
+	case TOKEN_DTYPE_BOOL:
+		newArg.typ = DATA_BOOL
+	case TOKEN_DTYPE_CHAR:
+		newArg.typ = DATA_CHAR
+	case TOKEN_DTYPE_INT:
+		newArg.typ = DATA_INT
+	case TOKEN_DTYPE_PTR:
+		newArg.typ = DATA_PTR
+	case TOKEN_DTYPE_PARAPOLY:
+		if !parsingArguments {
+			errorAt(&token, "TODO: CANT USE THIS TYPE IN RETURNS")
+			ExitWithError(CodeParseError)
+		}
+
+		newArg.typ = DATA_INFER
+		newArg.name = token.value.(string)
+		function.arguments.parapoly = true
+	case TOKEN_WORD:
+		w := token.value.(string)
+
+		if parsingArguments {
+			msg := fmt.Sprintf(MsgParseTypeUnknown, w)
+			errorAt(&token, msg)
+			ExitWithError(CodeParseError)
+		}
+
+		funcArgs := function.arguments
+		argTest := Argument{name: w, typ: DATA_INFER}
+
+		if funcArgs.parapoly && Contains(funcArgs.types, argTest) {
+			newArg.typ = DATA_INFER
+			newArg.name = token.value.(string)
+			function.returns.parapoly = true
+		} else {
+			errorAt(&token, "TODO: Definition for this type doesn't exist")
+			ExitWithError(CodeParseError)
+		}
+	default:
+		msg := fmt.Sprintf(MsgParseTypeUnknown, token.value.(string))
+		errorAt(&token, msg)
+		ExitWithError(CodeParseError)
+	}
+
+	if parsingArguments {
+		function.arguments.types = append(function.arguments.types, newArg)
+	} else {
+		function.returns.types = append(function.returns.types, newArg)
+	}
+}
+
 func parseFunction(token Token) {
 	// Recreate a temporary function entry to match with the already registered
 	// function in TheProgram. That's why this step doesn't have any error checking.
 	var testFunc Function
 
 	advance()
-
 	testFunc.name = parser.previous.value.(string)
 
 	if !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) {
 		for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
 			advance()
-			t := parser.previous
-			targ := DATA_EMPTY
-
-			switch t.typ {
-			case TOKEN_DTYPE_BOOL: targ = DATA_BOOL
-			case TOKEN_DTYPE_CHAR: targ = DATA_CHAR
-			case TOKEN_DTYPE_INT:  targ = DATA_INT
-			case TOKEN_DTYPE_PTR:  targ = DATA_PTR
-			}
-
-			testFunc.args = append(testFunc.args, targ)
+			parseArityInFunction(parser.previous, &testFunc, "argument")
 		}
 	}
 
 	if match(TOKEN_RIGHT_ARROW) {
 		for !check(TOKEN_PAREN_OPEN) {
 			advance()
-			t := parser.previous
-			tret := DATA_EMPTY
-
-			switch t.typ {
-			case TOKEN_DTYPE_BOOL: tret = DATA_BOOL
-			case TOKEN_DTYPE_CHAR: tret = DATA_CHAR
-			case TOKEN_DTYPE_INT: tret = DATA_INT
-			case TOKEN_DTYPE_PTR: tret = DATA_PTR
-			}
-
-			testFunc.rets = append(testFunc.rets, tret)
+			parseArityInFunction(parser.previous, &testFunc, "return")
 		}
 	}
 
@@ -795,8 +801,8 @@ func parseFunction(token Token) {
 	// and the returns.
 	for index, f := range TheProgram.chunks {
 		if !f.parsed && f.name == testFunc.name &&
-			reflect.DeepEqual(f.args, testFunc.args) &&
-			reflect.DeepEqual(f.rets, testFunc.rets) {
+			reflect.DeepEqual(f.arguments, testFunc.arguments) &&
+			reflect.DeepEqual(f.returns, testFunc.returns) {
 			frontend.current = &TheProgram.chunks[index]
 			break
 		}
