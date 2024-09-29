@@ -264,13 +264,6 @@ func generateLinuxX64() {
 				asm.WriteText("    cmp rax, rbx")
 				asm.WriteText("    cmovne rcx, rdx")
 				asm.WriteText("    push rcx")
-			case OP_OVER:
-				asm.WriteText(";; over (%s:%d:%d)", loc.f, loc.l, loc.c)
-				asm.WriteText("    pop rax")
-				asm.WriteText("    pop rbx")
-				asm.WriteText("    push rbx")
-				asm.WriteText("    push rax")
-				asm.WriteText("    push rbx")
 			case OP_RET:
 				asm.WriteText(";; ret (%s:%d:%d)", loc.f, loc.l, loc.c)
 

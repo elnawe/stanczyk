@@ -610,9 +610,6 @@ func parseToken(token Token) {
 	case TOKEN_MINUS:
 		code.op = OP_SUBSTRACT
 		emit(code)
-	case TOKEN_OVER:
-		code.op = OP_OVER
-		emit(code)
 	case TOKEN_PLUS:
 		code.op = OP_ADD
 		emit(code)

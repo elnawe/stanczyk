@@ -57,7 +57,6 @@ func getOperationName(code Code) string {
 	case OP_LOOP: name = "loop"
 	case OP_MULTIPLY: name = "* (multiply)"
 	case OP_NOT_EQUAL: name = "!= (not equal)"
-	case OP_OVER: name = "over"
 	case OP_RET: name = "ret"
 	case OP_STORE8, OP_STORE16, OP_STORE32, OP_STORE64: name = "store"
 	case OP_SUBSTRACT: name = "- (substract)"
@@ -407,13 +406,6 @@ func ValidateRun() {
 				a := tc.pop()
 				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
 				tc.push(DATA_INT)
-			case OP_OVER:
-				b := tc.pop()
-				a := tc.pop()
-				assertArgumentType(dtArray(a, b), dtArray(DATA_ANY, DATA_ANY), code, loc)
-				tc.push(a)
-				tc.push(b)
-				tc.push(a)
 			case OP_ROTATE:
 				c := tc.pop()
 				b := tc.pop()

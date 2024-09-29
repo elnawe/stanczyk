@@ -50,7 +50,6 @@ const (
 	TOKEN_LOAD64
 	TOKEN_LOOP
 	TOKEN_MINUS
-	TOKEN_OVER
 	TOKEN_PAREN_CLOSE
 	TOKEN_PAREN_OPEN
 	TOKEN_PLUS
@@ -79,7 +78,6 @@ type reserved struct {
 }
 
 var reservedWords = []reserved{
-	reserved{typ: TOKEN_OVER,           word: "over"    },
 	reserved{typ: TOKEN_ROTATE,         word: "rotate"  },
 	reserved{typ: TOKEN_SWAP,           word: "swap"    },
 

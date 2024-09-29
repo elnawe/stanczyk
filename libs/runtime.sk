@@ -129,11 +129,20 @@ fn dup $X -> X X (
 
 ; Duplicate the last 2 values on the stack
 ; Calling:
-;   - <any> <any> 2dup
+;   - <arg1> <arg2> 2dup
 ; Returns:
 ;   - The 2 given arguments, twice
 fn 2dup $X $Y -> X Y X Y (
 	bind ( x y ) x y x y
+)
+
+; Duplicates the second to last value on the stack and add it at the end
+; Calling:
+;   - <arg1> <arg2> over
+; Returns:
+;   - The given arguments, plus <arg1> duplicated at the end (<arg1> <arg2> <arg1>)
+fn over $X $Y -> X Y X (
+	bind ( x y ) x y x
 )
 
 ; Helper function for Logical And operator (&&).
