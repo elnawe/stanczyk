@@ -44,7 +44,6 @@ func getOperationName(code Code) string {
 	case OP_BIND: name = "bind"
 	case OP_CAST: name = "cast to " + getDataTypeName(code.value.(DataType))
 	case OP_DIVIDE: name = "div"
-	case OP_DROP: name = "drop"
 	case OP_DUP: name = "dup"
 	case OP_EQUAL: name = "= (equal)"
 	case OP_EXTERN: name = "extern"
@@ -292,9 +291,6 @@ func ValidateRun() {
 				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
 				tc.push(DATA_INT)
 				tc.push(DATA_INT)
-			case OP_DROP:
-				a := tc.pop()
-				assertArgumentType(dtArray(a), dtArray(DATA_ANY), code, loc)
 			case OP_DUP:
 				a := tc.pop()
 				assertArgumentType(dtArray(a), dtArray(DATA_ANY), code, loc)

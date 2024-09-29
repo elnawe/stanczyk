@@ -67,7 +67,7 @@ const MAX_UINT64 18446744073709551615
 ;   - <int/pointer> ++
 ; Returns:
 ;   - The given argument + 1
-fn ++ $T -> T (
+fn ++ $X -> X (
 	1 +
 )
 
@@ -76,7 +76,7 @@ fn ++ $T -> T (
 ;   - <int/pointer> --
 ; Returns:
 ;   - The given argument - 1.
-fn -- $T -> T (
+fn -- $X -> X (
 	1 -
 )
 
@@ -114,6 +114,20 @@ fn and bool bool -> bool (
 	swap (int)
 	swap (int)
 	+ 2 =
+)
+
+; Removes one value from the stack
+; Calling
+;   - <any value> drop
+fn drop any (
+	bind ( x )
+)
+
+; Removes two values from the stack
+; Calling
+;   - <any> <any> 2drop
+fn 2drop any any (
+	bind ( x y )
 )
 
 ; Helper function for Logical Or operator (||).

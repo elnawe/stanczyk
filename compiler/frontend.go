@@ -578,9 +578,6 @@ func parseToken(token Token) {
 	case TOKEN_DIV:
 		code.op = OP_DIVIDE
 		emit(code)
-	case TOKEN_DROP:
-		code.op = OP_DROP
-		emit(code)
 	case TOKEN_DUP:
 		code.op = OP_DUP
 		emit(code)

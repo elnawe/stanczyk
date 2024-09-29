@@ -163,9 +163,6 @@ func generateLinuxX64() {
 				asm.WriteText("    div rbx")
 				asm.WriteText("    push rax")
 				asm.WriteText("    push rdx")
-			case OP_DROP:
-				asm.WriteText(";; drop (%s:%d:%d)", loc.f, loc.l, loc.c)
-				asm.WriteText("    pop rax")
 			case OP_DUP:
 				asm.WriteText(";; dup (%s:%d:%d)", loc.f, loc.l, loc.c)
 				asm.WriteText("    pop rax")
