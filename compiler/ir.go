@@ -43,7 +43,6 @@ const (
 	OP_STORE16
 	OP_STORE32
 	OP_STORE64
-	OP_SWAP
 	OP_TAKE
 
 	// Special

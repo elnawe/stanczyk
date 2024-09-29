@@ -311,12 +311,6 @@ func generateLinuxX64() {
                 asm.WriteText("    pop rbx")
                 asm.WriteText("    pop rax")
                 asm.WriteText("    mov [rax], rbx")
-			case OP_SWAP:
-				asm.WriteText(";; swap (%s:%d:%d)", loc.f, loc.l, loc.c)
-				asm.WriteText("    pop rax")
-				asm.WriteText("    pop rbx")
-				asm.WriteText("    push rax")
-				asm.WriteText("    push rbx")
 			case OP_TAKE:
 				asm.WriteText(";; take (%s:%d:%d)", loc.f, loc.l, loc.c)
 				asm.WriteText("    pop rax")

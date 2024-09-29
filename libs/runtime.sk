@@ -145,6 +145,15 @@ fn over $X $Y -> X Y X (
 	bind ( x y ) x y x
 )
 
+; Takes the last two values in the stack and swap them in order
+; Calling:
+;   - <arg1> <arg2> swap
+; Returns:
+;   - The given argument in opposite order (<arg2> <arg1>)
+fn swap $X $Y -> Y X (
+	bind ( x y ) y x
+)
+
 ; Helper function for Logical And operator (&&).
 ; Calling:
 ;   - <bool1> <bool2> and

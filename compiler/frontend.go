@@ -635,9 +635,6 @@ func parseToken(token Token) {
 	case TOKEN_STORE64:
 		code.op = OP_STORE64
 		emit(code)
-	case TOKEN_SWAP:
-		code.op = OP_SWAP
-		emit(code)
 	case TOKEN_TAKE:
 		code.op = OP_TAKE
 		emit(code)

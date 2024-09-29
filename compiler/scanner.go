@@ -61,7 +61,6 @@ const (
 	TOKEN_STORE16
 	TOKEN_STORE32
 	TOKEN_STORE64
-	TOKEN_SWAP
 	TOKEN_TAKE
 	TOKEN_THIS
 	TOKEN_USING
@@ -79,7 +78,6 @@ type reserved struct {
 
 var reservedWords = []reserved{
 	reserved{typ: TOKEN_ROTATE,         word: "rotate"  },
-	reserved{typ: TOKEN_SWAP,           word: "swap"    },
 
 	reserved{typ: TOKEN_ARGC,           word: "argc"    },
 	reserved{typ: TOKEN_ARGV,           word: "argv"    },

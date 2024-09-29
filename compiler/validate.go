@@ -60,7 +60,6 @@ func getOperationName(code Code) string {
 	case OP_RET: name = "ret"
 	case OP_STORE8, OP_STORE16, OP_STORE32, OP_STORE64: name = "store"
 	case OP_SUBSTRACT: name = "- (substract)"
-	case OP_SWAP: name = "swap"
 	case OP_TAKE: name = "take"
 	}
 
@@ -423,12 +422,6 @@ func ValidateRun() {
 				b := tc.pop()
 				a := tc.pop()
 				assertArgumentTypes(dtArray(a, b), allowedTypes, code, loc)
-			case OP_SWAP:
-				b := tc.pop()
-				a := tc.pop()
-				assertArgumentType(dtArray(a, b), dtArray(DATA_ANY, DATA_ANY), code, loc)
-				tc.push(b)
-				tc.push(a)
 			case OP_TAKE:
 				a := tc.pop()
 				assertArgumentType(dtArray(a), dtArray(DATA_ANY), code, loc)
