@@ -172,6 +172,17 @@ func makeToken(t TokenType, value ...any) {
 	scanner.tokens = append(scanner.tokens, token)
 }
 
+func makeReservedToken(word string) bool {
+	for _, reserved := range reservedWords {
+		if reserved.word == word {
+			makeToken(reserved.typ)
+			return true
+		}
+	}
+
+	return false
+}
+
 // TODO: Find a better name for this function. Since I want to allow things like "2dup",
 // I need this function to be able to post a WORD token if the number is followed by
 // alpha characters.
@@ -189,7 +200,10 @@ func makeNumber(c byte, line string, index *int) {
 			result += string(c)
 		}
 
-		makeToken(TOKEN_WORD, result)
+		if !makeReservedToken(result) {
+			makeToken(TOKEN_WORD, result)
+		}
+
 		return
 	}
 
@@ -247,14 +261,9 @@ func makeWord(c byte, line string, index *int) {
 		word += string(c)
 	}
 
-	for _, reserved := range reservedWords {
-		if reserved.word == word {
-			makeToken(reserved.typ)
-			return
-		}
+	if !makeReservedToken(word) {
+		makeToken(TOKEN_WORD, word)
 	}
-
-	makeToken(TOKEN_WORD, word)
 }
 
 func makeParapolyToken(c byte, line string, index *int) {
