@@ -90,7 +90,8 @@ func generateLinuxX64() {
 			out.WriteText(".ip%d:", index)
 
 			switch instruction {
-			// Constants
+
+			// CONSTANTS
 			case OP_PUSH_BOOL:
 				boolText := map[int]string{1:"true", 0:"false"} [value.(int)]
 				out.WriteText(";; %s (%s:%d:%d)", boolText, loc.f, loc.l, loc.c)
@@ -121,48 +122,41 @@ func generateLinuxX64() {
 				out.WriteText("    push str_%d", len(out.data))
 				out.WriteData("str_%d: db %s", len(out.data), ascii)
 
-			// Intrinsics
+			// NUMBER ARITHMETICS
 			case OP_ADD:
 				out.WriteText(";; + (%s:%d:%d)", loc.f, loc.l, loc.c)
 				out.WriteText("    pop rax")
 				out.WriteText("    pop rbx")
 				out.WriteText("    add rax, rbx")
 				out.WriteText("    push rax")
-			case OP_ARGC:
-				out.WriteText(";; argc (%s:%d:%d)", loc.f, loc.l, loc.c)
-				out.WriteText("    mov rax, [args]")
-                out.WriteText("    mov rax, [rax]")
-                out.WriteText("    push rax")
-			case OP_ARGV:
-				out.WriteText(";; argv (%s:%d:%d)", loc.f, loc.l, loc.c)
-				out.WriteText("    mov rax, [args]")
-				out.WriteText("    add rax, 8")
-                out.WriteText("    push rax")
-			case OP_BIND:
-				newBinds := value.(int)
-
-				out.WriteText(";; bind (%s:%d:%d)", loc.f, loc.l, loc.c)
-				out.WriteText("    mov rax, [return_stack_rsp]")
-				out.WriteText("    sub rax, %d", (newBinds - binds) * 8)
-				out.WriteText("    mov [return_stack_rsp], rax")
-
-				for i := newBinds; i > binds; i-- {
-					out.WriteText("    pop rbx")
-					out.WriteText("    mov [rax+%d], rbx", (i - 1) * 8)
-				}
-
-				binds = newBinds
-			case OP_CAST:
-				out.WriteText(";; cast to %s (%s:%d:%d)",
-					getDataTypeName(value.(DataType)), loc.f, loc.l, loc.c)
 			case OP_DIVIDE:
-				out.WriteText(";; div (%s:%d:%d)", loc.f, loc.l, loc.c)
+				out.WriteText(";; / (%s:%d:%d)", loc.f, loc.l, loc.c)
 				out.WriteText("    xor rdx, rdx")
 				out.WriteText("    pop rbx")
 				out.WriteText("    pop rax")
 				out.WriteText("    div rbx")
 				out.WriteText("    push rax")
+			case OP_MODULO:
+				out.WriteText(";; % (%s:%d:%d)", loc.f, loc.l, loc.c)
+				out.WriteText("    xor rdx, rdx")
+				out.WriteText("    pop rbx")
+				out.WriteText("    pop rax")
+				out.WriteText("    div rbx")
 				out.WriteText("    push rdx")
+			case OP_MULTIPLY:
+				out.WriteText(";; * (%s:%d:%d)", loc.f, loc.l, loc.c)
+				out.WriteText("    pop rax")
+				out.WriteText("    pop rbx")
+				out.WriteText("    mul rbx")
+				out.WriteText("    push rax")
+			case OP_SUBSTRACT:
+				out.WriteText(";; - (%s:%d:%d)", loc.f, loc.l, loc.c)
+				out.WriteText("    pop rbx")
+				out.WriteText("    pop rax")
+				out.WriteText("    sub rax, rbx")
+				out.WriteText("    push rax")
+
+			// BOOLEAN ARITHMETICS
 			case OP_EQUAL:
 				out.WriteText(";; = (%s:%d:%d)", loc.f, loc.l, loc.c)
 				out.WriteText("    xor rcx, rcx")
@@ -172,23 +166,6 @@ func generateLinuxX64() {
 				out.WriteText("    cmp rax, rbx")
 				out.WriteText("    cmove rcx, rdx")
 				out.WriteText("    push rcx")
-			case OP_ASSEMBLY:
-				val := value.(Assembly)
-
-				out.WriteText(";; extern (%s:%d:%d)", loc.f, loc.l, loc.c)
-
-				for _, s := range val.body {
-					out.WriteText("    %s", s)
-				}
-			case OP_FUNCTION_CALL:
-				fnCall := value.(FunctionCall)
-
-				out.WriteText(";; call function %s (%s:%d:%d)", fnCall.name, loc.f, loc.l, loc.c)
-				out.WriteText("    mov rax, rsp")
-				out.WriteText("    mov rsp, [return_stack_rsp]")
-				out.WriteText("    call fn%d", fnCall.ip)
-				out.WriteText("    mov [return_stack_rsp], rsp")
-				out.WriteText("    mov rsp, rax")
 			case OP_GREATER:
 				out.WriteText(";; > (%s:%d:%d)", loc.f, loc.l, loc.c)
 				out.WriteText("    xor rcx, rcx")
@@ -225,6 +202,52 @@ func generateLinuxX64() {
 				out.WriteText("    cmp rax, rbx")
 				out.WriteText("    cmovle rcx, rdx")
 				out.WriteText("    push rcx")
+
+			// INTRINSICS
+			case OP_ARGC:
+				out.WriteText(";; argc (%s:%d:%d)", loc.f, loc.l, loc.c)
+				out.WriteText("    mov rax, [args]")
+                out.WriteText("    mov rax, [rax]")
+                out.WriteText("    push rax")
+			case OP_ARGV:
+				out.WriteText(";; argv (%s:%d:%d)", loc.f, loc.l, loc.c)
+				out.WriteText("    mov rax, [args]")
+				out.WriteText("    add rax, 8")
+                out.WriteText("    push rax")
+			case OP_ASSEMBLY:
+				val := value.(Assembly)
+
+				out.WriteText(";; extern (%s:%d:%d)", loc.f, loc.l, loc.c)
+
+				for _, s := range val.body {
+					out.WriteText("    %s", s)
+				}
+			case OP_FUNCTION_CALL:
+				fnCall := value.(FunctionCall)
+
+				out.WriteText(";; call fn %s (%s:%d:%d)", fnCall.name, loc.f, loc.l, loc.c)
+				out.WriteText("    mov rax, rsp")
+				out.WriteText("    mov rsp, [return_stack_rsp]")
+				out.WriteText("    call fn%d", fnCall.ip)
+				out.WriteText("    mov [return_stack_rsp], rsp")
+				out.WriteText("    mov rsp, rax")
+			case OP_BIND:
+				newBinds := value.(int)
+
+				out.WriteText(";; bind (%s:%d:%d)", loc.f, loc.l, loc.c)
+				out.WriteText("    mov rax, [return_stack_rsp]")
+				out.WriteText("    sub rax, %d", (newBinds - binds) * 8)
+				out.WriteText("    mov [return_stack_rsp], rax")
+
+				for i := newBinds; i > binds; i-- {
+					out.WriteText("    pop rbx")
+					out.WriteText("    mov [rax+%d], rbx", (i - 1) * 8)
+				}
+
+				binds = newBinds
+			case OP_CAST:
+				out.WriteText(";; cast to %s (%s:%d:%d)",
+					getDataTypeName(value.(DataType)), loc.f, loc.l, loc.c)
 			case OP_LOAD8:
 				out.WriteText(";; ->8 (%s:%d:%d)", loc.f, loc.l, loc.c)
 				out.WriteText("    pop rax")
@@ -249,12 +272,6 @@ func generateLinuxX64() {
                 out.WriteText("    xor rbx, rbx")
                 out.WriteText("    mov rbx, [rax]")
                 out.WriteText("    push rbx")
-			case OP_MULTIPLY:
-				out.WriteText(";; * (%s:%d:%d)", loc.f, loc.l, loc.c)
-				out.WriteText("    pop rax")
-				out.WriteText("    pop rbx")
-				out.WriteText("    mul rbx")
-				out.WriteText("    push rax")
 			case OP_NOT_EQUAL:
 				out.WriteText(";; != (%s:%d:%d)", loc.f, loc.l, loc.c)
 				out.WriteText("    xor rcx, rcx")
@@ -285,12 +302,6 @@ func generateLinuxX64() {
 				out.WriteText("    push rbx")
 				out.WriteText("    push rax")
 				out.WriteText("    push rcx")
-			case OP_SUBSTRACT:
-				out.WriteText(";; - (%s:%d:%d)", loc.f, loc.l, loc.c)
-				out.WriteText("    pop rbx")
-				out.WriteText("    pop rax")
-				out.WriteText("    sub rax, rbx")
-				out.WriteText("    push rax")
 			case OP_STORE8:
 				out.WriteText(";; <-8 (%s:%d:%d)", loc.f, loc.l, loc.c)
                 out.WriteText("    pop rbx")

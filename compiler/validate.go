@@ -303,6 +303,10 @@ func ValidateRun() {
 				a := tc.pop()
 				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
 				tc.push(DATA_INT)
+			case OP_MODULO:
+				b := tc.pop()
+				a := tc.pop()
+				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
 				tc.push(DATA_INT)
 			case OP_EQUAL, OP_NOT_EQUAL, OP_GREATER, OP_GREATER_EQUAL, OP_LESS, OP_LESS_EQUAL:
 				b := tc.pop()

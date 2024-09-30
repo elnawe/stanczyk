@@ -610,6 +610,9 @@ func parseToken(token Token) {
 	case TOKEN_MINUS:
 		code.op = OP_SUBSTRACT
 		emit(code)
+	case TOKEN_PERCENT:
+		code.op = OP_MODULO
+		emit(code)
 	case TOKEN_PLUS:
 		code.op = OP_ADD
 		emit(code)
@@ -619,6 +622,9 @@ func parseToken(token Token) {
 		emit(code)
 	case TOKEN_ROTATE:
 		code.op = OP_ROTATE
+		emit(code)
+	case TOKEN_SLASH:
+		code.op = OP_DIVIDE
 		emit(code)
 	case TOKEN_STAR:
 		code.op = OP_MULTIPLY

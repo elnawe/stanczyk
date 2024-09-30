@@ -80,30 +80,6 @@ fn -- $X -> X (
 	1 -
 )
 
-; Helper function to get a result of a division.
-; Note: Assembly's `DIV` instruction returns both the result
-; and the modulo. This function drops the modulo and returns
-; only the result.
-; Calling:
-;   - <int1> <int2> /
-; Returns:
-;   - The result of <int1> / <int2>.
-fn / int int -> int (
-	div drop
-)
-
-; Helper function to get the modulo of a division.
-; Note: Assembly's `DIV` instruction returns both the result
-; and the modulo. This function drops the result and returns
-; only the modulo.
-; Calling:
-;   - <int1> <int2> %
-; Returns:
-;   - The result of <int1> % <int2>.
-fn % int int -> int (
-	div nip
-)
-
 ; Removes one value from the stack
 ; Calling
 ;   - <any value> drop
