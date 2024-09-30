@@ -101,7 +101,7 @@ fn / int int -> int (
 ; Returns:
 ;   - The result of <int1> % <int2>.
 fn % int int -> int (
-	div swap drop
+	div nip
 )
 
 ; Removes one value from the stack
@@ -116,6 +116,15 @@ fn drop any (
 ;   - <any> <any> 2drop
 fn 2drop any any (
 	bind ( x y )
+)
+
+; Removes the second to last value from the stack
+; Calling:
+;		- <arg1> <arg2> nip
+; Returns
+;		- The second given argument (<arg2>)
+fn nip $X $Y -> Y (
+	bind ( x y ) y
 )
 
 ; Duplicate the last value on the stack

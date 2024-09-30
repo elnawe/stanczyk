@@ -51,7 +51,7 @@ fn strequal ptr ptr -> bool (
 		0 loop s1 over + ->8 swap s2 over + ->8 rotate = (
 			++
 		)
-		dup l1 = swap l2 = = swap drop ret
+		dup l1 = swap l2 = = nip ret
 	)
 )
 
