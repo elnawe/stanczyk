@@ -56,6 +56,8 @@ func generateLinuxX64() {
 
 	out.WriteBss("section .bss")
 	out.WriteBss("args: resq 1")
+	out.WriteBss("loop_index: resq 4")
+	out.WriteBss("loop_limit: resq 4")
 	out.WriteBss("return_stack_rsp: resq 1")
 	out.WriteBss("return_stack: resb 65536")
 	out.WriteBss("return_stack_rsp_end:")
@@ -76,18 +78,18 @@ func generateLinuxX64() {
 		}
 
 		out.WriteText("fn%d:", function.ip)
-		out.WriteText(";; start function %s (%s:%d:%d)", function.name,
+		out.WriteText(";; start fn %s (%s:%d:%d)", function.name,
 			function.loc.f, function.loc.l, function.loc.c)
 		out.WriteText("    sub rsp, 0")
 		out.WriteText("    mov [return_stack_rsp], rsp")
 		out.WriteText("    mov rsp, rax")
 
-		for index, code := range function.code {
+		for ipIndex, code := range function.code {
 			instruction := code.op
 			loc := code.loc
 			value := code.value
 
-			out.WriteText(".ip%d:", index)
+			out.WriteText(".ip%d:", ipIndex)
 
 			switch instruction {
 
@@ -203,6 +205,39 @@ func generateLinuxX64() {
 				out.WriteText("    cmovle rcx, rdx")
 				out.WriteText("    push rcx")
 
+			// FLOW CONTROL
+			case OP_LOOP_START:
+				val := value.(Loop)
+
+				out.WriteText(";; loop start (scope: %d) (%s:%d:%d)",
+					val.level, loc.f, loc.l, loc.c)
+				out.WriteText("    pop rbx") // index
+				out.WriteText("    mov QWORD [loop_index+%d], rbx", val.level)
+				out.WriteText("    pop rax") // limit
+				out.WriteText("    mov QWORD [loop_limit+%d], rax", val.level)
+				out.WriteText("    cmp rbx, rax")
+				out.WriteText("    %s .ip%dls", val.condition, ipIndex)
+				out.WriteText("    jmp .ip%dle", val.gotoIP)
+				out.WriteText(".ip%dls:", ipIndex)
+			case OP_LOOP_END:
+				val := value.(Loop)
+
+				out.WriteText(";; loop end (scope: %d) (%s:%d:%d)",
+					val.level, loc.f, loc.l, loc.c)
+				out.WriteText("    mov rax, 1")
+
+				if val.typ == LT_PLUSLOOP {
+					out.WriteText("    pop rax")
+				}
+
+				out.WriteText("    add QWORD [loop_index+%d], rax", val.level)
+				out.WriteText("    mov rbx, [loop_index+%d]", val.level)
+				out.WriteText("    mov rax, [loop_limit+%d]", val.level)
+				out.WriteText("    cmp rbx, rax")
+				out.WriteText("    %s .ip%dls", val.condition, val.gotoIP)
+				out.WriteText(".ip%dle:", ipIndex)
+				// maybe clear memory?
+
 			// INTRINSICS
 			case OP_ARGC:
 				out.WriteText(";; argc (%s:%d:%d)", loc.f, loc.l, loc.c)
@@ -217,11 +252,11 @@ func generateLinuxX64() {
 			case OP_ASSEMBLY:
 				val := value.(Assembly)
 
-				out.WriteText(";; extern (%s:%d:%d)", loc.f, loc.l, loc.c)
-
+				out.WriteText(";; asm ( (%s:%d:%d)", loc.f, loc.l, loc.c)
 				for _, s := range val.body {
 					out.WriteText("    %s", s)
 				}
+				out.WriteText(";; ) asm (%s:%d:%d)", loc.f, loc.l, loc.c)
 			case OP_FUNCTION_CALL:
 				fnCall := value.(FunctionCall)
 
@@ -346,7 +381,7 @@ func generateLinuxX64() {
 			}
 		}
 
-		out.WriteText(";; end function %s (%s:%d:%d)", function.name,
+		out.WriteText(";; end fn %s (%s:%d:%d)", function.name,
 			function.loc.f, function.loc.l, function.loc.c)
 	}
 

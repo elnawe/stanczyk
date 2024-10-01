@@ -11,6 +11,9 @@ const (
 	OP_PUSH_PTR
 	OP_PUSH_STR
 
+	OP_LOOP_START
+	OP_LOOP_END
+
 	// Intrinscis
 	OP_ADD
 	OP_ARGC
@@ -61,6 +64,31 @@ const (
 	DATA_INT
 	DATA_PTR
 )
+
+type LoopCondition string
+
+const (
+	LC_LESS				= "jl"
+	LC_LESS_EQUAL		= "jle"
+	LC_GREATER			= "jg"
+	LC_GREATER_EQUAL	= "jge"
+	LC_EQUAL			= "je"
+	LC_NOT_EQUAL        = "jne"
+)
+
+type LoopType int
+
+const (
+	LT_LOOP LoopType = iota
+	LT_PLUSLOOP
+)
+
+type Loop struct {
+	condition LoopCondition
+	gotoIP    int
+	level     int
+	typ       LoopType
+}
 
 type Bound struct {
 	word string

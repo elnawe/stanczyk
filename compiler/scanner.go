@@ -24,6 +24,20 @@ const (
 	TOKEN_DTYPE_PARAPOLY
 	TOKEN_DTYPE_PTR
 
+	// Flow Control
+	TOKEN_UNTIL
+	TOKEN_FOR
+	TOKEN_WHILE
+	TOKEN_LOOP
+	TOKEN_PLUSLOOP
+
+	// Single characters
+	TOKEN_BRACKET_CLOSE
+	TOKEN_BRACKET_OPEN
+	TOKEN_PAREN_CLOSE
+	TOKEN_PAREN_OPEN
+
+
 	// Reserved Words
 	TOKEN_ARGC
 	TOKEN_ARGV
@@ -35,7 +49,6 @@ const (
 	TOKEN_CAST_INT
 	TOKEN_CAST_PTR
 	TOKEN_CONST
-	TOKEN_DIV
 	TOKEN_ELSE
 	TOKEN_EQUAL
 	TOKEN_FN
@@ -48,10 +61,7 @@ const (
 	TOKEN_LOAD16
 	TOKEN_LOAD32
 	TOKEN_LOAD64
-	TOKEN_LOOP
 	TOKEN_MINUS
-	TOKEN_PAREN_CLOSE
-	TOKEN_PAREN_OPEN
 	TOKEN_PERCENT
 	TOKEN_PLUS
 	TOKEN_RET
@@ -81,6 +91,11 @@ type reserved struct {
 var reservedWords = []reserved{
 	reserved{typ: TOKEN_ROTATE,        word: "rotate" },
 
+	reserved{typ: TOKEN_FOR,           word: "for"    },
+	reserved{typ: TOKEN_UNTIL,         word: "until"  },
+	reserved{typ: TOKEN_WHILE,         word: "while"  },
+	reserved{typ: TOKEN_PLUSLOOP,      word: "+loop"  },
+
 	reserved{typ: TOKEN_ARGC,          word: "argc"   },
 	reserved{typ: TOKEN_ARGV,          word: "argv"   },
 	reserved{typ: TOKEN_ASM,           word: "asm"    },
@@ -91,7 +106,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_CAST_INT,      word: "(int)"  },
 	reserved{typ: TOKEN_CAST_PTR,      word: "(ptr)"  },
 	reserved{typ: TOKEN_CONST,         word: "const"  },
-	reserved{typ: TOKEN_DIV,           word: "div"	   },
 	reserved{typ: TOKEN_DTYPE_ANY,     word: "any"    },
 	reserved{typ: TOKEN_DTYPE_BOOL,    word: "bool"   },
 	reserved{typ: TOKEN_DTYPE_CHAR,    word: "char"   },
@@ -294,6 +308,8 @@ func TokenizeFile(f string, s string) []Token {
 			}
 
 			switch {
+			case c == '[': makeToken(TOKEN_BRACKET_OPEN)
+			case c == ']': makeToken(TOKEN_BRACKET_CLOSE)
 			case c == '$':
 				makeParapolyToken(c, line, &index)
 			case c == '"':

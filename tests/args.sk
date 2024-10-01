@@ -6,5 +6,5 @@ fn main (
   "\n" print
 
   "./output  " print
-  0 []argv println
+  0 argv[] println
 )

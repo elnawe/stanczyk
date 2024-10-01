@@ -67,11 +67,11 @@ const O_CREATE       64
 ; Helper function to access the arguments Array (passed through when calling
 ; the program).
 ; Calling:
-;   - <index> []argv
+;   - <index> argv[]
 ; Returns:
 ;   - A pointer to the element in the Array. If element is out of reach,
 ;     throws an error and stops execution.
-fn []argv int -> ptr (
+fn argv[] int -> ptr (
 	8 * argv (int) + (ptr) ->64
 	if dup (int) 0 = (
 		dup print

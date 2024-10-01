@@ -10,20 +10,28 @@ import (
 type ScopeName int
 
 const (
-	SCOPE_PROGRAM ScopeName = iota
-	SCOPE_FUNCTION
+	SCOPE_FUNCTION ScopeName = iota
+	SCOPE_LOOP
 )
+
+type Let struct {
+	word string
+	loc  Location
+}
+
+type Scope struct {
+	typ           ScopeName
+	tt            TokenType
+	startIP       int
+	loopCondition LoopCondition
+	thenIP        int
+	loopIP        int
+}
 
 type Object struct {
 	id    int
 	value int
 	word  string
-}
-
-type Scope struct {
-	tt     TokenType
-	thenIP int
-	loopIP int
 }
 
 type Frontend struct {
@@ -32,7 +40,6 @@ type Frontend struct {
 	current	   *Function
 	error      bool
 	sLevel     int
-	sName      ScopeName
 	scope      [10]Scope
 }
 
@@ -577,9 +584,6 @@ func parseToken(token Token) {
 		code.op = OP_CAST
 		code.value = DATA_PTR
 		emit(code)
-	case TOKEN_DIV:
-		code.op = OP_DIVIDE
-		emit(code)
 	case TOKEN_EQUAL:
 		code.op = OP_EQUAL
 		emit(code)
@@ -653,6 +657,72 @@ func parseToken(token Token) {
 	// Special
 	case TOKEN_WORD:
 		expandWord(token)
+	case TOKEN_UNTIL:
+		*sLevel++
+		frontend.scope[*sLevel].typ = SCOPE_LOOP
+		frontend.scope[*sLevel].startIP = len(frontend.current.code)
+		frontend.scope[*sLevel].loopCondition = LC_LESS
+		code.op = OP_LOOP_START
+		emit(code)
+	case TOKEN_WHILE:
+		*sLevel++
+		advance()
+		condToken := parser.previous
+
+		switch condToken.typ {
+		case TOKEN_BANG_EQUAL:
+			frontend.scope[*sLevel].loopCondition = LC_NOT_EQUAL
+		case TOKEN_EQUAL:
+			frontend.scope[*sLevel].loopCondition = LC_EQUAL
+		case TOKEN_GREATER:
+			frontend.scope[*sLevel].loopCondition = LC_GREATER
+		case TOKEN_GREATER_EQUAL:
+			frontend.scope[*sLevel].loopCondition = LC_GREATER_EQUAL
+		case TOKEN_LESS:
+			frontend.scope[*sLevel].loopCondition = LC_LESS
+		case TOKEN_LESS_EQUAL:
+			frontend.scope[*sLevel].loopCondition = LC_LESS_EQUAL
+		default:
+			errorAt(&condToken, "TODO: ERROR MESSAGE NOT ALLOWED COMPARISON")
+			ExitWithError(CodeParseError)
+		}
+
+		frontend.scope[*sLevel].typ = SCOPE_LOOP
+		frontend.scope[*sLevel].startIP = len(frontend.current.code)
+		code.op = OP_LOOP_START
+		emit(code)
+	case TOKEN_FOR, TOKEN_PLUSLOOP: // TOKEN_LOOP
+		cScope := frontend.scope[*sLevel]
+
+		if cScope.typ != SCOPE_LOOP {
+			errorAt(&token, "TODO: ERROR MESSAGE FOR LOOP")
+			ExitWithError(CodeParseError)
+		}
+
+		loopTyp := LT_LOOP
+
+		if token.typ == TOKEN_PLUSLOOP {
+			loopTyp = LT_PLUSLOOP
+		}
+
+		sValue := Loop{
+			condition: cScope.loopCondition,
+			gotoIP: len(frontend.current.code),
+			level: *sLevel,
+			typ: loopTyp,
+		}
+		eValue := Loop{
+			condition: cScope.loopCondition,
+			gotoIP: cScope.startIP,
+			level: *sLevel,
+			typ: loopTyp,
+		}
+
+		frontend.current.code[cScope.startIP].value = sValue
+		code.op = OP_LOOP_END
+		code.value = eValue
+		emit(code)
+		*sLevel--
 	case TOKEN_IF:
 		*sLevel++
 		frontend.scope[*sLevel].tt = token.typ
