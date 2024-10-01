@@ -3,7 +3,7 @@ using io
 ;; Test: print
 ;; Description:
 ;    print numbers on the screen. Numbers with snake_case should print without the _.
-fn main (
+fn main ()
   "1  " print 1 println
   "-----------" println
 
@@ -26,4 +26,4 @@ fn main (
   "-----------" println
 
   "2000000000  " print 2_000_000_000 println
-)
+ret

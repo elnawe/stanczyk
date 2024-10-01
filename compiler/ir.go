@@ -65,15 +65,16 @@ const (
 	DATA_PTR
 )
 
-type LoopCondition string
+type ScopeStartCondition string
 
 const (
-	LC_LESS				= "jl"
-	LC_LESS_EQUAL		= "jle"
-	LC_GREATER			= "jg"
-	LC_GREATER_EQUAL	= "jge"
-	LC_EQUAL			= "je"
-	LC_NOT_EQUAL        = "jne"
+	LC_NONE ScopeStartCondition = ""
+	LC_LESS						= "jl"
+	LC_LESS_EQUAL				= "jle"
+	LC_GREATER					= "jg"
+	LC_GREATER_EQUAL			= "jge"
+	LC_EQUAL					= "je"
+	LC_NOT_EQUAL				= "jne"
 )
 
 type LoopType int
@@ -84,7 +85,7 @@ const (
 )
 
 type Loop struct {
-	condition LoopCondition
+	condition ScopeStartCondition
 	gotoIP    int
 	level     int
 	typ       LoopType

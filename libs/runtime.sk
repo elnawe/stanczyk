@@ -67,77 +67,77 @@ const MAX_UINT64 18446744073709551615
 ;   - <int/pointer> ++
 ; Returns:
 ;   - The given argument + 1
-fn ++ $X -> X (
+fn ++ ($X --- X)
 	1 +
-)
+ret
 
 ; Helper function to decrement a number or a pointer position by 1.
 ; Calling:
 ;   - <int/pointer> --
 ; Returns:
 ;   - The given argument - 1.
-fn -- $X -> X (
+fn -- ($X --- X)
 	1 -
-)
+ret
 
 ; Removes one value from the stack
 ; Calling
 ;   - <any value> drop
-fn drop any (
-	bind ( x )
-)
+fn drop (any)
+	bind (x)
+ret
 
 ; Removes two values from the stack
 ; Calling
 ;   - <any> <any> 2drop
-fn 2drop any any (
-	bind ( x y )
-)
+fn 2drop (any any)
+	bind (x y)
+ret
 
 ; Removes the second to last value from the stack
 ; Calling:
 ;		- <arg1> <arg2> nip
 ; Returns
 ;		- The second given argument (<arg2>)
-fn nip $X $Y -> Y (
-	bind ( x y ) y
-)
+fn nip ($X $Y --- Y)
+	bind (x y) y
+ret
 
 ; Duplicate the last value on the stack
 ; Calling:
 ;   - <any> dup
 ; Returns:
 ;   - The given argument, twice
-fn dup $X -> X X (
-	bind ( x ) x x
-)
+fn dup ($X --- X X)
+	bind (x) x x
+ret
 
 ; Duplicate the last 2 values on the stack
 ; Calling:
 ;   - <arg1> <arg2> 2dup
 ; Returns:
 ;   - The 2 given arguments, twice
-fn 2dup $X $Y -> X Y X Y (
-	bind ( x y ) x y x y
-)
+fn 2dup ($X $Y --- X Y X Y)
+	bind (x y) x y x y
+ret
 
 ; Duplicates the second to last value on the stack and add it at the end
 ; Calling:
 ;   - <arg1> <arg2> over
 ; Returns:
 ;   - The given arguments, plus <arg1> duplicated at the end (<arg1> <arg2> <arg1>)
-fn over $X $Y -> X Y X (
-	bind ( x y ) x y x
-)
+fn over ($X $Y --- X Y X)
+	bind (x y) x y x
+ret
 
 ; Takes the last two values in the stack and swap them in order
 ; Calling:
 ;   - <arg1> <arg2> swap
 ; Returns:
 ;   - The given argument in opposite order (<arg2> <arg1>)
-fn swap $X $Y -> Y X (
-	bind ( x y ) y x
-)
+fn swap ($X $Y --- Y X)
+	bind (x y) y x
+ret
 
 ; Helper function for Logical And operator (&&).
 ; Calling:
@@ -145,30 +145,30 @@ fn swap $X $Y -> Y X (
 ; Returns:
 ;   - A boolean value. `true` if both given values are true, `false` if one or
 ;     more are false.
-fn and bool bool -> bool (
-	swap (int)
-	swap (int)
+fn and (bool bool --- bool)
+	swap ->int
+	swap ->int
 	+ 2 =
-)
+ret
 
 ; Helper function for Logical Or operator (||).
 ; Calling:
 ;   - <bool1> <bool2> or
 ; Returns:
 ;   - A boolean value. `true` if at least of the given values is true.
-fn or bool bool -> bool (
-	swap (int)
-	swap (int)
+fn or (bool bool --- bool)
+	swap ->int
+	swap ->int
 	+ 0 >
-)
+ret
 
 ; Helper function to calculate the difference between 2 pointers.
 ; Calling:
 ;   - <pointer1> <pointer2> ptrdiff
 ; Returns:
 ;   - <int> with the difference between the given pointers.
-fn ptrdiff ptr ptr -> int (
-	swap (int)
-	swap (int)
+fn ptrdiff (ptr ptr --- int)
+	swap ->int
+	swap ->int
 	-
-)
+ret

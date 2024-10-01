@@ -1,20 +1,20 @@
 using io
 
-fn equal int int -> bool (
+fn equal (int int --- bool)
   =
-)
+ret
 
-fn equal bool bool -> bool (
+fn equal (bool bool --- bool)
   =
-)
+ret
 
-fn equal ptr ptr -> bool (
+fn equal (ptr ptr --- bool)
   strequal
-)
+ret
 
-fn main (
+fn main ()
   "Testing polymorphism with this function that takes different parameters but always returns a boolean value" println
   "true  " print 2 2 equal println
   "false  " print false true equal println
   "true  " print "test" "test" equal println
-)
+ret

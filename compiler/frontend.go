@@ -7,23 +7,49 @@ import (
 	"strings"
 )
 
-type ScopeName int
+type ScopeType int
 
 const (
-	SCOPE_FUNCTION ScopeName = iota
+	SCOPE_FUNCTION = iota
 	SCOPE_LOOP
 )
 
+type BindType int
+
+const (
+	CONSTANT BindType = iota
+	VARIABLE
+	BIND
+	AUTOBIND
+)
+
 type Let struct {
-	word string
-	loc  Location
+	btype  BindType
+	dtype  DataType
+	id     int
+	name   string
+	token  Token
+	value  any
 }
 
 type Scope struct {
-	typ           ScopeName
+	typ            ScopeType
+	startCondition ScopeStartCondition
+	startIP        int
+	startToken     Token
+	binds          []Let
+}
+
+type ScopeContainer struct {
+	levels        []Scope
+	currentLevel  int
+}
+
+type ScopeOld struct {
+	typ           ScopeType
 	tt            TokenType
+	loopCondition ScopeStartCondition
 	startIP       int
-	loopCondition LoopCondition
 	thenIP        int
 	loopIP        int
 }
@@ -40,7 +66,8 @@ type Frontend struct {
 	current	   *Function
 	error      bool
 	sLevel     int
-	scope      [10]Scope
+	scopeOld   [10]ScopeOld
+	scope      ScopeContainer
 }
 
 type Parser struct {
@@ -101,8 +128,7 @@ func consume(tt TokenType, err string) {
 }
 
 func check(tt TokenType) bool {
-	result := tt == parser.current.typ
-	return result
+	return tt == parser.current.typ
 }
 
 func match(tt TokenType) bool {
@@ -118,6 +144,42 @@ func match(tt TokenType) bool {
  *   | ||   /
  *  |___|_|_\
  */
+func startScope(newScope Scope) {
+	frontend.scope.levels = append(frontend.scope.levels, newScope)
+	frontend.scope.currentLevel++
+}
+
+func getLastScope() *Scope {
+	return &frontend.scope.levels[frontend.scope.currentLevel-1]
+}
+
+func endScope() {
+	frontend.scope.levels = frontend.scope.levels[:frontend.scope.currentLevel-1]
+	frontend.scope.currentLevel--
+}
+
+func bind(newBind Let) {
+	scope := getLastScope()
+	newBind.id = len(scope.binds)
+	scope.binds = append(scope.binds, newBind)
+}
+
+func getBound(token Token) (Let, bool) {
+	word := token.value.(string)
+
+	for index := frontend.scope.currentLevel-1; index >= 0; index-- {
+		scope := frontend.scope.levels[index]
+
+		for _, b := range scope.binds {
+			if b.name == word {
+				return b, true
+			}
+		}
+	}
+
+	return Let{}, false
+}
+
 func emit(code Code) {
 	frontend.current.WriteCode(code)
 }
@@ -218,23 +280,23 @@ func registerFunction(token Token) {
 		}
 	}
 
-	if !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) {
-		for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
-			advance()
-			parseArityInFunction(parser.previous, &function, "argument")
+	consume(TOKEN_PAREN_OPEN, MsgParseFunctionMissingOpenStmt)
+
+	parsingArguments := true
+
+	for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
+		advance()
+		t := parser.previous
+
+		if t.typ == TOKEN_DASH_DASH_DASH {
+			parsingArguments = false
+			continue
 		}
+
+		parseArityInFunction(t, &function, parsingArguments)
 	}
 
-	if match(TOKEN_RIGHT_ARROW) {
-		if check(TOKEN_PAREN_OPEN) {
-			errorAt(&parser.previous, MsgParseFunctionNoReturnSpecified)
-		}
-
-		for !check(TOKEN_PAREN_OPEN) {
-			advance()
-			parseArityInFunction(parser.previous, &function, "return")
-		}
-	}
+	consume(TOKEN_PAREN_CLOSE, MsgParseFunctionMissingCloseStmt)
 
 	// Verify if the function signature is different from a previous function declared
 	// with the same name. Error out if it matches signature arguments, or if it has different
@@ -261,29 +323,12 @@ func registerFunction(token Token) {
 		}
 	}
 
-	consume(TOKEN_PAREN_OPEN, MsgParseFunctionMissingOpenStmt)
-
 	// Skip the function content, since we're just registering it.
-	// Since we need to care about scope, we're increasing the scope every time we see
-	// a code block is being opened, and then we decrease the scope when it's closed.
-	// This allows us to have as many code blocks inside a function as we want to.
-	frontend.sLevel++
-
-	// BUG: Empty function will break the code registering here.
-	// On an empty file, compile `fn main ()`
-	for frontend.sLevel > 0 && !check(TOKEN_EOF) {
+	for !check(TOKEN_RET) && !check(TOKEN_EOF) {
 		advance()
-
-		if check(TOKEN_PAREN_OPEN) {
-			frontend.sLevel++
-		}
-
-		if check(TOKEN_PAREN_CLOSE) {
-			frontend.sLevel--
-		}
 	}
 
-	consume(TOKEN_PAREN_CLOSE, MsgParseFunctionMissingCloseStmt)
+	consume(TOKEN_RET, MsgParseFunctionMissingRetWord)
 
 	TheProgram.chunks = append(TheProgram.chunks, function)
 }
@@ -593,6 +638,8 @@ func parseToken(token Token) {
 	case TOKEN_GREATER_EQUAL:
 		code.op = OP_GREATER_EQUAL
 		emit(code)
+	case TOKEN_LEAVE:
+		emitReturn()
 	case TOKEN_LESS:
 		code.op = OP_LESS
 		emit(code)
@@ -619,10 +666,6 @@ func parseToken(token Token) {
 		emit(code)
 	case TOKEN_PLUS:
 		code.op = OP_ADD
-		emit(code)
-	case TOKEN_RET:
-		code.op = OP_RET
-		code.value = 0
 		emit(code)
 	case TOKEN_ROTATE:
 		code.op = OP_ROTATE
@@ -659,9 +702,9 @@ func parseToken(token Token) {
 		expandWord(token)
 	case TOKEN_UNTIL:
 		*sLevel++
-		frontend.scope[*sLevel].typ = SCOPE_LOOP
-		frontend.scope[*sLevel].startIP = len(frontend.current.code)
-		frontend.scope[*sLevel].loopCondition = LC_LESS
+		frontend.scopeOld[*sLevel].typ = SCOPE_LOOP
+		frontend.scopeOld[*sLevel].startIP = len(frontend.current.code)
+		frontend.scopeOld[*sLevel].loopCondition = LC_LESS
 		code.op = OP_LOOP_START
 		emit(code)
 	case TOKEN_WHILE:
@@ -671,28 +714,28 @@ func parseToken(token Token) {
 
 		switch condToken.typ {
 		case TOKEN_BANG_EQUAL:
-			frontend.scope[*sLevel].loopCondition = LC_NOT_EQUAL
+			frontend.scopeOld[*sLevel].loopCondition = LC_NOT_EQUAL
 		case TOKEN_EQUAL:
-			frontend.scope[*sLevel].loopCondition = LC_EQUAL
+			frontend.scopeOld[*sLevel].loopCondition = LC_EQUAL
 		case TOKEN_GREATER:
-			frontend.scope[*sLevel].loopCondition = LC_GREATER
+			frontend.scopeOld[*sLevel].loopCondition = LC_GREATER
 		case TOKEN_GREATER_EQUAL:
-			frontend.scope[*sLevel].loopCondition = LC_GREATER_EQUAL
+			frontend.scopeOld[*sLevel].loopCondition = LC_GREATER_EQUAL
 		case TOKEN_LESS:
-			frontend.scope[*sLevel].loopCondition = LC_LESS
+			frontend.scopeOld[*sLevel].loopCondition = LC_LESS
 		case TOKEN_LESS_EQUAL:
-			frontend.scope[*sLevel].loopCondition = LC_LESS_EQUAL
+			frontend.scopeOld[*sLevel].loopCondition = LC_LESS_EQUAL
 		default:
 			errorAt(&condToken, "TODO: ERROR MESSAGE NOT ALLOWED COMPARISON")
 			ExitWithError(CodeParseError)
 		}
 
-		frontend.scope[*sLevel].typ = SCOPE_LOOP
-		frontend.scope[*sLevel].startIP = len(frontend.current.code)
+		frontend.scopeOld[*sLevel].typ = SCOPE_LOOP
+		frontend.scopeOld[*sLevel].startIP = len(frontend.current.code)
 		code.op = OP_LOOP_START
 		emit(code)
 	case TOKEN_FOR, TOKEN_PLUSLOOP: // TOKEN_LOOP
-		cScope := frontend.scope[*sLevel]
+		cScope := frontend.scopeOld[*sLevel]
 
 		if cScope.typ != SCOPE_LOOP {
 			errorAt(&token, "TODO: ERROR MESSAGE FOR LOOP")
@@ -725,11 +768,11 @@ func parseToken(token Token) {
 		*sLevel--
 	case TOKEN_IF:
 		*sLevel++
-		frontend.scope[*sLevel].tt = token.typ
+		frontend.scopeOld[*sLevel].tt = token.typ
 	case TOKEN_ELSE:
 		if *sLevel > 0 {
-			prevThen := frontend.scope[*sLevel].thenIP
-			frontend.scope[*sLevel].thenIP = len(frontend.current.code)
+			prevThen := frontend.scopeOld[*sLevel].thenIP
+			frontend.scopeOld[*sLevel].thenIP = len(frontend.current.code)
 			code.op = OP_JUMP
 			emit(code)
 			frontend.current.code[prevThen].value = len(frontend.current.code)
@@ -738,41 +781,33 @@ func parseToken(token Token) {
 		}
 	case TOKEN_LOOP:
 		*sLevel++
-		frontend.scope[*sLevel].tt = token.typ
-		frontend.scope[*sLevel].loopIP = len(frontend.current.code)
+		frontend.scopeOld[*sLevel].tt = token.typ
+		frontend.scopeOld[*sLevel].loopIP = len(frontend.current.code)
 	case TOKEN_PAREN_OPEN:
-		if *sLevel > 0 {
-			frontend.scope[*sLevel].thenIP = len(frontend.current.code)
-			code.op = OP_JUMP_IF_FALSE
-			emit(code)
-		} else {
-			errorAt(&token, MsgParseOpenStmtOrphanTokenFound)
-		}
+		frontend.scopeOld[*sLevel].thenIP = len(frontend.current.code)
+		code.op = OP_JUMP_IF_FALSE
+		emit(code)
 	case TOKEN_PAREN_CLOSE:
-		if *sLevel > 0 {
-			cScope := frontend.scope[*sLevel]
+		cScope := frontend.scopeOld[*sLevel]
 
-			switch cScope.tt {
-			case TOKEN_IF:
-				code.op = OP_END_IF
-				emit(code)
-				frontend.current.code[cScope.thenIP].value = len(frontend.current.code)
-			case TOKEN_LOOP:
-				code.op = OP_LOOP
-				code.value = cScope.loopIP
-				emit(code)
+		switch cScope.tt {
+		case TOKEN_IF:
+			code.op = OP_END_IF
+			emit(code)
+			frontend.current.code[cScope.thenIP].value = len(frontend.current.code)
+		case TOKEN_LOOP:
+			code.op = OP_LOOP
+			code.value = cScope.loopIP
+			emit(code)
 
-				var endLoop Code
-				endLoop.loc = token.loc
-				endLoop.op = OP_END_LOOP
-				emit(endLoop)
-				frontend.current.code[cScope.thenIP].value = len(frontend.current.code)
-			}
-
-			*sLevel--
-		} else {
-			errorAt(&token, MsgParseCloseStmtOrphanTokenFound)
+			var endLoop Code
+			endLoop.loc = token.loc
+			endLoop.op = OP_END_LOOP
+			emit(endLoop)
+			frontend.current.code[cScope.thenIP].value = len(frontend.current.code)
 		}
+
+		*sLevel--
 	}
 }
 
@@ -797,10 +832,8 @@ func parseArityInAssembly(token Token, args *Arity) {
 	args.types = append(args.types, newArg)
 }
 
-func parseArityInFunction(token Token, function *Function, parsing string) {
+func parseArityInFunction(token Token, function *Function, parsingArguments bool) {
 	var newArg Argument
-
-	parsingArguments := parsing == "argument"
 
 	switch token.typ {
 	case TOKEN_DTYPE_ANY:
@@ -863,36 +896,27 @@ func parseArityInFunction(token Token, function *Function, parsing string) {
 
 func parseFunction(token Token) {
 	// Recreate a temporary function entry to match with the already registered
-	// function in TheProgram. That's why this step doesn't have any error checking.
+	// functions in TheProgram. That's why this step doesn't have any error checking.
 	var testFunc Function
 
 	advance()
 	testFunc.name = parser.previous.value.(string)
+	advance()
 
-	if !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) {
-		for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
-			advance()
-			parseArityInFunction(parser.previous, &testFunc, "argument")
-		}
-	}
+	parsingArguments := true
 
-	// TODO: Returns shouldn't be part of a function signature. When registering
-	// a function, arguments can be different, but returns should always be the same.
-	for !match(TOKEN_PAREN_OPEN) {
+	for !match(TOKEN_PAREN_CLOSE) {
 		advance()
+		t := parser.previous
+
+		if t.typ == TOKEN_DASH_DASH_DASH {
+			parsingArguments = false
+			continue
+		}
+
+		parseArityInFunction(t, &testFunc, parsingArguments)
 	}
-	// if match(TOKEN_RIGHT_ARROW) {
-	// 	for !check(TOKEN_PAREN_OPEN) {
-	// 		advance()
-	// 		parseArityInFunction(parser.previous, &testFunc, "return")
-	// 	}
-	// }
 
-	// consume(TOKEN_PAREN_OPEN, MsgParseFunctionMissingOpenStmt)
-
-	// NOTE: The safest way to match the current function to parse with the existing
-	// one in TheProgram, is to check for the parsed flag, the name, the arguments
-	// and the returns.
 	for index, f := range TheProgram.chunks {
 		if !f.parsed && f.name == testFunc.name &&
 			reflect.DeepEqual(f.arguments, testFunc.arguments) {
@@ -902,10 +926,7 @@ func parseFunction(token Token) {
 	}
 
 	if frontend.current != nil {
-		frontend.sLevel++
-		frontend.scope[1].tt = TOKEN_FN
-
-		for frontend.sLevel > 0 && !check(TOKEN_EOF) {
+		for !match(TOKEN_RET) {
 			advance()
 			parseToken(parser.previous)
 		}

@@ -37,6 +37,8 @@ const (
 	TOKEN_PAREN_CLOSE
 	TOKEN_PAREN_OPEN
 
+	// NEW
+	TOKEN_DASH_DASH_DASH
 
 	// Reserved Words
 	TOKEN_ARGC
@@ -55,6 +57,7 @@ const (
 	TOKEN_GREATER
 	TOKEN_GREATER_EQUAL
 	TOKEN_IF
+	TOKEN_LEAVE
 	TOKEN_LESS
 	TOKEN_LESS_EQUAL
 	TOKEN_LOAD8
@@ -89,60 +92,60 @@ type reserved struct {
 }
 
 var reservedWords = []reserved{
-	reserved{typ: TOKEN_ROTATE,        word: "rotate" },
+	reserved{typ: TOKEN_ROTATE,         word: "rotate" },
+	reserved{typ: TOKEN_DASH_DASH_DASH, word: "---"    },
 
-	reserved{typ: TOKEN_FOR,           word: "for"    },
-	reserved{typ: TOKEN_UNTIL,         word: "until"  },
-	reserved{typ: TOKEN_WHILE,         word: "while"  },
-	reserved{typ: TOKEN_PLUSLOOP,      word: "+loop"  },
+	reserved{typ: TOKEN_FOR,            word: "for"    },
+	reserved{typ: TOKEN_UNTIL,          word: "until"  },
+	reserved{typ: TOKEN_WHILE,          word: "while"  },
+	reserved{typ: TOKEN_PLUSLOOP,       word: "+loop"  },
 
-	reserved{typ: TOKEN_ARGC,          word: "argc"   },
-	reserved{typ: TOKEN_ARGV,          word: "argv"   },
-	reserved{typ: TOKEN_ASM,           word: "asm"    },
-	reserved{typ: TOKEN_BANG_EQUAL,    word: "!="     },
-	reserved{typ: TOKEN_BIND,          word: "bind"   },
-	reserved{typ: TOKEN_CAST_BOOL,     word: "(bool)" },
-	reserved{typ: TOKEN_CAST_CHAR,     word: "(char)" },
-	reserved{typ: TOKEN_CAST_INT,      word: "(int)"  },
-	reserved{typ: TOKEN_CAST_PTR,      word: "(ptr)"  },
-	reserved{typ: TOKEN_CONST,         word: "const"  },
-	reserved{typ: TOKEN_DTYPE_ANY,     word: "any"    },
-	reserved{typ: TOKEN_DTYPE_BOOL,    word: "bool"   },
-	reserved{typ: TOKEN_DTYPE_CHAR,    word: "char"   },
-	reserved{typ: TOKEN_DTYPE_INT,     word: "int"    },
-	reserved{typ: TOKEN_DTYPE_PTR,     word: "ptr"    },
-	reserved{typ: TOKEN_ELSE,          word: "else"   },
-	reserved{typ: TOKEN_EQUAL,         word: "="      },
-	reserved{typ: TOKEN_FALSE,         word: "false"  },
-	reserved{typ: TOKEN_FN,            word: "fn"     },
-	reserved{typ: TOKEN_GREATER,       word: ">"      },
-	reserved{typ: TOKEN_GREATER_EQUAL, word: ">="     },
-	reserved{typ: TOKEN_IF,            word: "if"     },
-	reserved{typ: TOKEN_LESS,          word: "<"      },
-	reserved{typ: TOKEN_LESS_EQUAL,    word: "<="     },
-	reserved{typ: TOKEN_LOAD8,         word: "->8"    },
-	reserved{typ: TOKEN_LOAD16,        word: "->16"   },
-	reserved{typ: TOKEN_LOAD32,        word: "->32"   },
-	reserved{typ: TOKEN_LOAD64,        word: "->64"   },
-	reserved{typ: TOKEN_LOOP,          word: "loop"   },
-	reserved{typ: TOKEN_MINUS,         word: "-"      },
-	reserved{typ: TOKEN_PAREN_CLOSE,   word: ")"      },
-	reserved{typ: TOKEN_PAREN_OPEN,    word: "("      },
-	reserved{typ: TOKEN_PERCENT,       word: "%"      },
-	reserved{typ: TOKEN_PLUS,          word: "+"      },
-	reserved{typ: TOKEN_RET,           word: "ret"    },
-	reserved{typ: TOKEN_RIGHT_ARROW,   word: "->"     },
-	reserved{typ: TOKEN_SLASH,         word: "/"      },
-	reserved{typ: TOKEN_STAR,          word: "*"      },
-	reserved{typ: TOKEN_STORE8,        word: "<-8"    },
-	reserved{typ: TOKEN_STORE16,       word: "<-16"   },
-	reserved{typ: TOKEN_STORE32,       word: "<-32"   },
-	reserved{typ: TOKEN_STORE64,       word: "<-64"   },
-	reserved{typ: TOKEN_TAKE,          word: "take"   },
-	reserved{typ: TOKEN_THIS,          word: "this"   },
-	reserved{typ: TOKEN_TRUE,          word: "true"   },
-	reserved{typ: TOKEN_USING,         word: "using"  },
-	reserved{typ: TOKEN_VAR,           word: "var"    },
+	reserved{typ: TOKEN_ARGC,           word: "argc"   },
+	reserved{typ: TOKEN_ARGV,           word: "argv"   },
+	reserved{typ: TOKEN_ASM,            word: "asm"    },
+	reserved{typ: TOKEN_BANG_EQUAL,     word: "!="     },
+	reserved{typ: TOKEN_BIND,           word: "bind"   },
+	reserved{typ: TOKEN_CAST_BOOL,      word: "->bool" },
+	reserved{typ: TOKEN_CAST_CHAR,      word: "->char" },
+	reserved{typ: TOKEN_CAST_INT,       word: "->int"  },
+	reserved{typ: TOKEN_CAST_PTR,       word: "->ptr"  },
+	reserved{typ: TOKEN_CONST,          word: "const"  },
+	reserved{typ: TOKEN_DTYPE_ANY,      word: "any"    },
+	reserved{typ: TOKEN_DTYPE_BOOL,     word: "bool"   },
+	reserved{typ: TOKEN_DTYPE_CHAR,     word: "char"   },
+	reserved{typ: TOKEN_DTYPE_INT,      word: "int"    },
+	reserved{typ: TOKEN_DTYPE_PTR,      word: "ptr"    },
+	reserved{typ: TOKEN_ELSE,           word: "else"   },
+	reserved{typ: TOKEN_EQUAL,          word: "="      },
+	reserved{typ: TOKEN_FALSE,          word: "false"  },
+	reserved{typ: TOKEN_FN,             word: "fn"     },
+	reserved{typ: TOKEN_GREATER,        word: ">"      },
+	reserved{typ: TOKEN_GREATER_EQUAL,  word: ">="     },
+	reserved{typ: TOKEN_IF,             word: "if"     },
+	reserved{typ: TOKEN_LEAVE,          word: "leave"  },
+	reserved{typ: TOKEN_LESS,           word: "<"      },
+	reserved{typ: TOKEN_LESS_EQUAL,     word: "<="     },
+	reserved{typ: TOKEN_LOAD8,          word: "->8"    },
+	reserved{typ: TOKEN_LOAD16,         word: "->16"   },
+	reserved{typ: TOKEN_LOAD32,         word: "->32"   },
+	reserved{typ: TOKEN_LOAD64,         word: "->64"   },
+	reserved{typ: TOKEN_LOOP,           word: "loop"   },
+	reserved{typ: TOKEN_MINUS,          word: "-"      },
+	reserved{typ: TOKEN_PERCENT,        word: "%"      },
+	reserved{typ: TOKEN_PLUS,           word: "+"      },
+	reserved{typ: TOKEN_RET,            word: "ret"    },
+	reserved{typ: TOKEN_RIGHT_ARROW,    word: "->"     },
+	reserved{typ: TOKEN_SLASH,          word: "/"      },
+	reserved{typ: TOKEN_STAR,           word: "*"      },
+	reserved{typ: TOKEN_STORE8,         word: "<-8"    },
+	reserved{typ: TOKEN_STORE16,        word: "<-16"   },
+	reserved{typ: TOKEN_STORE32,        word: "<-32"   },
+	reserved{typ: TOKEN_STORE64,        word: "<-64"   },
+	reserved{typ: TOKEN_TAKE,           word: "take"   },
+	reserved{typ: TOKEN_THIS,           word: "this"   },
+	reserved{typ: TOKEN_TRUE,           word: "true"   },
+	reserved{typ: TOKEN_USING,          word: "using"  },
+	reserved{typ: TOKEN_VAR,            word: "var"    },
 }
 
 type Location struct {
@@ -204,10 +207,10 @@ func makeNumber(c byte, line string, index *int) {
 		result += string(c)
 	}
 
-	if !IsSpace(c) {
+	if !IsSpace(c) && !IsReservedCharacter(c) {
 		result += string(c)
 
-		for Advance(&c, line, index) && !IsSpace(c) {
+		for Advance(&c, line, index) && !IsSpace(c) && !IsReservedCharacter(c) {
 			result += string(c)
 		}
 
@@ -268,7 +271,7 @@ func makeChar(c byte, line string, index *int) {
 func makeWord(c byte, line string, index *int) {
 	word := string(c)
 
-	for Advance(&c, line, index) && !IsSpace(c) {
+	for AdvanceWithChecks(&c, line, index) {
 		word += string(c)
 	}
 
@@ -310,6 +313,8 @@ func TokenizeFile(f string, s string) []Token {
 			switch {
 			case c == '[': makeToken(TOKEN_BRACKET_OPEN)
 			case c == ']': makeToken(TOKEN_BRACKET_CLOSE)
+			case c == '(': makeToken(TOKEN_PAREN_OPEN)
+			case c == ')': makeToken(TOKEN_PAREN_CLOSE)
 			case c == '$':
 				makeParapolyToken(c, line, &index)
 			case c == '"':

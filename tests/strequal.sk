@@ -1,10 +1,10 @@
 using io
 
-fn get-str -> ptr (
+fn get-str (--- ptr)
   "My test string"
-)
+ret
 
-fn main (
+fn main ()
   "Testing strings in Stańczyk is a little bit more complicated" println
 
   if "Stańczyk" "Stańczyk" strequal (
@@ -24,4 +24,4 @@ fn main (
   else
     "3- test success" println
   )
-)
+ret

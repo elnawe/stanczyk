@@ -3,7 +3,7 @@ using strings
 
 var number 32
 
-fn main (
+fn main ()
   "Save the number to static memory and print it" println
   "The number is 1234567890123  " print
   1234567890123
@@ -13,4 +13,4 @@ fn main (
     10 /
   ) drop
   number println
-)
+ret

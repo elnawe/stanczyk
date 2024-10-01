@@ -3,7 +3,7 @@ using io
 ;; Test: arithmetics
 ;; Description:
 ;    Simple arithmetics test. Printing the results so they can be compared.
-fn main (
+fn main ()
   "2 + 2 = 4  "   print
   2 2 +           println
   "-----------"   println
@@ -66,4 +66,4 @@ fn main (
 
   "10 ++ ++ ++ ++ -- = 13  " print
   10 ++ ++ ++ ++ --          println
-)
+ret

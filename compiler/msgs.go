@@ -129,23 +129,22 @@ const (
 
 	MsgParseFunctionSignatureNotFound =
 		"function signature (arguments) with name '%s' has not been found"
-
 	MsgParseFunctionMissingName =
 		"invalid or missing function name\n" +
-			"\t\tfn my-func ( [...] )\n" +
+			"\t\tfn my-func () ... ret\n" +
 			"\t\t   ^^^^^^^"
-	MsgParseFunctionNoReturnSpecified =
-		"no return values specified after '->'\n" +
-			"\t\tfn my-func -> ( [...] )\n" +
-			"\t\t           ^^"
 	MsgParseFunctionMissingOpenStmt =
-		"missing '(' keyword\n" +
-			"\t\tfn my-func ( [...] )\n" +
+		"missing '(' in function declaration\n" +
+			"\t\tfn my-func () ... ret\n" +
 			"\t\t           ^"
 	MsgParseFunctionMissingCloseStmt =
-		"missing ')'\n" +
-			"\t\tfn my-func ( [...] )\n" +
-			"\t\t                   ^"
+		"missing ')' in function declaration\n" +
+			"\t\tfn my-func () ... ret\n" +
+			"\t\t            ^"
+	MsgParseFunctionMissingRetWord =
+		"missing 'ret' word in function definition\n" +
+			"\t\tfn my-func () ... ret\n" +
+			"\t\t                  ^^^"
 	MsgParseFunctionMainAlreadyDefined =
 		"function main already defined at %s:%d"
 	MsgParseFunctionNotPolymorphic =

@@ -4,39 +4,39 @@ using io
 ;; Description:
 ;    simple fn composition
 
-fn S (
+fn S ()
   "S" print
-)
+ret
 
-fn t (
+fn t ()
   "t" print
-)
+ret
 
-fn a (
+fn a ()
   "a" print
-)
+ret
 
-fn ń (
+fn ń ()
   "ń" print
-)
+ret
 
-fn c (
+fn c ()
   "c" print
-)
+ret
 
-fn z (
+fn z ()
   "z" print
-)
+ret
 
-fn y (
+fn y ()
   "y" print
-)
+ret
 
-fn k (
+fn k ()
   "k" println
-)
+ret
 
-fn main (
+fn main ()
   "Stańczyk  " print
   S t a ń c z y k
-)
+ret

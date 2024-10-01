@@ -16,12 +16,26 @@ func IsSpace(c byte) bool {
 	return c == ' ' || c == '\t'
 }
 
+func IsReservedCharacter(c byte) bool {
+	return c == '[' || c == ']' || c == '(' || c == ')'
+}
+
 func IsDigit(c byte) bool {
 	if _, err := strconv.Atoi(string(c)); err == nil {
 		return true;
 	}
 
 	return false;
+}
+
+func AdvanceWithChecks(c *byte, line string, index *int) bool {
+	if *index + 1 <= len(line) - 1 {
+		testC := line[*index+1]
+		if IsSpace(testC) || IsReservedCharacter(testC) {
+			return false
+		}
+	}
+	return Advance(c, line, index)
 }
 
 func Advance(c *byte, line string, index *int) bool {

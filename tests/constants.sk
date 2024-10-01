@@ -8,10 +8,10 @@ const thirty 30
 const +2010 ( 20 10 + )
 const *103  ( 10 3 * )
 
-fn main (
+fn main ()
   "making sure all these values are 30" println
 
   "30  " print thirty println
   "30  " print +2010 println
   "30  " print *103 println
-)
+ret

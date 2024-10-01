@@ -3,7 +3,7 @@ using io
 ;; Test: runtime library
 ;; Description:
 ;    Test all runtime library functions.
-fn main (
+fn main ()
   "2  " print
   1 ++ println
 
@@ -24,4 +24,4 @@ fn main (
 	"true  " print 2 2 = 3 2 = or  println
 	"true  " print 2 3 = 3 3 = or  println
 	"false " print 2 3 = 3 2 = or  println
-)
+ret

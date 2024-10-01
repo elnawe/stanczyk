@@ -1,10 +1,10 @@
 using io
 
-fn main (
+fn main ()
   "1  " print
   argc print
   "\n" print
 
   "./output  " print
-  0 argv[] println
-)
+  0 argv-array println
+ret

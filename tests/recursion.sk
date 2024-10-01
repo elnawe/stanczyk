@@ -5,17 +5,17 @@ using io
 ;    testing recusive functions
 const ORIGINAL 10
 
-fn add-3-to-original int -> int (
+fn add-3-to-original (int --- int)
   if dup ORIGINAL 3 + = (
-    ret
+    leave
   else
-    ++ add-3-to-original ret
+    ++ add-3-to-original leave
   )
-)
+ret
 
-fn main (
+fn main ()
   "define a recursive function that adds 3 (1 by 1) to 'ORIGINAL' of value 10 and returns it"
   println
   "add-3-to-original  13  " print
   ORIGINAL add-3-to-original println
-)
+ret

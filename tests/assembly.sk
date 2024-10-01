@@ -1,6 +1,6 @@
 using io
 
-fn custom-linux-write ptr int (
+fn custom-linux-write (ptr int)
 	swap
 	asm int ptr (
 		mov rax, SYS_WRITE
@@ -9,16 +9,16 @@ fn custom-linux-write ptr int (
 		pop rdx
 		syscall
 	)
-)
+ret
 
-fn return-13 -> int (
+fn return-13 (--- int)
   asm -> int (
 		mov rax, 13
 		push rax
   )
-)
+ret
 
-fn main (
+fn main ()
   "Printing this text with asm\n" dup strlen custom-linux-write
 	return-13 println
-)
+ret

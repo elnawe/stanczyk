@@ -4,7 +4,7 @@ using io
 ;; Description:
 ;    Test the control flow mechanism
 
-fn main (
+fn main ()
   "if true -> 13  " print
   if true (
     13 println
@@ -58,4 +58,4 @@ fn main (
     --
   ) drop
   "-----------" println
-)
+ret
