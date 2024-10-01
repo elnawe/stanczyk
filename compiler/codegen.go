@@ -224,13 +224,18 @@ func generateLinuxX64() {
 
 				out.WriteText(";; loop end (scope: %d) (%s:%d:%d)",
 					val.level, loc.f, loc.l, loc.c)
-				out.WriteText("    mov rax, 1")
 
-				if val.typ == LT_PLUSLOOP {
+				switch val.typ {
+				case TOKEN_LOOP:
+					out.WriteText("    add QWORD [loop_index+%d], 1", val.level)
+				case TOKEN_NLOOP:
 					out.WriteText("    pop rax")
+					out.WriteText("    mov QWORD [loop_index+%d], rax", val.level)
+				case TOKEN_PLUSLOOP:
+					out.WriteText("    pop rax")
+					out.WriteText("    add QWORD [loop_index+%d], rax", val.level)
 				}
 
-				out.WriteText("    add QWORD [loop_index+%d], rax", val.level)
 				out.WriteText("    mov rbx, [loop_index+%d]", val.level)
 				out.WriteText("    mov rax, [loop_limit+%d]", val.level)
 				out.WriteText("    cmp rbx, rax")

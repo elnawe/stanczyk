@@ -10,7 +10,8 @@ import (
 type ScopeType int
 
 const (
-	SCOPE_FUNCTION = iota
+	SCOPE_GLOBAL = iota
+	SCOPE_FUNCTION
 	SCOPE_LOOP
 )
 
@@ -24,16 +25,18 @@ const (
 )
 
 type Let struct {
-	btype  BindType
-	dtype  DataType
-	id     int
-	name   string
-	token  Token
-	value  any
+	bindId  int
+	scopeId int
+	btype   BindType
+	dtype   DataType
+	name    string
+	token   Token
+	value   any
 }
 
 type Scope struct {
 	typ            ScopeType
+	scopeId        int
 	startCondition ScopeStartCondition
 	startIP        int
 	startToken     Token
@@ -145,6 +148,7 @@ func match(tt TokenType) bool {
  *  |___|_|_\
  */
 func startScope(newScope Scope) {
+	newScope.scopeId = frontend.scope.currentLevel
 	frontend.scope.levels = append(frontend.scope.levels, newScope)
 	frontend.scope.currentLevel++
 }
@@ -160,7 +164,8 @@ func endScope() {
 
 func bind(newBind Let) {
 	scope := getLastScope()
-	newBind.id = len(scope.binds)
+	newBind.bindId = len(scope.binds)
+	newBind.scopeId = scope.scopeId
 	scope.binds = append(scope.binds, newBind)
 }
 
@@ -700,71 +705,79 @@ func parseToken(token Token) {
 	// Special
 	case TOKEN_WORD:
 		expandWord(token)
-	case TOKEN_UNTIL:
+	case TOKEN_UNTIL, TOKEN_WHILE:
+		startScope(Scope{
+			typ: SCOPE_LOOP,
+			startCondition: LC_LESS,
+			startIP: len(frontend.current.code),
+			startToken: token,
+		})
+
 		*sLevel++
-		frontend.scopeOld[*sLevel].typ = SCOPE_LOOP
-		frontend.scopeOld[*sLevel].startIP = len(frontend.current.code)
 		frontend.scopeOld[*sLevel].loopCondition = LC_LESS
-		code.op = OP_LOOP_START
-		emit(code)
-	case TOKEN_WHILE:
-		*sLevel++
-		advance()
-		condToken := parser.previous
-
-		switch condToken.typ {
-		case TOKEN_BANG_EQUAL:
-			frontend.scopeOld[*sLevel].loopCondition = LC_NOT_EQUAL
-		case TOKEN_EQUAL:
-			frontend.scopeOld[*sLevel].loopCondition = LC_EQUAL
-		case TOKEN_GREATER:
-			frontend.scopeOld[*sLevel].loopCondition = LC_GREATER
-		case TOKEN_GREATER_EQUAL:
-			frontend.scopeOld[*sLevel].loopCondition = LC_GREATER_EQUAL
-		case TOKEN_LESS:
-			frontend.scopeOld[*sLevel].loopCondition = LC_LESS
-		case TOKEN_LESS_EQUAL:
-			frontend.scopeOld[*sLevel].loopCondition = LC_LESS_EQUAL
-		default:
-			errorAt(&condToken, "TODO: ERROR MESSAGE NOT ALLOWED COMPARISON")
-			ExitWithError(CodeParseError)
-		}
-
 		frontend.scopeOld[*sLevel].typ = SCOPE_LOOP
 		frontend.scopeOld[*sLevel].startIP = len(frontend.current.code)
-		code.op = OP_LOOP_START
-		emit(code)
-	case TOKEN_FOR, TOKEN_PLUSLOOP: // TOKEN_LOOP
-		cScope := frontend.scopeOld[*sLevel]
 
-		if cScope.typ != SCOPE_LOOP {
-			errorAt(&token, "TODO: ERROR MESSAGE FOR LOOP")
-			ExitWithError(CodeParseError)
+		if token.typ == TOKEN_WHILE {
+			advance()
+			conditionToken := parser.previous
+			currentScope := getLastScope()
+
+			switch conditionToken.typ {
+			case TOKEN_BANG_EQUAL:
+				currentScope.startCondition = LC_NOT_EQUAL
+				frontend.scopeOld[*sLevel].loopCondition = LC_NOT_EQUAL
+			case TOKEN_EQUAL:
+				currentScope.startCondition = LC_EQUAL
+				frontend.scopeOld[*sLevel].loopCondition = LC_EQUAL
+			case TOKEN_GREATER:
+				currentScope.startCondition = LC_GREATER
+				frontend.scopeOld[*sLevel].loopCondition = LC_GREATER
+			case TOKEN_GREATER_EQUAL:
+				currentScope.startCondition = LC_GREATER_EQUAL
+				frontend.scopeOld[*sLevel].loopCondition = LC_GREATER_EQUAL
+			case TOKEN_LESS:
+				currentScope.startCondition = LC_LESS
+				frontend.scopeOld[*sLevel].loopCondition = LC_LESS
+			case TOKEN_LESS_EQUAL:
+				currentScope.startCondition = LC_LESS_EQUAL
+				frontend.scopeOld[*sLevel].loopCondition = LC_LESS_EQUAL
+			default:
+				errorAt(&conditionToken, "TODO: ERROR MESSAGE NOT ALLOWED COMPARISON")
+				ExitWithError(CodeParseError)
+			}
 		}
 
-		loopTyp := LT_LOOP
+		code.op = OP_LOOP_START
+		emit(code)
+	case TOKEN_LOOP, TOKEN_NLOOP, TOKEN_PLUSLOOP:
+		currentScope := getLastScope()
 
-		if token.typ == TOKEN_PLUSLOOP {
-			loopTyp = LT_PLUSLOOP
+		if currentScope.typ != SCOPE_LOOP {
+			// TODO: Improve error message, showing the starting and closing statements
+			errorAt(&currentScope.startToken, "TODO: ERROR MESSAGE")
+			errorAt(&token, "TODO: ERROR MESSAGE")
+			ExitWithError(CodeParseError)
 		}
 
 		sValue := Loop{
-			condition: cScope.loopCondition,
+			condition: currentScope.startCondition,
 			gotoIP: len(frontend.current.code),
-			level: *sLevel,
-			typ: loopTyp,
+			level: frontend.scope.currentLevel,
+			typ: token.typ,
 		}
 		eValue := Loop{
-			condition: cScope.loopCondition,
-			gotoIP: cScope.startIP,
-			level: *sLevel,
-			typ: loopTyp,
+			condition: currentScope.startCondition,
+			gotoIP: currentScope.startIP,
+			level: frontend.scope.currentLevel,
+			typ: token.typ,
 		}
 
-		frontend.current.code[cScope.startIP].value = sValue
+		frontend.current.code[currentScope.startIP].value = sValue
 		code.op = OP_LOOP_END
 		code.value = eValue
 		emit(code)
+		endScope()
 		*sLevel--
 	case TOKEN_IF:
 		*sLevel++
@@ -779,7 +792,7 @@ func parseToken(token Token) {
 		} else {
 			errorAt(&token, MsgParseElseOrphanTokenFound)
 		}
-	case TOKEN_LOOP:
+	case TOKEN_FOR:
 		*sLevel++
 		frontend.scopeOld[*sLevel].tt = token.typ
 		frontend.scopeOld[*sLevel].loopIP = len(frontend.current.code)
@@ -795,7 +808,7 @@ func parseToken(token Token) {
 			code.op = OP_END_IF
 			emit(code)
 			frontend.current.code[cScope.thenIP].value = len(frontend.current.code)
-		case TOKEN_LOOP:
+		case TOKEN_FOR:
 			code.op = OP_LOOP
 			code.value = cScope.loopIP
 			emit(code)
@@ -926,12 +939,15 @@ func parseFunction(token Token) {
 	}
 
 	if frontend.current != nil {
+		startScope(Scope{typ: SCOPE_FUNCTION, startToken: token})
+
 		for !match(TOKEN_RET) {
 			advance()
 			parseToken(parser.previous)
 		}
 
 		emitReturn()
+		endScope()
 
 		// Marking the function as "parsed", then clearing out the bindings, and
 		// removing the pointer to this function, so we can safely check for the next one.
@@ -1028,6 +1044,8 @@ func FrontendRun() {
 	// User entry file
 	file.Open(Stanczyk.workspace.entry)
 
+	startScope(Scope{typ: SCOPE_GLOBAL})
+
 	// I'm not using "range" because Go creates a copy of the Array
 	// (turning it into a slice), so if I find a new file while
 	// going through the compilation, it will not update the `for` statement.
@@ -1042,6 +1060,8 @@ func FrontendRun() {
 	for index := 0; index < len(file.files); index++ {
 		compilationThirdPass(index)
 	}
+
+	endScope()
 
 	TheProgram.variables = frontend.variables
 

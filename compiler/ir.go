@@ -79,16 +79,11 @@ const (
 
 type LoopType int
 
-const (
-	LT_LOOP LoopType = iota
-	LT_PLUSLOOP
-)
-
 type Loop struct {
 	condition ScopeStartCondition
 	gotoIP    int
 	level     int
-	typ       LoopType
+	typ       TokenType
 }
 
 type Bound struct {

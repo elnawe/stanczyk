@@ -29,6 +29,7 @@ const (
 	TOKEN_FOR
 	TOKEN_WHILE
 	TOKEN_LOOP
+	TOKEN_NLOOP
 	TOKEN_PLUSLOOP
 
 	// Single characters
@@ -95,10 +96,14 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_ROTATE,         word: "rotate" },
 	reserved{typ: TOKEN_DASH_DASH_DASH, word: "---"    },
 
+	// TODO: SWITCH THESE!
 	reserved{typ: TOKEN_FOR,            word: "for"    },
+	reserved{typ: TOKEN_LOOP,           word: "loop"   },
+
 	reserved{typ: TOKEN_UNTIL,          word: "until"  },
 	reserved{typ: TOKEN_WHILE,          word: "while"  },
 	reserved{typ: TOKEN_PLUSLOOP,       word: "+loop"  },
+	reserved{typ: TOKEN_NLOOP,          word: "nloop"  },
 
 	reserved{typ: TOKEN_ARGC,           word: "argc"   },
 	reserved{typ: TOKEN_ARGV,           word: "argv"   },
@@ -129,7 +134,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_LOAD16,         word: "->16"   },
 	reserved{typ: TOKEN_LOAD32,         word: "->32"   },
 	reserved{typ: TOKEN_LOAD64,         word: "->64"   },
-	reserved{typ: TOKEN_LOOP,           word: "loop"   },
 	reserved{typ: TOKEN_MINUS,          word: "-"      },
 	reserved{typ: TOKEN_PERCENT,        word: "%"      },
 	reserved{typ: TOKEN_PLUS,           word: "+"      },

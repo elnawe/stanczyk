@@ -439,11 +439,12 @@ func ValidateRun() {
 			case OP_LOOP_END:
 				value := code.value.(Loop)
 
-				if value.typ == LT_PLUSLOOP {
+				switch value.typ {
+				case TOKEN_LOOP:
+				case TOKEN_NLOOP, TOKEN_PLUSLOOP:
 					a := tc.pop()
 					assertArgumentType(dtArray(a), dtArray(DATA_INT), code, loc)
 				}
-
 			case OP_END_IF, OP_END_LOOP:
 				if snapshots[tc.scope].stackCount != tc.stackCount {
 					ReportErrorAtLocation(MsgsTypecheckStackSizeChangedAfterBlock, loc)

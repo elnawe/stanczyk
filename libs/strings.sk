@@ -30,14 +30,14 @@
 ;; The Stańczyk Strings Library
 
 fn strlen (ptr --- int)
-	dup loop dup ->8 0 != (
+	dup for dup ->8 0 != (
 		++
 	)
 	swap ptrdiff
 ret
 
 fn intlen (int --- int)
-	0 swap loop dup 0 > (
+	0 swap for dup 0 > (
 		swap ++ swap 10 /
 	) drop
 ret
@@ -48,7 +48,7 @@ fn strequal (ptr ptr --- bool)
 
 	false
 	if l1 l2 = (
-		0 loop s1 over + ->8 swap s2 over + ->8 rotate = (
+		0 for s1 over + ->8 swap s2 over + ->8 rotate = (
 			++
 		)
 		dup l1 = swap l2 = = nip leave
@@ -59,7 +59,7 @@ const ITOA_BUFFER_CAP 20
 var itoa-buffer ITOA_BUFFER_CAP
 
 fn itoa (int --- ptr)
-	0 loop dup ITOA_BUFFER_CAP <= (
+	0 for dup ITOA_BUFFER_CAP <= (
 		dup itoa-buffer swap + '\0' <-8 ++
 	) drop
 
@@ -67,7 +67,7 @@ fn itoa (int --- ptr)
 		itoa-buffer '0' <-8
 	)
 
-	loop dup intlen 0 > (
+	for dup intlen 0 > (
 		dup 10 % 48 + ->char
 		over intlen -- itoa-buffer swap + swap <-8
 		10 /
