@@ -6,9 +6,9 @@ using io
 
 fn main ()
   "true value:  " print
-  true ->int println
+  true int println
   "-----------" println
 
   "false value:  " print
-  false ->int println
+  false int println
 ret

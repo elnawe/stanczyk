@@ -68,7 +68,7 @@ fn itoa (int --- ptr)
 	)
 
 	for dup intlen 0 > (
-		dup 10 % 48 + ->char
+		dup 10 % 48 + char
 		over intlen -- itoa-buffer swap + swap <-8
 		10 /
 	) drop

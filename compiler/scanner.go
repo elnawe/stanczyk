@@ -47,10 +47,6 @@ const (
 	TOKEN_ASM
 	TOKEN_BANG_EQUAL
 	TOKEN_BIND
-	TOKEN_CAST_BOOL
-	TOKEN_CAST_CHAR
-	TOKEN_CAST_INT
-	TOKEN_CAST_PTR
 	TOKEN_CONST
 	TOKEN_ELSE
 	TOKEN_EQUAL
@@ -96,7 +92,12 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_ROTATE,         word: "rotate" },
 	reserved{typ: TOKEN_DASH_DASH_DASH, word: "---"    },
 
-	// TODO: SWITCH THESE!
+	reserved{typ: TOKEN_DTYPE_ANY,      word: "any"    },
+	reserved{typ: TOKEN_DTYPE_BOOL,     word: "bool"   },
+	reserved{typ: TOKEN_DTYPE_CHAR,     word: "char"   },
+	reserved{typ: TOKEN_DTYPE_INT,      word: "int"    },
+	reserved{typ: TOKEN_DTYPE_PTR,      word: "ptr"    },
+
 	reserved{typ: TOKEN_FOR,            word: "for"    },
 	reserved{typ: TOKEN_LOOP,           word: "loop"   },
 
@@ -110,16 +111,7 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_ASM,            word: "asm"    },
 	reserved{typ: TOKEN_BANG_EQUAL,     word: "!="     },
 	reserved{typ: TOKEN_BIND,           word: "bind"   },
-	reserved{typ: TOKEN_CAST_BOOL,      word: "->bool" },
-	reserved{typ: TOKEN_CAST_CHAR,      word: "->char" },
-	reserved{typ: TOKEN_CAST_INT,       word: "->int"  },
-	reserved{typ: TOKEN_CAST_PTR,       word: "->ptr"  },
 	reserved{typ: TOKEN_CONST,          word: "const"  },
-	reserved{typ: TOKEN_DTYPE_ANY,      word: "any"    },
-	reserved{typ: TOKEN_DTYPE_BOOL,     word: "bool"   },
-	reserved{typ: TOKEN_DTYPE_CHAR,     word: "char"   },
-	reserved{typ: TOKEN_DTYPE_INT,      word: "int"    },
-	reserved{typ: TOKEN_DTYPE_PTR,      word: "ptr"    },
 	reserved{typ: TOKEN_ELSE,           word: "else"   },
 	reserved{typ: TOKEN_EQUAL,          word: "="      },
 	reserved{typ: TOKEN_FALSE,          word: "false"  },

@@ -604,6 +604,24 @@ func parseToken(token Token) {
 		code.value = 1
 		emit(code)
 
+	// Casting
+	case TOKEN_DTYPE_BOOL:
+		code.op = OP_CAST
+		code.value = DATA_BOOL
+		emit(code)
+	case TOKEN_DTYPE_CHAR:
+		code.op = OP_CAST
+		code.value = DATA_CHAR
+		emit(code)
+	case TOKEN_DTYPE_INT:
+		code.op = OP_CAST
+		code.value = DATA_INT
+		emit(code)
+	case TOKEN_DTYPE_PTR:
+		code.op = OP_CAST
+		code.value = DATA_PTR
+		emit(code)
+
 	// Intrinsics
 	case TOKEN_ARGC:
 		code.op = OP_ARGC
@@ -618,22 +636,6 @@ func parseToken(token Token) {
 		emit(code)
 	case TOKEN_BIND:
 		addBind(token)
-	case TOKEN_CAST_BOOL:
-		code.op = OP_CAST
-		code.value = DATA_BOOL
-		emit(code)
-	case TOKEN_CAST_CHAR:
-		code.op = OP_CAST
-		code.value = DATA_CHAR
-		emit(code)
-	case TOKEN_CAST_INT:
-		code.op = OP_CAST
-		code.value = DATA_INT
-		emit(code)
-	case TOKEN_CAST_PTR:
-		code.op = OP_CAST
-		code.value = DATA_PTR
-		emit(code)
 	case TOKEN_EQUAL:
 		code.op = OP_EQUAL
 		emit(code)

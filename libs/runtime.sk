@@ -146,8 +146,8 @@ ret
 ;   - A boolean value. `true` if both given values are true, `false` if one or
 ;     more are false.
 fn and (bool bool --- bool)
-	swap ->int
-	swap ->int
+	swap int
+	swap int
 	+ 2 =
 ret
 
@@ -157,8 +157,8 @@ ret
 ; Returns:
 ;   - A boolean value. `true` if at least of the given values is true.
 fn or (bool bool --- bool)
-	swap ->int
-	swap ->int
+	swap int
+	swap int
 	+ 0 >
 ret
 
@@ -168,7 +168,7 @@ ret
 ; Returns:
 ;   - <int> with the difference between the given pointers.
 fn ptrdiff (ptr ptr --- int)
-	swap ->int
-	swap ->int
+	swap int
+	swap int
 	-
 ret

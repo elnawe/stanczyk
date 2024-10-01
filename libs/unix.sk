@@ -72,8 +72,8 @@ const O_CREATE       64
 ;   - A pointer to the element in the Array. If element is out of reach,
 ;     throws an error and stops execution.
 fn argv-array (int --- ptr)
-	8 * argv ->int + ->ptr ->64
-	if dup ->int 0 = (
+	8 * argv int + ptr ->64
+	if dup int 0 = (
 		dup print
 		"argv empty" panic
 	)

@@ -26,14 +26,14 @@ fn main ()
   "-----------" println
 
   "loop 0 to 5" println
-  0 loop dup 5 <= (
+  0 for dup 5 <= (
     dup println
     ++
   ) drop
   "-----------" println
 
   "loop 0 to 10, skipping even" println
-  0 loop dup 10 <= (
+  0 for dup 10 <= (
     if dup 2 % 0 != (
       dup println
     )
@@ -42,7 +42,7 @@ fn main ()
   "-----------" println
 
   "loop 0 to 10, skipping odd" println
-  0 loop dup 10 <= (
+  0 for dup 10 <= (
     if dup 2 % 0 = (
       dup println
     )
@@ -51,7 +51,7 @@ fn main ()
   "-----------" println
 
   "loop 10 to 0, skipping every 2 elements" println
-  10 loop dup 0 >= (
+  10 for dup 0 >= (
     if dup 3 % 0 = (
       dup println
     )

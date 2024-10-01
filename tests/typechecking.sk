@@ -2,7 +2,7 @@ using io
 
 fn main ()
   "adding to a ptr only works when type casting the pointer to int" println
-  5 true ->int +
+  5 true int +
   "6  " print
   println
 ret
