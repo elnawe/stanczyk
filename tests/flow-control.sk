@@ -1,6 +1,6 @@
 using io
 
-;; Test: control-flow
+;; Test: flow-control
 ;; Description:
 ;    Test the control flow mechanism
 

@@ -14,4 +14,6 @@ fn main ()
   "30  " print thirty println
   "30  " print +2010 println
   "30  " print *103 println
+	const twenty 20
+	"20  " print twenty println
 ret

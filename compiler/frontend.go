@@ -24,9 +24,18 @@ const (
 	AUTOBIND
 )
 
+type AutobindValue string
+
+const (
+	NONE AutobindValue = ""
+	LOOPINDEX = "LOOPINDEX"
+	LOOPLIMIT = "LOOPLIMIT"
+)
+
 type Let struct {
 	bindId  int
 	scopeId int
+
 	btype   BindType
 	dtype   DataType
 	name    string
@@ -211,15 +220,17 @@ func registerConstant(token Token) {
 		return
 	}
 
+	wordToken := parser.previous
 	constant.id = len(frontend.constants)
-	constant.word = parser.previous.value.(string)
+	constant.word = wordToken.value.(string)
 
-	for _, c := range frontend.constants {
-		if c.word == constant.word {
-			msg := fmt.Sprintf(MsgParseConstOverrideNotAllowed, constant.word)
-			errorAt(&parser.previous, msg)
-			return
-		}
+	// TODO: Support rebiding constants in same scope if build configuration allows for it.
+	_, found := getBound(wordToken)
+
+	if found {
+		msg := fmt.Sprintf(MsgParseConstOverrideNotAllowed, constant.word)
+		errorAt(&token, msg)
+		return
 	}
 
 	if match(TOKEN_PAREN_CLOSE) {
@@ -256,6 +267,13 @@ func registerConstant(token Token) {
 	}
 
 	frontend.constants = append(frontend.constants, constant)
+	bind(Let{
+		btype: CONSTANT,
+		dtype: DATA_INT,
+		name: constant.word,
+		token: token,
+		value: constant.value,
+	})
 }
 
 func registerFunction(token Token) {
@@ -443,6 +461,17 @@ func getFunction(token Token) (Code, bool) {
 }
 
 func expandWord(token Token) {
+	b, found := getBound(token)
+
+	if found {
+		switch b.btype {
+		case CONSTANT:
+			emit(Code{op: OP_PUSH_INT, loc: token.loc, value: b.value.(int)})
+		}
+
+		return
+	}
+
 	// Find the word in bindings. If it returns one, emit it.
 	code_b, ok_b := getBinding(token)
 
@@ -453,12 +482,12 @@ func expandWord(token Token) {
 
 
 	// Find the word in constants. If it returns one, emit it.
-	code_c, ok_c := getConstant(token)
+	// code_c, ok_c := getConstant(token)
 
-	if ok_c {
-		emit(code_c)
-		return
-	}
+	// if ok_c {
+	// 	emit(code_c)
+	// 	return
+	// }
 
 	// Find the word in variables. If it returns one, emit it.
 	code_v, ok_v := getVariable(token)
@@ -621,6 +650,10 @@ func parseToken(token Token) {
 		code.op = OP_CAST
 		code.value = DATA_PTR
 		emit(code)
+
+	// Definition
+	case TOKEN_CONST:
+		registerConstant(token)
 
 	// Intrinsics
 	case TOKEN_ARGC:
