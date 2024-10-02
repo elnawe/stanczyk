@@ -425,10 +425,10 @@ func ValidateRun() {
 				tc.push(a)
 
 			case OP_LOOP_START:
-				// b := tc.pop()
-				// a := tc.pop()
-				// assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
-				// tc.scope++
+				b := tc.pop()
+				a := tc.pop()
+				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
+				tc.scope++
 			case OP_LOOP_END:
 				value := code.value.(Loop)
 

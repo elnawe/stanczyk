@@ -789,7 +789,7 @@ func parseToken(token Token) {
 		loopIndexByte += loopScopeDepth
 		loopIndexLetter := string(byte(loopIndexByte))
 
-		limitName := loopIndexLetter + "LIMIT"
+		limitName := loopIndexLetter + "limit"
 
 		limitValue := Bound{name: limitName, id: len(frontend.current.bindings)}
 		frontend.current.bindings = append(frontend.current.bindings, limitValue)
@@ -810,6 +810,8 @@ func parseToken(token Token) {
 		})
 
 		emit(Code{op: OP_BIND, loc: token.loc, value: len(frontend.current.bindings)})
+		emit(Code{op: OP_PUSH_BOUND, loc: token.loc, value: limitValue})
+		emit(Code{op: OP_PUSH_BOUND, loc: token.loc, value: indexValue})
 
 		loopScopeValue := LoopScopeValue{
 			bindIndexId: indexValue.id,

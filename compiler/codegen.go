@@ -206,25 +206,10 @@ func generateLinuxX64() {
 			// FLOW CONTROL
 			case OP_LOOP_START:
 				val := value.(Loop)
-				indexPtr := val.bindIndexId * 8
-				limitPtr := val.bindLimitId * 8
-
-				// out.WriteText(";; bound %s (%s:%d:%d)", bound.name, loc.f, loc.l, loc.c)
-				// out.WriteText("    mov rax, [return_stack_rsp]")
-				// out.WriteText("    add rax, %d", bound.id * 8)
-				// out.WriteText("    push QWORD [rax]")
-
-				// bindIndexId int
-				// bindLimitId int
-
 				out.WriteText(";; loop start (scope: %d) (%s:%d:%d)",
 					val.level, loc.f, loc.l, loc.c)
-				// out.WriteText("    pop rbx") // index
-				// out.WriteText("    mov QWORD [loop_index+%d], rbx", val.level)
-				out.WriteText("    mov rbx, [return_stack_rsp+%d]", indexPtr)
-				out.WriteText("    mov rax, [return_stack_rsp+%d]", limitPtr)
-				// out.WriteText("    pop rax") // limit
-				// out.WriteText("    mov QWORD [loop_limit+%d], rax", val.level)
+				out.WriteText("    pop rbx") // index
+				out.WriteText("    pop rax") // limit
 				out.WriteText("    cmp rbx, rax")
 				out.WriteText("    %s .ip%dls", val.condition, ipIndex)
 				out.WriteText("    jmp .ip%dle", val.gotoIP)
@@ -237,26 +222,31 @@ func generateLinuxX64() {
 				out.WriteText(";; loop end (scope: %d) (%s:%d:%d)",
 					val.level, loc.f, loc.l, loc.c)
 
+				// Move the limit to RAX
+				out.WriteText("    mov rcx, [return_stack_rsp]")
+				out.WriteText("    add rcx, %d", limitPtr)
+				out.WriteText("    mov rax, QWORD [rcx]")
+
+				// Update the index and move to RBX
+				out.WriteText("    mov rcx, [return_stack_rsp]")
+				out.WriteText("    add rcx, %d", indexPtr)
+
 				switch val.typ {
 				case TOKEN_LOOP:
-					out.WriteText("    add QWORD [return_stack_rsp+%d], 1", indexPtr)
-					// out.WriteText("    add QWORD [loop_index+%d], 1", val.level)
+					out.WriteText("    add QWORD [rcx], 1")
 				case TOKEN_NLOOP:
-					out.WriteText("    pop rax")
-					out.WriteText("    mov QWORD [return_stack_rsp+%d], rax", indexPtr)
-					// out.WriteText("    mov QWORD [loop_index+%d], rax", val.level)
+					out.WriteText("    pop rdx")
+					out.WriteText("    mov QWORD [rcx], rdx")
 				case TOKEN_PLUSLOOP:
-					out.WriteText("    pop rax")
-					out.WriteText("    add QWORD [return_stack_rsp+%d], rax", indexPtr)
-					// out.WriteText("    add QWORD [loop_index+%d], rax", val.level)
+					out.WriteText("    pop rdx")
+					out.WriteText("    add QWORD [rcx], rdx")
 				}
 
-				out.WriteText("    mov rbx, [return_stack_rsp+%d]", indexPtr)
-				out.WriteText("    mov rax, [return_stack_rsp+%d]", limitPtr)
+				out.WriteText("    mov rbx, QWORD [rcx]")
+
 				out.WriteText("    cmp rbx, rax")
 				out.WriteText("    %s .ip%dls", val.condition, val.gotoIP)
 				out.WriteText(".ip%dle:", ipIndex)
-				// maybe clear memory?
 
 			// INTRINSICS
 			case OP_ARGC:
