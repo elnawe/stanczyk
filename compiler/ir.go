@@ -41,7 +41,6 @@ const (
 	OP_MULTIPLY
 	OP_NOT_EQUAL
 	OP_RET
-	OP_ROTATE
 	OP_SUBSTRACT
 	OP_STORE8
 	OP_STORE16
@@ -80,14 +79,16 @@ const (
 type LoopType int
 
 type Loop struct {
-	condition ScopeStartCondition
-	gotoIP    int
-	level     int
-	typ       TokenType
+	bindIndexId int
+	bindLimitId int
+	condition   ScopeStartCondition
+	gotoIP      int
+	level       int
+	typ         TokenType
 }
 
 type Bound struct {
-	word string
+	name string
 	id   int
 }
 

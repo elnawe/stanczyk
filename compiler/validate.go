@@ -53,6 +53,8 @@ func getOperationName(code Code) string {
 	case OP_JUMP_IF_FALSE: name = "then"
 	case OP_LESS: name = "< (less)"
 	case OP_LESS_EQUAL: name = "<= (less equal)"
+	case OP_LOOP_END: name = "loop end (loop)"
+	case OP_LOOP_START: name = "loop start (until)"
 	case OP_LOAD8, OP_LOAD16, OP_LOAD32, OP_LOAD64: name = "load"
 	case OP_LOOP: name = "loop"
 	case OP_MULTIPLY: name = "* (multiply)"
@@ -409,15 +411,6 @@ func ValidateRun() {
 				a := tc.pop()
 				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
 				tc.push(DATA_INT)
-			case OP_ROTATE:
-				c := tc.pop()
-				b := tc.pop()
-				a := tc.pop()
-				assertArgumentType(dtArray(a, b, c),
-					dtArray(DATA_ANY, DATA_ANY, DATA_ANY), code, loc)
-				tc.push(b)
-				tc.push(c)
-				tc.push(a)
 			case OP_STORE8, OP_STORE16, OP_STORE32, OP_STORE64:
 				allowedTypes := [][]DataType{
 					dtArray(DATA_PTR, DATA_PTR),
@@ -432,10 +425,10 @@ func ValidateRun() {
 				tc.push(a)
 
 			case OP_LOOP_START:
-				b := tc.pop()
-				a := tc.pop()
-				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
-				tc.scope++
+				// b := tc.pop()
+				// a := tc.pop()
+				// assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
+				// tc.scope++
 			case OP_LOOP_END:
 				value := code.value.(Loop)
 

@@ -3,12 +3,12 @@ using io
 fn main ()
   "testing bindings to form a word" println
   "S" "t" "a" "ń" "c" "z" "y" "k"
-  bind (s t a n c z y k)
+  [s t a n c z y k]
   "Stańczyk  " print
   s print t print a print n print c print z print y print k println
 	"I can also bind again!"
 	"In fact, I can bind multiple"
-	bind (another multiple)
+	[another multiple]
 	another println
 	multiple println
 ret

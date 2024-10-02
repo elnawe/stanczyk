@@ -27,7 +27,6 @@ const (
 	// Flow Control
 	TOKEN_UNTIL
 	TOKEN_FOR
-	TOKEN_WHILE
 	TOKEN_LOOP
 	TOKEN_NLOOP
 	TOKEN_PLUSLOOP
@@ -66,7 +65,6 @@ const (
 	TOKEN_PLUS
 	TOKEN_RET
 	TOKEN_RIGHT_ARROW
-	TOKEN_ROTATE
 	TOKEN_SLASH
 	TOKEN_STAR
 	TOKEN_STORE8
@@ -89,7 +87,6 @@ type reserved struct {
 }
 
 var reservedWords = []reserved{
-	reserved{typ: TOKEN_ROTATE,         word: "rotate" },
 	reserved{typ: TOKEN_DASH_DASH_DASH, word: "---"    },
 
 	reserved{typ: TOKEN_DTYPE_ANY,      word: "any"    },
@@ -102,7 +99,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_LOOP,           word: "loop"   },
 
 	reserved{typ: TOKEN_UNTIL,          word: "until"  },
-	reserved{typ: TOKEN_WHILE,          word: "while"  },
 	reserved{typ: TOKEN_PLUSLOOP,       word: "+loop"  },
 	reserved{typ: TOKEN_NLOOP,          word: "nloop"  },
 
