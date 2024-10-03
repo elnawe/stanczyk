@@ -44,15 +44,15 @@ ret
 
 fn strequal (ptr ptr --- bool)
 	over strlen swap dup strlen
-	[s1 l1 s2 l2]
-
-	false
-	if l1 l2 = (
-		0 for s1 over + ->8 swap s2 over + ->8 rot = (
-			++
+	let s1 l1 s2 l2 in
+		false
+		if l1 l2 = (
+			0 for s1 over + ->8 swap s2 over + ->8 rot = (
+				++
+			)
+			dup l1 = swap l2 = = nip leave
 		)
-		dup l1 = swap l2 = = nip leave
-	)
+	done
 ret
 
 const ITOA_BUFFER_CAP 20

@@ -162,17 +162,18 @@ func match(tt TokenType) bool {
  *   | ||   /
  *  |___|_|_\
  */
-func startScope(newScope Scope) {
+func startScope(newScope Scope) *Scope {
 	newScope.scopeId = frontend.scope.currentLevel
 	frontend.scope.levels = append(frontend.scope.levels, newScope)
 	frontend.scope.currentLevel++
+	return getCurrentScope()
 }
 
-func getLastScope() *Scope {
+func getCurrentScope() *Scope {
 	return &frontend.scope.levels[frontend.scope.currentLevel-1]
 }
 
-func getCountScopeType(typ ScopeType) int {
+func getCountForScopeType(typ ScopeType) int {
 	count := 0
 
 	for _, s := range frontend.scope.levels {
@@ -185,12 +186,12 @@ func getCountScopeType(typ ScopeType) int {
 }
 
 func endScope() {
-	frontend.scope.levels = frontend.scope.levels[:frontend.scope.currentLevel-1]
 	frontend.scope.currentLevel--
+	frontend.scope.levels = frontend.scope.levels[:len(frontend.scope.levels)-1]
 }
 
 func bind(newBind Let) {
-	scope := getLastScope()
+	scope := getCurrentScope()
 	newBind.bindId = len(scope.binds)
 	newBind.scopeId = scope.scopeId
 	scope.binds = append(scope.binds, newBind)
@@ -425,18 +426,6 @@ func registerVar(token Token) {
  *  | (_| (_) | |\/| |  _/| || |__ / _ \| |  | | (_) | .` |
  *   \___\___/|_|  |_|_| |___|____/_/ \_\_| |___\___/|_|\_|
  */
-func getBinding(token Token) (Code, bool) {
-	word := token.value.(string)
-
-	for _, b := range frontend.current.bindings {
-		if b.name == word {
-			return Code{op: OP_PUSH_BOUND, loc: token.loc, value: b}, true
-		}
-	}
-
-	return Code{}, false
-}
-
 func getConstant(token Token) (Code, bool) {
 	word := token.value.(string)
 
@@ -479,6 +468,15 @@ func getFunction(token Token) (Code, bool) {
 }
 
 func expandWord(token Token) {
+	word := token.value.(string)
+
+	for _, bind := range frontend.current.scope.binds {
+		if bind.name == word {
+			emit(Code{op: OP_PUSH_BIND, loc: token.loc, value: bind})
+			return
+		}
+	}
+
 	b, found := getBound(token)
 
 	if found {
@@ -491,14 +489,6 @@ func expandWord(token Token) {
 
 		return
 	}
-
-	// Find the word in constants. If it returns one, emit it.
-	// code_c, ok_c := getConstant(token)
-
-	// if ok_c {
-	// 	emit(code_c)
-	// 	return
-	// }
 
 	// Find the word in variables. If it returns one, emit it.
 	code_v, ok_v := getVariable(token)
@@ -520,40 +510,6 @@ func expandWord(token Token) {
 	msg := fmt.Sprintf(MsgParseWordNotFound, token.value.(string))
 	ReportErrorAtLocation(msg, token.loc)
 	ExitWithError(CodeCodegenError)
-}
-
-func addBind(token Token) {
-	error_found := false
-	startingBoundIndex := len(frontend.current.bindings)
-
-	consume(TOKEN_PAREN_OPEN, MsgParseBindMissingOpenStmt)
-
-	for match(TOKEN_WORD) {
-		t := parser.previous
-		word := t.value.(string)
-
-		_, found := getBinding(t)
-
-		if found {
-			error_found = true
-			errorAt(&token, MsgParseBindCannotOverrideWord, word)
-			break
-		}
-
-		frontend.current.bindings = append(frontend.current.bindings, Bound{
-			name: word,
-			id: len(frontend.current.bindings),
-		})
-	}
-
-	if error_found || len(frontend.current.bindings) == startingBoundIndex {
-		errorAt(&token, MsgParseBindEmptyBody)
-		for !match(TOKEN_PAREN_CLOSE) { advance() }
-		return
-	}
-
-	consume(TOKEN_PAREN_CLOSE, MsgParseBindMissingCloseStmt)
-	emit(Code{op: OP_BIND, loc: token.loc, value: len(frontend.current.bindings)})
 }
 
 func addAssembly(token Token) {
@@ -695,8 +651,6 @@ func parseToken(token Token) {
 	case TOKEN_BANG_EQUAL:
 		code.op = OP_NOT_EQUAL
 		emit(code)
-	case TOKEN_BIND:
-		addBind(token)
 	case TOKEN_EQUAL:
 		code.op = OP_EQUAL
 		emit(code)
@@ -713,6 +667,35 @@ func parseToken(token Token) {
 		emit(code)
 	case TOKEN_LESS_EQUAL:
 		code.op = OP_LESS_EQUAL
+		emit(code)
+	case TOKEN_LET, TOKEN_LETSTAR:
+		count := 0
+		for match(TOKEN_WORD) {
+			w := parser.previous.value.(string)
+			count++
+			frontend.current.scope.binds = append(
+				frontend.current.scope.binds,
+				Bind{
+					id: len(frontend.current.scope.binds),
+					name: w,
+					writable: token.typ == TOKEN_LETSTAR,
+				},
+			)
+		}
+		consume(TOKEN_IN, "TODO: Missing IN keyowrd")
+		frontend.current.scope.count = append(frontend.current.scope.count, count)
+		code.op = OP_LET_BIND
+		code.value = count
+		emit(code)
+	case TOKEN_DONE:
+		lastIndex := len(frontend.current.scope.count)-1
+		countOfBinds := len(frontend.current.scope.binds)
+		unbindAmount := frontend.current.scope.count[lastIndex]
+		frontend.current.scope.count = frontend.current.scope.count[:lastIndex]
+		frontend.current.scope.binds =
+			frontend.current.scope.binds[:countOfBinds-unbindAmount]
+		code.op = OP_LET_UNBIND
+		code.value = unbindAmount
 		emit(code)
 	case TOKEN_LOAD8:
 		code.op = OP_LOAD8
@@ -768,9 +751,8 @@ func parseToken(token Token) {
 	case TOKEN_UNTIL:
 		// Getting the condition from the last IP
 		var condition ScopeStartCondition
-
 		lastIPCode := frontend.current.code[len(frontend.current.code)-1]
-		frontend.current.code = frontend.current.code[:len(frontend.current.code)-1]
+		frontend.current.code = remove(frontend.current.code, len(frontend.current.code)-1)
 
 		switch lastIPCode.op {
 		case OP_NOT_EQUAL		: condition = LC_NOT_EQUAL
@@ -784,47 +766,36 @@ func parseToken(token Token) {
 			ExitWithError(CodeParseError)
 		}
 
-		loopIndexByte := 73
-		loopScopeDepth := getCountScopeType(SCOPE_LOOP)
+		currentScope := startScope(Scope{
+			typ: SCOPE_LOOP,
+			startCondition: condition,
+			startToken: token,
+		})
+
+		loopIndexByte := 72
+		loopScopeDepth := getCountForScopeType(SCOPE_LOOP)
 		loopIndexByte += loopScopeDepth
 		loopIndexLetter := string(byte(loopIndexByte))
-
 		limitName := loopIndexLetter + "limit"
 
+
 		limitValue := Bound{name: limitName, id: len(frontend.current.bindings)}
+		bind(Let{btype: BIND, name: limitName, token: token, value: limitValue})
 		frontend.current.bindings = append(frontend.current.bindings, limitValue)
-		bind(Let{
-			btype: AUTOBIND,
-			name: limitName,
-			token: token,
-			value: limitValue,
-		})
 
 		indexValue := Bound{name: loopIndexLetter, id: len(frontend.current.bindings)}
+		bind(Let{btype: BIND, name: loopIndexLetter, token: token, value: indexValue})
 		frontend.current.bindings = append(frontend.current.bindings, indexValue)
-		bind(Let{
-			btype: AUTOBIND,
-			name: loopIndexLetter,
-			token: token,
-			value: indexValue,
-		})
 
 		emit(Code{op: OP_BIND, loc: token.loc, value: len(frontend.current.bindings)})
 		emit(Code{op: OP_PUSH_BOUND, loc: token.loc, value: limitValue})
 		emit(Code{op: OP_PUSH_BOUND, loc: token.loc, value: indexValue})
 
-		loopScopeValue := LoopScopeValue{
+		currentScope.startIP = len(frontend.current.code)
+		currentScope.value = LoopScopeValue{
 			bindIndexId: indexValue.id,
 			bindLimitId: limitValue.id,
 		}
-
-		startScope(Scope{
-			typ: SCOPE_LOOP,
-			startCondition: condition,
-			startIP: len(frontend.current.code),
-			startToken: token,
-			value: loopScopeValue,
-		})
 
 		*sLevel++
 		frontend.scopeOld[*sLevel].loopCondition = condition
@@ -833,8 +804,8 @@ func parseToken(token Token) {
 
 		code.op = OP_LOOP_START
 		emit(code)
-	case TOKEN_LOOP, TOKEN_NLOOP, TOKEN_PLUSLOOP:
-		currentScope := getLastScope()
+	case TOKEN_LOOP, TOKEN_LLOOP, TOKEN_NLOOP, TOKEN_PLUSLOOP:
+		currentScope := getCurrentScope()
 
 		if currentScope.typ != SCOPE_LOOP {
 			// TODO: Improve error message, showing the starting and closing statements
@@ -1163,4 +1134,8 @@ func FrontendRun() {
 	if frontend.error {
 		ExitWithError(CodeParseError)
 	}
+}
+
+func remove(slice []Code, s int) []Code {
+    return append(slice[:s], slice[s+1:]...)
 }

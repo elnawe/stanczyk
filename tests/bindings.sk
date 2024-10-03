@@ -3,12 +3,22 @@ using io
 fn main ()
   "testing bindings to form a word" println
   "S" "t" "a" "ń" "c" "z" "y" "k"
-  [s t a n c z y k]
-  "Stańczyk  " print
-  s print t print a print n print c print z print y print k println
+	let s t a n c z y k in
+		"Stańczyk  " print
+		s print t print a print n print c print z print y print k println
+	done
+
 	"I can also bind again!"
 	"In fact, I can bind multiple"
-	[another multiple]
-	another println
-	multiple println
+	"Nested let takes this value"
+
+	; BUG: There's a bug in here where nested shouldn't really have "nested"
+	; string. At that point, it should be the "I can" string
+	let another multiple in
+		let nested in
+			another println
+			multiple println
+			nested println
+		done
+	done
 ret

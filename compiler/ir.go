@@ -6,6 +6,7 @@ const (
 	// Constants
 	OP_PUSH_BOOL OpCode = iota
 	OP_PUSH_BOUND
+	OP_PUSH_BIND
 	OP_PUSH_CHAR
 	OP_PUSH_INT
 	OP_PUSH_PTR
@@ -13,6 +14,9 @@ const (
 
 	OP_LOOP_START
 	OP_LOOP_END
+
+	OP_LET_BIND
+	OP_LET_UNBIND
 
 	// Intrinscis
 	OP_ADD
@@ -107,12 +111,24 @@ type Arity struct {
 	types        []Argument
 }
 
+type Bind struct {
+	id       int
+	name     string
+	writable bool
+}
+
+type BindScope struct {
+	count []int
+	binds []Bind
+}
+
 type Function struct {
 	ip          int
 	name        string
 	arguments   Arity
 	returns     Arity
 	loc         Location
+	scope       BindScope
 	bindings    []Bound
 	code        []Code
 	parsed      bool

@@ -29,6 +29,7 @@ const (
 	TOKEN_FOR
 	TOKEN_LOOP
 	TOKEN_NLOOP
+	TOKEN_LLOOP
 	TOKEN_PLUSLOOP
 
 	// Single characters
@@ -39,13 +40,16 @@ const (
 
 	// NEW
 	TOKEN_DASH_DASH_DASH
+	TOKEN_LET
+	TOKEN_LETSTAR
+	TOKEN_IN
+	TOKEN_DONE
 
 	// Reserved Words
 	TOKEN_ARGC
 	TOKEN_ARGV
 	TOKEN_ASM
 	TOKEN_BANG_EQUAL
-	TOKEN_BIND
 	TOKEN_CONST
 	TOKEN_ELSE
 	TOKEN_EQUAL
@@ -88,6 +92,11 @@ type reserved struct {
 
 var reservedWords = []reserved{
 	reserved{typ: TOKEN_DASH_DASH_DASH, word: "---"    },
+	reserved{typ: TOKEN_LET,            word: "let"    },
+	reserved{typ: TOKEN_LETSTAR,        word: "let*"   },
+	reserved{typ: TOKEN_IN,             word: "in"     },
+	reserved{typ: TOKEN_DONE,           word: "done"   },
+
 
 	reserved{typ: TOKEN_DTYPE_ANY,      word: "any"    },
 	reserved{typ: TOKEN_DTYPE_BOOL,     word: "bool"   },
@@ -100,13 +109,13 @@ var reservedWords = []reserved{
 
 	reserved{typ: TOKEN_UNTIL,          word: "until"  },
 	reserved{typ: TOKEN_PLUSLOOP,       word: "+loop"  },
+	reserved{typ: TOKEN_LLOOP,          word: "lloop"  },
 	reserved{typ: TOKEN_NLOOP,          word: "nloop"  },
 
 	reserved{typ: TOKEN_ARGC,           word: "argc"   },
 	reserved{typ: TOKEN_ARGV,           word: "argv"   },
 	reserved{typ: TOKEN_ASM,            word: "asm"    },
 	reserved{typ: TOKEN_BANG_EQUAL,     word: "!="     },
-	reserved{typ: TOKEN_BIND,           word: "bind"   },
 	reserved{typ: TOKEN_CONST,          word: "const"  },
 	reserved{typ: TOKEN_ELSE,           word: "else"   },
 	reserved{typ: TOKEN_EQUAL,          word: "="      },
@@ -166,7 +175,7 @@ func makeToken(t TokenType, value ...any) {
 	var token Token
 	token.typ = t
 	token.loc = Location{
-		f: scanner.filename,
+		f: GetRelativePath(scanner.filename),
 		c: scanner.column,
 		l: scanner.line,
 	}

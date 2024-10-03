@@ -209,9 +209,9 @@ func ValidateRun() {
 
 	for ifunction, function := range TheProgram.chunks {
 		var binds []DataType
+		var bindings []DataType
 		argumentTypes := function.arguments.types
 		returnTypes := function.returns.types
-
 
 		if function.name == "main" {
 			mainHandled = true
@@ -243,6 +243,9 @@ func ValidateRun() {
 			case OP_PUSH_BOUND:
 				value := code.value.(Bound)
 				tc.push(binds[value.id])
+			case OP_PUSH_BIND:
+				value := code.value.(Bind)
+				tc.push(bindings[value.id])
 			case OP_PUSH_CHAR:
 				tc.push(DATA_CHAR)
 			case OP_PUSH_INT:
@@ -251,6 +254,34 @@ func ValidateRun() {
 				tc.push(DATA_PTR)
 			case OP_PUSH_STR:
 				tc.push(DATA_PTR)
+
+			case OP_BIND:
+				var have []DataType
+				var wants []DataType
+				value := code.value.(int)
+
+				for index := len(binds); index < value; index++ {
+					a := tc.pop()
+					binds = append([]DataType{a}, binds...)
+					have = append([]DataType{a}, have...)
+					wants = append(wants, DATA_ANY)
+				}
+				assertArgumentType(have, wants, code, loc)
+
+			case OP_LET_BIND:
+				var have []DataType
+				var wants []DataType
+				newBinds := code.value.(int)
+				for i := newBinds; i > 0; i-- {
+					a := tc.pop()
+					bindings = append([]DataType{a}, bindings...)
+					have = append([]DataType{a}, have...)
+					wants = append(wants, DATA_ANY)
+				}
+				assertArgumentType(have, wants, code, loc)
+			case OP_LET_UNBIND:
+				unbound := code.value.(int)
+				bindings = bindings[:len(bindings)-unbound]
 
 			// Intrinsics
 			case OP_ASSEMBLY:
@@ -284,18 +315,6 @@ func ValidateRun() {
 				tc.push(DATA_INT)
 			case OP_ARGV:
 				tc.push(DATA_PTR)
-			case OP_BIND:
-				var have []DataType
-				var wants []DataType
-				value := code.value.(int)
-
-				for index := len(binds); index < value; index++ {
-					a := tc.pop()
-					binds = append([]DataType{a}, binds...)
-					have = append([]DataType{a}, have...)
-					wants = append(wants, DATA_ANY)
-				}
-				assertArgumentType(have, wants, code, loc)
 			case OP_CAST:
 				a := tc.pop()
 				assertArgumentType(dtArray(a), dtArray(DATA_ANY), code, loc)
@@ -434,7 +453,8 @@ func ValidateRun() {
 
 				switch value.typ {
 				case TOKEN_LOOP:
-				case TOKEN_NLOOP, TOKEN_PLUSLOOP:
+					// Nothing
+				case TOKEN_LLOOP, TOKEN_NLOOP, TOKEN_PLUSLOOP:
 					a := tc.pop()
 					assertArgumentType(dtArray(a), dtArray(DATA_INT), code, loc)
 				}
