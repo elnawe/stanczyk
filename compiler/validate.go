@@ -65,7 +65,6 @@ func getOperationName(code Code) string {
 	case OP_RET: name = "ret"
 	case OP_STORE8, OP_STORE16, OP_STORE32, OP_STORE64: name = "store"
 	case OP_SUBSTRACT: name = "- (substract)"
-	case OP_TAKE: name = "take"
 	}
 
 	return name
@@ -427,15 +426,11 @@ func ValidateRun() {
 				b := tc.pop()
 				a := tc.pop()
 				assertArgumentTypes(dtArray(a, b), allowedTypes, code, loc)
-			case OP_TAKE:
-				a := tc.pop()
-				assertArgumentType(dtArray(a), dtArray(DATA_ANY), code, loc)
-				tc.push(a)
 
 			case OP_LOOP_END:
 				tc.scope--
 			case OP_LOOP_SETUP:
-				// Does nothing
+				// NOTE: This is just meant to be a label in the code.
 			case OP_LOOP_START:
 				a := tc.pop()
 				assertArgumentType(dtArray(a), dtArray(DATA_BOOL), code, loc)

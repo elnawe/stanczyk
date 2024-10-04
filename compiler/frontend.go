@@ -384,6 +384,18 @@ func registerVar(token Token) {
  *  | (_| (_) | |\/| |  _/| || |__ / _ \| |  | | (_) | .` |
  *   \___\___/|_|  |_|_| |___|____/_/ \_\_| |___\___/|_|\_|
  */
+func takeFromFunctionCode(quant int) []Code {
+	var result []Code
+	codeLength := len(frontend.current.code)
+
+	for index := codeLength-quant; index < codeLength; index++ {
+		result = append(result, frontend.current.code[index])
+	}
+
+	frontend.current.code = frontend.current.code[:codeLength-quant]
+	return result
+}
+
 func getVariables() []Object {
 	var vars []Object
 
@@ -668,9 +680,6 @@ func parseToken(token Token) {
 	case TOKEN_STORE64:
 		code.op = OP_STORE64
 		emit(code)
-	case TOKEN_TAKE:
-		code.op = OP_TAKE
-		emit(code)
 	case TOKEN_THIS:
 		loc := code.loc
 		code.op = OP_PUSH_STR
@@ -680,21 +689,17 @@ func parseToken(token Token) {
 	// Special
 	case TOKEN_WORD:
 		expandWord(token)
+
+	// FLOW CONTROL
 	case TOKEN_UNTIL:
-		// Loops work in a way where we get the last 3 op codes, OP codes are the ones
+		// UNTIL Loops work in a way where we get the last 3 op codes, OP codes are the ones
 		// hopefully providing a boolean as a result. We use them initially to make sure
 		// we want to go through the LOOP (as in, if the result is true, we start preparation).
 		// Preparation step begins by binding the left and right operators into the limit
 		// and index words, and then use the bound values to do another check and continue.
 		// That would be, if it's true, jumps into the loop, if it's false, goes to the end
 		// label.
-		codeLength := len(frontend.current.code)
-		copyOfLoopStartCodeOps := []Code{
-			frontend.current.code[codeLength-3],
-			frontend.current.code[codeLength-2],
-			frontend.current.code[codeLength-1],
-		}
-		frontend.current.code = frontend.current.code[:codeLength-3]
+		copyOfLoopStartCodeOps := takeFromFunctionCode(3)
 
 		c := openScope(SCOPE_LOOP, token)
 
@@ -703,26 +708,20 @@ func parseToken(token Token) {
 		emit(copyOfLoopStartCodeOps[0])
 		emit(copyOfLoopStartCodeOps[1])
 		emit(Code{op: OP_LET_BIND, loc: code.loc, value: bind([]string{limitN, indexN})})
-
-		// Push the bindings and test again
 		emit(Code{op: OP_LOOP_SETUP, loc: code.loc, value: c.ipStart})
-
-		bc, bf := getBind(Token{loc: token.loc, value: limitN})
-		if !bf {
-			errorAt(&token, "TODO: Couldn't find LIMIT")
-			return
-		}
+		bc, _ := getBind(Token{loc: token.loc, value: limitN})
 		emit(bc)
-
-		bc, bf = getBind(Token{loc: token.loc, value: indexN})
-		if !bf {
-			errorAt(&token, "TODO: Couldn't find INDEX")
-			return
-		}
+		bc, _ = getBind(Token{loc: token.loc, value: indexN})
 		emit(bc)
 		emit(copyOfLoopStartCodeOps[2])
-
-		// Conditionally start the loop
+		emit(Code{op: OP_LOOP_START, loc: code.loc, value: c.ipStart})
+	case TOKEN_WHILE:
+		c := openScope(SCOPE_LOOP, token)
+		_, indexN := getLimitIndexBindWord()
+		emit(Code{op: OP_LET_BIND, loc: code.loc, value: bind([]string{indexN})})
+		emit(Code{op: OP_LOOP_SETUP, loc: code.loc, value: c.ipStart})
+		bc, _ := getBind(Token{loc: token.loc, value: indexN})
+		emit(bc)
 		emit(Code{op: OP_LOOP_START, loc: code.loc, value: c.ipStart})
 	case TOKEN_LOOP:
 		c := getCurrentScope()
@@ -737,17 +736,19 @@ func parseToken(token Token) {
 		switch c.tokenStart.typ {
 		case TOKEN_UNTIL:
 			_, indexN := getLimitIndexBindWord()
-			bc, bf := getBind(Token{loc: token.loc, value: indexN})
-			if !bf {
-				errorAt(&token, "TODO: Couldn't find INDEX")
-				return
-			}
+			bc, _ := getBind(Token{loc: token.loc, value: indexN})
 			emit(Code{op: OP_REBIND, loc: code.loc, value: bc.value})
 			emit(Code{op: OP_LOOP_END, loc: code.loc, value: c.ipStart})
 			emit(Code{op: OP_LET_UNBIND, loc: code.loc, value: unbind()})
-			closeScopeAfterCheck(SCOPE_LOOP)
+		case TOKEN_WHILE:
+			_, indexN := getLimitIndexBindWord()
+			bc, _ := getBind(Token{loc: token.loc, value: indexN})
+			emit(Code{op: OP_REBIND, loc: code.loc, value: bc.value})
+			emit(Code{op: OP_LOOP_END, loc: code.loc, value: c.ipStart})
+			emit(Code{op: OP_LET_UNBIND, loc: code.loc, value: unbind()})
 		}
 
+		closeScopeAfterCheck(SCOPE_LOOP)
 	case TOKEN_IF:
 		*sLevel++
 		frontend.scopeOld[*sLevel].tt = token.typ

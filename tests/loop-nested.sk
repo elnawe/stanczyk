@@ -1,0 +1,10 @@
+using io
+
+fn main ()
+	5 0 != until
+		"loop 1: " print I println
+		5 0 != until
+			"loop 2: " print J println
+		J ++ loop
+	I ++ loop
+ret

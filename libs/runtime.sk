@@ -135,6 +135,13 @@ fn -rot ($X $Y $Z --- Z X Y) let x y z in z x y done ret
 ;   - The given argument in opposite order (<arg2> <arg1>)
 fn swap ($X $Y --- Y X) let x y in y x done ret
 
+; Takes the last value from the stack and push it back so it can be used in special cases
+; Calling:
+;   - <arg> take
+; Returns:
+;   - Same <arg>
+fn take ($X --- X) let x in x done ret
+
 ; Duplicates the last value on the data stack and swap the other values
 ; Calling:
 ;   - <arg1> <arg2> swap

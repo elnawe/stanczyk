@@ -28,6 +28,7 @@ const (
 	TOKEN_UNTIL
 	TOKEN_FOR
 	TOKEN_LOOP
+	TOKEN_WHILE
 
 	// Single characters
 	TOKEN_BRACKET_CLOSE
@@ -72,7 +73,6 @@ const (
 	TOKEN_STORE16
 	TOKEN_STORE32
 	TOKEN_STORE64
-	TOKEN_TAKE
 	TOKEN_THIS
 	TOKEN_USING
 	TOKEN_VAR
@@ -104,6 +104,7 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_FOR,            word: "for"    },
 	reserved{typ: TOKEN_LOOP,           word: "loop"   },
 	reserved{typ: TOKEN_UNTIL,          word: "until"  },
+	reserved{typ: TOKEN_WHILE,          word: "while"  },
 
 	reserved{typ: TOKEN_ARGC,           word: "argc"   },
 	reserved{typ: TOKEN_ARGV,           word: "argv"   },
@@ -135,7 +136,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_STORE16,        word: "<-16"   },
 	reserved{typ: TOKEN_STORE32,        word: "<-32"   },
 	reserved{typ: TOKEN_STORE64,        word: "<-64"   },
-	reserved{typ: TOKEN_TAKE,           word: "take"   },
 	reserved{typ: TOKEN_THIS,           word: "this"   },
 	reserved{typ: TOKEN_TRUE,           word: "true"   },
 	reserved{typ: TOKEN_USING,          word: "using"  },

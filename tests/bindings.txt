@@ -1,5 +1,0 @@
-testing bindings to form a word
-Stańczyk  Stańczyk
-I can also bind again!
-In fact, I can bind multiple
-Nested let takes this value

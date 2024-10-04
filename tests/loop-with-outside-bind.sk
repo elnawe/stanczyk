@@ -1,0 +1,10 @@
+using io
+
+fn main ()
+	13
+	let x in
+		5 0 != until
+			x println
+		I ++ loop
+	done
+ret

@@ -339,10 +339,6 @@ func generateLinuxX64() {
                 out.WriteText("    pop rbx")
                 out.WriteText("    pop rax")
                 out.WriteText("    mov [rax], rbx")
-			case OP_TAKE:
-				out.WriteText(";; take (%s:%d:%d)", loc.f, loc.l, loc.c)
-				out.WriteText("    pop rax")
-				out.WriteText("    push rax")
 
 			// Special
 			case OP_END_IF:

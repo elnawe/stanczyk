@@ -1,0 +1,7 @@
+using io
+
+fn main ()
+	10 0 != until
+		"loop 1: " print I println
+	I ++ loop
+ret

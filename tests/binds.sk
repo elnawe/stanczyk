@@ -7,16 +7,4 @@ fn main ()
 		"Stańczyk  " print
 		s print t print a print n print c print z print y print k println
 	done
-
-	"Nested let takes this value"
-	"I can also bind again!"
-	"In fact, I can bind multiple"
-
-	let another multiple in
-		let nested in
-			another println
-			multiple println
-			nested println
-		done
-	done
 ret
