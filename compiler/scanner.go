@@ -28,9 +28,6 @@ const (
 	TOKEN_UNTIL
 	TOKEN_FOR
 	TOKEN_LOOP
-	TOKEN_NLOOP
-	TOKEN_LLOOP
-	TOKEN_PLUSLOOP
 
 	// Single characters
 	TOKEN_BRACKET_CLOSE
@@ -106,11 +103,7 @@ var reservedWords = []reserved{
 
 	reserved{typ: TOKEN_FOR,            word: "for"    },
 	reserved{typ: TOKEN_LOOP,           word: "loop"   },
-
 	reserved{typ: TOKEN_UNTIL,          word: "until"  },
-	reserved{typ: TOKEN_PLUSLOOP,       word: "+loop"  },
-	reserved{typ: TOKEN_LLOOP,          word: "lloop"  },
-	reserved{typ: TOKEN_NLOOP,          word: "nloop"  },
 
 	reserved{typ: TOKEN_ARGC,           word: "argc"   },
 	reserved{typ: TOKEN_ARGV,           word: "argv"   },

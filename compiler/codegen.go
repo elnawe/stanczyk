@@ -103,7 +103,6 @@ func generateLinuxX64() {
 				out.WriteText("    mov rax, [return_stack_rsp]")
 				out.WriteText("    add rax, %d", val * 8)
 				out.WriteText("    push QWORD [rax]")
-				out.WriteText("    xor rax, rax")
 			case OP_PUSH_CHAR:
 				out.WriteText(";; '%d' (%s:%d:%d)", value, loc.f, loc.l, loc.c)
 				out.WriteText("    mov rax, %d", value)
@@ -205,29 +204,21 @@ func generateLinuxX64() {
 				out.WriteText("    push rcx")
 
 			// FLOW CONTROL
-			case OP_LOOP_START:
-				val := value.(Loop)
-				out.WriteText(";; loop start (scope: %d) (%s:%d:%d)",
-					val.level, loc.f, loc.l, loc.c)
-				out.WriteText(".ip%dlsetup:", ipIndex)
-				out.WriteText("    pop rbx") // index
-				out.WriteText("    pop rax") // limit
-				out.WriteText("    cmp rbx, rax")
-				out.WriteText("    %s .ip%dlstart", val.condition, ipIndex)
-				out.WriteText("    jmp .ip%dlend", val.gotoIP)
-				out.WriteText(".ip%dlstart:", ipIndex)
 			case OP_LOOP_END:
-				val := value.(Loop)
-
-				out.WriteText(";; loop end (scope: %d) (%s:%d:%d)",
-					val.level, loc.f, loc.l, loc.c)
-				// Update index
-				out.WriteText("    mov rax, [return_stack_rsp]")
-				out.WriteText("    add QWORD [rax+%d], 1", val.bindIndexId * 8)
-				out.WriteText("    push QWORD [rax+%d]", val.bindLimitId * 8)
-				out.WriteText("    push QWORD [rax+%d]", val.bindIndexId * 8)
-				out.WriteText("    jmp .ip%dlsetup", val.gotoIP)
-				out.WriteText(".ip%dlend:", ipIndex)
+				val := value.(int)
+				out.WriteText(";; OP_LOOP_END %d (%s:%d:%d)", val, loc.f, loc.l, loc.c)
+				out.WriteText("    jmp .ltest%d", val)
+				out.WriteText(".lend%d:", val)
+			case OP_LOOP_SETUP:
+				val := value.(int)
+				out.WriteText(";; OP_LOOP_SETUP %d (%s:%d:%d)", val, loc.f, loc.l, loc.c)
+				out.WriteText(".ltest%d:", val)
+			case OP_LOOP_START:
+				val := value.(int)
+				out.WriteText(";; OP_LOOP_START %d (%s:%d:%d)", val, loc.f, loc.l, loc.c)
+				out.WriteText("    pop rax")
+				out.WriteText("    test rax, rax")
+				out.WriteText("    jz .lend%d", val)
 
 			// INTRINSICS
 			case OP_ARGC:
@@ -255,9 +246,14 @@ func generateLinuxX64() {
 				out.WriteText("    call fn%d", fnCall.ip)
 				out.WriteText("    mov [return_stack_rsp], rsp")
 				out.WriteText("    mov rsp, rax")
+			case OP_REBIND:
+				index := value.(int)
+				out.WriteText(";; OP_REBIND %d (%s:%d:%d)", index, loc.f, loc.l, loc.c)
+				out.WriteText("    mov rax, [return_stack_rsp]")
+				out.WriteText("    pop rbx")
+				out.WriteText("    mov [rax+%d], rbx", index * 8)
 			case OP_LET_BIND:
 				newBinds := value.(int)
-				totalBinds := currentBindsCount + newBinds
 				out.WriteText(";; let [%d] in (%s:%d:%d)", newBinds, loc.f, loc.l, loc.c)
 				out.WriteText("    mov rax, [return_stack_rsp]")
 				out.WriteText("    sub rax, %d", newBinds * 8)
@@ -266,7 +262,7 @@ func generateLinuxX64() {
 					out.WriteText("    pop rbx")
 					out.WriteText("    mov [rax+%d], rbx", (i - 1) * 8)
 				}
-				currentBindsCount = totalBinds
+				currentBindsCount += newBinds
 			case OP_LET_UNBIND:
 				unbindCount := value.(int)
 				out.WriteText(";; unbinding: %d (%s:%d:%d)", unbindCount, loc.f, loc.l, loc.c)

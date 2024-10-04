@@ -54,8 +54,10 @@ func getOperationName(code Code) string {
 	case OP_JUMP_IF_FALSE: name = "then"
 	case OP_LESS: name = "< (less)"
 	case OP_LESS_EQUAL: name = "<= (less equal)"
-	case OP_LOOP_END: name = "loop end (loop)"
-	case OP_LOOP_START: name = "loop start (until)"
+	case OP_REBIND: name = "OP_REBIND"
+	case OP_LOOP_END: name = "OP_LOOP_END"
+	case OP_LOOP_SETUP: name = "OP_LOOP_SETUP"
+	case OP_LOOP_START: name = "OP_LOOP_START"
 	case OP_LOAD8, OP_LOAD16, OP_LOAD32, OP_LOAD64: name = "load"
 	case OP_LOOP: name = "loop"
 	case OP_MULTIPLY: name = "* (multiply)"
@@ -266,6 +268,9 @@ func ValidateRun() {
 			case OP_LET_UNBIND:
 				unbound := code.value.(int)
 				bindings = bindings[:len(bindings)-unbound]
+			case OP_REBIND:
+				a := tc.pop()
+				assertArgumentType(dtArray(a), dtArray(DATA_ANY), code, loc)
 
 			// Intrinsics
 			case OP_ASSEMBLY:
@@ -427,21 +432,15 @@ func ValidateRun() {
 				assertArgumentType(dtArray(a), dtArray(DATA_ANY), code, loc)
 				tc.push(a)
 
-			case OP_LOOP_START:
-				b := tc.pop()
-				a := tc.pop()
-				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
-				tc.scope++
 			case OP_LOOP_END:
-				value := code.value.(Loop)
+				tc.scope--
+			case OP_LOOP_SETUP:
+				// Does nothing
+			case OP_LOOP_START:
+				a := tc.pop()
+				assertArgumentType(dtArray(a), dtArray(DATA_BOOL), code, loc)
+				tc.scope++
 
-				switch value.typ {
-				case TOKEN_LOOP:
-					// Nothing
-				case TOKEN_LLOOP, TOKEN_NLOOP, TOKEN_PLUSLOOP:
-					a := tc.pop()
-					assertArgumentType(dtArray(a), dtArray(DATA_INT), code, loc)
-				}
 			case OP_END_IF, OP_END_LOOP:
 				if snapshots[tc.scope].stackCount != tc.stackCount {
 					ReportErrorAtLocation(MsgsTypecheckStackSizeChangedAfterBlock, loc)

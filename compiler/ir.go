@@ -11,11 +11,13 @@ const (
 	OP_PUSH_PTR
 	OP_PUSH_STR
 
-	OP_LOOP_START
 	OP_LOOP_END
+	OP_LOOP_SETUP
+	OP_LOOP_START
 
 	OP_LET_BIND
 	OP_LET_UNBIND
+	OP_REBIND
 
 	// Intrinscis
 	OP_ADD
@@ -66,36 +68,6 @@ const (
 	DATA_PTR
 )
 
-type ScopeStartCondition string
-
-const (
-	LC_NONE ScopeStartCondition = ""
-	LC_LESS						= "jl"
-	LC_LESS_EQUAL				= "jle"
-	LC_GREATER					= "jg"
-	LC_GREATER_EQUAL			= "jge"
-	LC_EQUAL					= "je"
-	LC_NOT_EQUAL				= "jne"
-)
-
-type ScopeName int
-
-const (
-	SCOPE_BIND ScopeName = iota
-	SCOPE_LOOP
-)
-
-type LoopType int
-
-type Loop struct {
-	bindIndexId int
-	bindLimitId int
-	condition   ScopeStartCondition
-	gotoIP      int
-	level       int
-	typ         TokenType
-}
-
 type Program struct {
 	chunks    []Function
 	variables []Object
@@ -122,6 +94,32 @@ type Binding struct {
 	words []string
 }
 
+type ScopeCondition string
+type ScopeType int
+
+const (
+	LC_NONE ScopeCondition	= ""
+	LC_LESS					= "jl"
+	LC_LESS_EQUAL			= "jle"
+	LC_GREATER				= "jg"
+	LC_GREATER_EQUAL		= "jge"
+	LC_EQUAL				= "je"
+	LC_NOT_EQUAL			= "jne"
+)
+
+const (
+	SCOPE_BIND ScopeType = iota
+	SCOPE_LOOP
+)
+
+type Scope struct {
+	condition  ScopeCondition
+	ipStart    int
+	ipThen     int
+	tokenStart Token
+	typ        ScopeType
+}
+
 type Function struct {
 	ip          int
 	name        string
@@ -131,7 +129,7 @@ type Function struct {
 	returns     Arity
 	bindings    Binding
 	code        []Code
-	scope       []ScopeName
+	scope       []Scope
 
 	parsed      bool
 	called      bool
