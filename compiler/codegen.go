@@ -97,11 +97,6 @@ func generateLinuxX64() {
 				out.WriteText(";; %s (%s:%d:%d)", boolText, loc.f, loc.l, loc.c)
 				out.WriteText("    mov rax, %d", value)
 				out.WriteText("    push rax")
-			case OP_PUSH_BOUND:
-				bound := value.(Bound)
-				out.WriteText(";; bound %s (%s:%d:%d)", bound.name, loc.f, loc.l, loc.c)
-				out.WriteText("    mov rax, [return_stack_rsp]")
-				out.WriteText("    push QWORD [rax+%d]", bound.id * 8)
 			case OP_PUSH_BIND:
 				val := value.(int)
 				out.WriteText(";; bind \"%d\" (%s:%d:%d)", val, loc.f, loc.l, loc.c)
@@ -279,20 +274,6 @@ func generateLinuxX64() {
 				out.WriteText("    add rax, %d", unbindCount * 8)
 				out.WriteText("    mov [return_stack_rsp], rax")
 				currentBindsCount -= unbindCount
-			case OP_BIND:
-				newBinds := value.(int)
-
-				out.WriteText(";; bind (%s:%d:%d)", loc.f, loc.l, loc.c)
-				out.WriteText("    mov rax, [return_stack_rsp]")
-				out.WriteText("    sub rax, %d", (newBinds - currentBindsCount) * 8)
-				out.WriteText("    mov [return_stack_rsp], rax")
-
-				for i := newBinds; i > currentBindsCount; i-- {
-					out.WriteText("    pop rbx")
-					out.WriteText("    mov QWORD [rax+%d], rbx", (i - 1) * 8)
-				}
-
-				currentBindsCount = newBinds
 			case OP_CAST:
 				out.WriteText(";; cast to %s (%s:%d:%d)",
 					getDataTypeName(value.(DataType)), loc.f, loc.l, loc.c)

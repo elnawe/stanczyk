@@ -12,8 +12,6 @@ fn main ()
 	"I can also bind again!"
 	"In fact, I can bind multiple"
 
-	; BUG: There's a bug in here where nested shouldn't really have "nested"
-	; string. At that point, it should be the "I can" string
 	let another multiple in
 		let nested in
 			another println

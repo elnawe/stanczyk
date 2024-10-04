@@ -5,7 +5,6 @@ type OpCode int
 const (
 	// Constants
 	OP_PUSH_BOOL OpCode = iota
-	OP_PUSH_BOUND
 	OP_PUSH_BIND
 	OP_PUSH_CHAR
 	OP_PUSH_INT
@@ -23,7 +22,6 @@ const (
 	OP_ARGC
 	OP_ARGV
 	OP_ASSEMBLY
-	OP_BIND
 	OP_CAST
 	OP_DIVIDE
 	OP_END_IF
@@ -80,6 +78,13 @@ const (
 	LC_NOT_EQUAL				= "jne"
 )
 
+type ScopeName int
+
+const (
+	SCOPE_BIND ScopeName = iota
+	SCOPE_LOOP
+)
+
 type LoopType int
 
 type Loop struct {
@@ -89,11 +94,6 @@ type Loop struct {
 	gotoIP      int
 	level       int
 	typ         TokenType
-}
-
-type Bound struct {
-	name string
-	id   int
 }
 
 type Program struct {
@@ -117,20 +117,22 @@ type Bind struct {
 	writable bool
 }
 
-type BindScope struct {
+type Binding struct {
 	count []int
-	binds []string
+	words []string
 }
 
 type Function struct {
 	ip          int
 	name        string
+	loc         Location
+
 	arguments   Arity
 	returns     Arity
-	loc         Location
-	scope       BindScope
-	bindings    []Bound
+	bindings    Binding
 	code        []Code
+	scope       []ScopeName
+
 	parsed      bool
 	called      bool
 	internal    bool

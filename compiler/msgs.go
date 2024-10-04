@@ -121,6 +121,11 @@ const (
 		"entry point is not defined\n" +
 			"define a 'main' function"
 
+	MsgParseLetMissingIn =
+		"missing 'in' after let binding\n" +
+			"\tlet x y z in ... done\n" +
+			"\t          ^^"
+
 
 	MsgParseWordNotFound = "undefined word %s"
 

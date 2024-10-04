@@ -42,7 +42,8 @@ func getOperationName(code Code) string {
 	case OP_ARGC: name = "argc"
 	case OP_ARGV: name = "argv"
 	case OP_ASSEMBLY: name = "asm"
-	case OP_BIND: name = "bind"
+	case OP_LET_BIND: name = "let"
+	case OP_LET_UNBIND: name = "done"
 	case OP_CAST: name = "cast to " + getDataTypeName(code.value.(DataType))
 	case OP_DIVIDE: name = "div"
 	case OP_EQUAL: name = "= (equal)"
@@ -208,7 +209,6 @@ func ValidateRun() {
 	mainHandled := false
 
 	for ifunction, function := range TheProgram.chunks {
-		var binds []DataType
 		var bindings []DataType
 		argumentTypes := function.arguments.types
 		returnTypes := function.returns.types
@@ -240,9 +240,6 @@ func ValidateRun() {
 			// Constants
 			case OP_PUSH_BOOL:
 				tc.push(DATA_BOOL)
-			case OP_PUSH_BOUND:
-				value := code.value.(int)
-				tc.push(binds[value])
 			case OP_PUSH_BIND:
 				value := code.value.(int)
 				tc.push(bindings[value])
@@ -254,19 +251,6 @@ func ValidateRun() {
 				tc.push(DATA_PTR)
 			case OP_PUSH_STR:
 				tc.push(DATA_PTR)
-
-			case OP_BIND:
-				var have []DataType
-				var wants []DataType
-				value := code.value.(int)
-
-				for index := len(binds); index < value; index++ {
-					a := tc.pop()
-					binds = append([]DataType{a}, binds...)
-					have = append([]DataType{a}, have...)
-					wants = append(wants, DATA_ANY)
-				}
-				assertArgumentType(have, wants, code, loc)
 
 			case OP_LET_BIND:
 				var have []DataType
