@@ -35,41 +35,6 @@ func getStackValues() string {
 	return r
 }
 
-func getOperationName(code Code) string {
-	name := "Unhandled"
-	switch code.op {
-	case OP_ADD: name = "+ (add)"
-	case OP_ARGC: name = "argc"
-	case OP_ARGV: name = "argv"
-	case OP_ASSEMBLY: name = "asm"
-	case OP_LET_BIND: name = "let"
-	case OP_LET_UNBIND: name = "done"
-	case OP_CAST: name = "cast to " + getDataTypeName(code.value.(DataType))
-	case OP_DIVIDE: name = "div"
-	case OP_EQUAL: name = "= (equal)"
-	case OP_FUNCTION_CALL: name = "function: " + code.value.([]FunctionCall)[0].name
-	case OP_GREATER: name = "> (greater)"
-	case OP_GREATER_EQUAL: name = ">= (greater equal)"
-	case OP_JUMP: name = "else"
-	case OP_JUMP_IF_FALSE: name = "then"
-	case OP_LESS: name = "< (less)"
-	case OP_LESS_EQUAL: name = "<= (less equal)"
-	case OP_REBIND: name = "OP_REBIND"
-	case OP_LOOP_END: name = "OP_LOOP_END"
-	case OP_LOOP_SETUP: name = "OP_LOOP_SETUP"
-	case OP_LOOP_START: name = "OP_LOOP_START"
-	case OP_LOAD8, OP_LOAD16, OP_LOAD32, OP_LOAD64: name = "load"
-	case OP_LOOP: name = "loop"
-	case OP_MULTIPLY: name = "* (multiply)"
-	case OP_NOT_EQUAL: name = "!= (not equal)"
-	case OP_RET: name = "ret"
-	case OP_STORE8, OP_STORE16, OP_STORE32, OP_STORE64: name = "store"
-	case OP_SUBSTRACT: name = "- (substract)"
-	}
-
-	return name
-}
-
 func getDataTypeName(v DataType) string {
 	r := ""
 	switch v {
@@ -132,7 +97,7 @@ func assertArgumentTypes(test []DataType, want [][]DataType, code Code, loc Loca
 		}
 
 		msg := fmt.Sprintf(MsgTypecheckArgumentsTypesMismatch,
-			getOperationName(code), getDataTypeNames(test), wantsText)
+			code.op, getDataTypeNames(test), wantsText)
 		ReportErrorAtLocation(msg, loc)
 		ExitWithError(CodeTypecheckError)
 	}
@@ -157,7 +122,7 @@ func assertArgumentType(test []DataType, want []DataType, code Code, loc Locatio
 
 	if errFound {
 		msg := fmt.Sprintf(MsgTypecheckArgumentsTypeMismatch,
-			getOperationName(code), getDataTypeNames(test), getDataTypeNames(want))
+			code.op, getDataTypeNames(test), getDataTypeNames(want))
 		ReportErrorAtLocation(msg, loc)
 		ExitWithError(CodeTypecheckError)
 	}
@@ -449,7 +414,7 @@ func ValidateRun() {
 			case OP_JUMP, OP_LOOP, OP_RET:
 
 			default:
-				fmt.Println("Unhandled", getOperationName(code))
+				fmt.Println("Unhandled", code.op)
 			}
 		}
 
