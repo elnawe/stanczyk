@@ -676,7 +676,7 @@ func parseToken(token Token) {
 			count++
 			newBinds = append(newBinds, w)
 		}
-		consume(TOKEN_IN, "TODO: Missing IN keyowrd")
+		consume(TOKEN_IN, "TODO: Missing IN keyword")
 		frontend.current.scope.count = append([]int{count}, frontend.current.scope.count...)
 		frontend.current.scope.binds = append(newBinds, frontend.current.scope.binds...)
 		code.op = OP_LET_BIND
@@ -685,7 +685,7 @@ func parseToken(token Token) {
 	case TOKEN_DONE:
 		unbindAmount := frontend.current.scope.count[0]
 		frontend.current.scope.count = frontend.current.scope.count[1:]
-		frontend.current.scope.binds = frontend.current.scope.binds[unbindAmount-1:]
+		frontend.current.scope.binds = frontend.current.scope.binds[unbindAmount:]
 		code.op = OP_LET_UNBIND
 		code.value = unbindAmount
 		emit(code)
