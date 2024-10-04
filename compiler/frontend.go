@@ -470,9 +470,9 @@ func getFunction(token Token) (Code, bool) {
 func expandWord(token Token) {
 	word := token.value.(string)
 
-	for _, bind := range frontend.current.scope.binds {
-		if bind.name == word {
-			emit(Code{op: OP_PUSH_BIND, loc: token.loc, value: bind})
+	for index, bind := range frontend.current.scope.binds {
+		if bind == word {
+			emit(Code{op: OP_PUSH_BIND, loc: token.loc, value: index})
 			return
 		}
 	}
@@ -670,30 +670,22 @@ func parseToken(token Token) {
 		emit(code)
 	case TOKEN_LET, TOKEN_LETSTAR:
 		count := 0
+		var newBinds []string
 		for match(TOKEN_WORD) {
 			w := parser.previous.value.(string)
 			count++
-			frontend.current.scope.binds = append(
-				frontend.current.scope.binds,
-				Bind{
-					id: len(frontend.current.scope.binds),
-					name: w,
-					writable: token.typ == TOKEN_LETSTAR,
-				},
-			)
+			newBinds = append(newBinds, w)
 		}
 		consume(TOKEN_IN, "TODO: Missing IN keyowrd")
-		frontend.current.scope.count = append(frontend.current.scope.count, count)
+		frontend.current.scope.count = append([]int{count}, frontend.current.scope.count...)
+		frontend.current.scope.binds = append(newBinds, frontend.current.scope.binds...)
 		code.op = OP_LET_BIND
 		code.value = count
 		emit(code)
 	case TOKEN_DONE:
-		lastIndex := len(frontend.current.scope.count)-1
-		countOfBinds := len(frontend.current.scope.binds)
-		unbindAmount := frontend.current.scope.count[lastIndex]
-		frontend.current.scope.count = frontend.current.scope.count[:lastIndex]
-		frontend.current.scope.binds =
-			frontend.current.scope.binds[:countOfBinds-unbindAmount]
+		unbindAmount := frontend.current.scope.count[0]
+		frontend.current.scope.count = frontend.current.scope.count[1:]
+		frontend.current.scope.binds = frontend.current.scope.binds[unbindAmount-1:]
 		code.op = OP_LET_UNBIND
 		code.value = unbindAmount
 		emit(code)

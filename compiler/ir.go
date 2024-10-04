@@ -119,7 +119,7 @@ type Bind struct {
 
 type BindScope struct {
 	count []int
-	binds []Bind
+	binds []string
 }
 
 type Function struct {

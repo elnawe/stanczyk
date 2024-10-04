@@ -241,11 +241,11 @@ func ValidateRun() {
 			case OP_PUSH_BOOL:
 				tc.push(DATA_BOOL)
 			case OP_PUSH_BOUND:
-				value := code.value.(Bound)
-				tc.push(binds[value.id])
+				value := code.value.(int)
+				tc.push(binds[value])
 			case OP_PUSH_BIND:
-				value := code.value.(Bind)
-				tc.push(bindings[value.id])
+				value := code.value.(int)
+				tc.push(bindings[value])
 			case OP_PUSH_CHAR:
 				tc.push(DATA_CHAR)
 			case OP_PUSH_INT:
