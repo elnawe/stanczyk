@@ -5,7 +5,7 @@ using io
 ;    String writing and string length checking
 fn main ()
   ; Check the length
-  "Hello, World\n" strlen println
+  "Hello, World\n" len println
 
   ; Print something
   "Hello, Stańczyk!" println

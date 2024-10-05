@@ -19,6 +19,6 @@ fn return-13 (--- int)
 ret
 
 fn main ()
-  "Printing this text with asm\n" dup strlen custom-linux-write
+  "Printing this text with asm\n" dup len custom-linux-write
 	return-13 println
 ret

@@ -87,7 +87,7 @@ fn clear () "\e[H\e[2J" print ret
 ; Calling:
 ;   - <string> eputs
 fn eputs (ptr)
-	dup strlen swap
+	dup len swap
 	asm int ptr (
 		mov rax, SYS_WRITE
 		mov rdi, STDERR
@@ -123,7 +123,7 @@ ret
 ; Calling:
 ;   - <string> print
 fn print (ptr)
-	dup strlen swap
+	dup len swap
 	asm int ptr (
 		mov rax, SYS_WRITE
 		mov rdi, STDOUT

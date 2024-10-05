@@ -29,21 +29,26 @@
 
 ;; The Stańczyk Strings Library
 
-fn strlen (ptr --- int)
-	dup for dup ->8 0 != (
-		++
-	)
-	swap ptrdiff
-ret
+; Calculates the length of a number (as in number of characters)
+; Calling:
+;   - <int> len
+; Returns:
+;   - The number of characters. If the number is 13, it will return 2
+fn len (int --- int) 0 dup rot < until ++ I 10 / loop ret
 
-fn intlen (int --- int)
-	0 swap for dup 0 > (
-		swap ++ swap 10 /
-	) drop
+; Calculates the length of a string (as in number of characters)
+; Calling:
+;   - <string> len
+; Returns:
+;   - The number of characters in teh string. "Stanczyk" returns 8
+fn len (ptr --- int)
+	let s in
+		0 dup s ->8 != until ++ dup s swap + ->8 loop
+	done
 ret
 
 fn strequal (ptr ptr --- bool)
-	over strlen swap dup strlen
+	over len swap dup len
 	let s1 l1 s2 l2 in
 		false
 		if l1 l2 = (
@@ -63,13 +68,13 @@ fn itoa (int --- ptr)
 		dup itoa-buffer swap + '\0' <-8 ++
 	) drop
 
-	if dup intlen 0 = (
+	if dup len 0 = (
 		itoa-buffer '0' <-8
 	)
 
-	for dup intlen 0 > (
+	for dup len 0 > (
 		dup 10 % 48 + char
-		over intlen -- itoa-buffer swap + swap <-8
+		over len -- itoa-buffer swap + swap <-8
 		10 /
 	) drop
 
