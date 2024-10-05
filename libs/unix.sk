@@ -133,24 +133,30 @@ fn print (ptr)
 	)
 ret
 
+; Helper function to print a character on the standard output.
+; Calling:
+;   - <char> print
+fn print (char) int itoa print ret
+
 ; Helper function to print an integer on the standard output.
 ; Calling:
 ;   - <int> print
-fn print (int)
-	itoa print
-ret
+fn print (int) itoa print ret
 
 ; Helper function to print a boolean value on the standard output.
 ; Calling:
 ;   - <bool> print
-fn print (bool)
-	take 1 = if "true" print else "false" print fi
-ret
+fn print (bool) take 1 = if "true" print else "false" print fi ret
 
 ; Helper function internally calling "print", but adds a newline after printing.
 ; Calling:
 ;   - <ptr> println
 fn println (ptr) print "\n" print ret
+
+; Helper function internally calling "print", but adds a newline after printing.
+; Calling:
+;   - <char> println
+fn println (char) print "\n" print ret
 
 ; Helper function internally calling "print", but adds a newline after printing.
 ; Calling:
