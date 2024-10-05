@@ -1,0 +1,19 @@
+<int> len:
+number: 13
+length: 2 2
+
+<string> len:
+string: "Hello, Stanczyk"
+length: 15 15
+
+<str1> <str2> strequal:
+strings: "Stanczyk" "Stnaczyk"
+result: false false
+
+<str1> <str2> strequal:
+strings: "Stanczyk" "Stańczyk"
+result: false false
+
+<str1> <str2> strequal:
+strings: "Stanczyk" "Stanczyk"
+result: true true

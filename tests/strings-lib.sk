@@ -1,0 +1,37 @@
+using io
+using strings
+
+;; Test: strings
+;; Description:
+;    String writing and string length checking
+fn main ()
+	;; len for numbers
+	"<int> len:" println
+	"number: 13" println
+	"length: 2 " print 13 len println
+
+	"\n" print
+
+	;; len for strings
+	"<string> len:" println
+	"string: \"Hello, Stanczyk\"" println
+	"length: 15 " print "Hello, Stanczyk" len println
+
+	"\n" print
+
+	"<str1> <str2> strequal:" println
+	"strings: \"Stanczyk\" \"Stnaczyk\"" println
+	"result: false " print "Stanczyk" "Stnaczyk" strequal println
+
+	"\n" print
+
+	"<str1> <str2> strequal:" println
+	"strings: \"Stanczyk\" \"Stańczyk\"" println
+	"result: false " print "Stanczyk" "Stańczyk" strequal println
+
+	"\n" print
+
+	"<str1> <str2> strequal:" println
+	"strings: \"Stanczyk\" \"Stanczyk\"" println
+	"result: true " print "Stanczyk" "Stanczyk" strequal println
+ret
