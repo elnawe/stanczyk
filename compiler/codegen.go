@@ -314,13 +314,6 @@ func generateLinuxX64() {
 
 			// Special
 			case OP_CAST:
-			case OP_END_LOOP:
-			case OP_JUMP_IF_FALSE:
-				out.WriteText("    pop rax")
-				out.WriteText("    test rax, rax")
-				out.WriteText("    jz .ip%d", value)
-			case OP_LOOP:
-				out.WriteText("    jmp .ip%d", value)
 			}
 		}
 

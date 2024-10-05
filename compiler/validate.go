@@ -376,12 +376,6 @@ func ValidateRun() {
 				tc.scope++
 				snapshots[tc.scope] = tc
 			case OP_IF_END, OP_IF_ELSE:
-
-			case OP_JUMP_IF_FALSE:
-				a := tc.pop()
-				assertArgumentType(dtArray(a), dtArray(DATA_BOOL), code, loc)
-				tc.scope++
-				snapshots[tc.scope] = tc
 			case OP_LOAD8, OP_LOAD16, OP_LOAD32, OP_LOAD64:
 				a := tc.pop()
 				assertArgumentType(dtArray(a), dtArray(DATA_PTR), code, loc)
@@ -409,17 +403,7 @@ func ValidateRun() {
 				assertArgumentType(dtArray(a), dtArray(DATA_BOOL), code, loc)
 				tc.scope++
 
-			case OP_END_LOOP:
-				if snapshots[tc.scope].stackCount != tc.stackCount {
-					ReportErrorAtLocation(MsgsTypecheckStackSizeChangedAfterBlock, loc)
-					ExitWithError(CodeTypecheckError)
-				}
-				if snapshots[tc.scope].stack != tc.stack {
-					ReportErrorAtLocation(MsgsTypecheckStackTypeChangedAfterBlock, loc)
-					ExitWithError(CodeTypecheckError)
-				}
-				tc.scope--
-			case OP_LOOP, OP_RET:
+			case OP_RET:
 
 			default:
 				fmt.Println("Unhandled", code.op)

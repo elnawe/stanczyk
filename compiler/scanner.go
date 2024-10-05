@@ -27,7 +27,6 @@ const (
 	// Flow Control
 	TOKEN_CASE
 	TOKEN_ELSE
-	TOKEN_FOR // TODO: Remove
 	TOKEN_IF
 	TOKEN_FI
 	TOKEN_LOOP
@@ -103,7 +102,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_DTYPE_PTR,      word: "ptr"    },
 
 	reserved{typ: TOKEN_FI,             word: "fi"     },
-	reserved{typ: TOKEN_FOR,            word: "for"    },
 	reserved{typ: TOKEN_IF,             word: "if"     },
 	reserved{typ: TOKEN_LOOP,           word: "loop"   },
 	reserved{typ: TOKEN_UNTIL,          word: "until"  },

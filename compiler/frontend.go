@@ -34,8 +34,6 @@ type Frontend struct {
 	globals    []Object
 	current	   *Function
 	error      bool
-	sLevel     int
-	scopeOld   [10]ScopeOld
 }
 
 type Parser struct {
@@ -549,7 +547,6 @@ func parseToken(token Token) {
 	var code Code
 	code.loc = token.loc
 	code.value = token.value
-	sLevel := &frontend.sLevel
 
 	switch token.typ {
 	// Constants
@@ -791,31 +788,6 @@ func parseToken(token Token) {
 		code.op = OP_IF_ELSE
 		code.value = c.ipStart
 		emit(code)
-	case TOKEN_FOR:
-		*sLevel++
-		frontend.scopeOld[*sLevel].tt = token.typ
-		frontend.scopeOld[*sLevel].loopIP = len(frontend.current.code)
-	case TOKEN_PAREN_OPEN:
-		frontend.scopeOld[*sLevel].thenIP = len(frontend.current.code)
-		code.op = OP_JUMP_IF_FALSE
-		emit(code)
-	case TOKEN_PAREN_CLOSE:
-		cScope := frontend.scopeOld[*sLevel]
-
-		switch cScope.tt {
-		case TOKEN_FOR:
-			code.op = OP_LOOP
-			code.value = cScope.loopIP
-			emit(code)
-
-			var endLoop Code
-			endLoop.loc = token.loc
-			endLoop.op = OP_END_LOOP
-			emit(endLoop)
-			frontend.current.code[cScope.thenIP].value = len(frontend.current.code)
-		}
-
-		*sLevel--
 	}
 }
 
