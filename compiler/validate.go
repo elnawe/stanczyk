@@ -409,7 +409,7 @@ func ValidateRun() {
 				assertArgumentType(dtArray(a), dtArray(DATA_BOOL), code, loc)
 				tc.scope++
 
-			case OP_END_IF, OP_END_LOOP:
+			case OP_END_LOOP:
 				if snapshots[tc.scope].stackCount != tc.stackCount {
 					ReportErrorAtLocation(MsgsTypecheckStackSizeChangedAfterBlock, loc)
 					ExitWithError(CodeTypecheckError)
@@ -419,7 +419,7 @@ func ValidateRun() {
 					ExitWithError(CodeTypecheckError)
 				}
 				tc.scope--
-			case OP_JUMP, OP_LOOP, OP_RET:
+			case OP_LOOP, OP_RET:
 
 			default:
 				fmt.Println("Unhandled", code.op)
