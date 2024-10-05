@@ -188,6 +188,18 @@ func generateLinuxX64() {
 				out.WriteText("    push rcx")
 
 			// FLOW CONTROL
+			case OP_IF_START:
+				val := value.(int)
+				out.WriteText("    pop rax")
+				out.WriteText("    test rax, rax")
+				out.WriteText("    jz .ifelse%d", val)
+			case OP_IF_ELSE:
+				val := value.(int)
+				out.WriteText("    jmp .ifthen%d", val)
+				out.WriteText(".ifelse%d:", val)
+			case OP_IF_END:
+				val := value.(int)
+				out.WriteText(".ifthen%d:", val)
 			case OP_LOOP_END:
 				val := value.(int)
 				out.WriteText("    jmp .ltest%d", val)

@@ -1,0 +1,9 @@
+using io
+
+fn main ()
+	0
+	true while
+		++
+	dup 10 != loop
+	println
+ret

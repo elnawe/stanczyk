@@ -1,11 +1,11 @@
 using io
 
 fn fib (int --- int)
-  if dup 2 < (
+  dup 2 < if
     leave
   else
      dup 1 - fib swap 2 - fib + leave
-  )
+	fi
 ret
 
 fn main ()

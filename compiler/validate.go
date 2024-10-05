@@ -369,6 +369,14 @@ func ValidateRun() {
 						tc.push(d.typ)
 					}
 				}
+
+			case OP_IF_START:
+				a := tc.pop()
+				assertArgumentType(dtArray(a), dtArray(DATA_BOOL), code, loc)
+				tc.scope++
+				snapshots[tc.scope] = tc
+			case OP_IF_END, OP_IF_ELSE:
+
 			case OP_JUMP_IF_FALSE:
 				a := tc.pop()
 				assertArgumentType(dtArray(a), dtArray(DATA_BOOL), code, loc)

@@ -25,9 +25,13 @@ const (
 	TOKEN_DTYPE_PTR
 
 	// Flow Control
-	TOKEN_UNTIL
-	TOKEN_FOR
+	TOKEN_CASE
+	TOKEN_ELSE
+	TOKEN_FOR // TODO: Remove
+	TOKEN_IF
+	TOKEN_FI
 	TOKEN_LOOP
+	TOKEN_UNTIL
 	TOKEN_WHILE
 
 	// Single characters
@@ -49,12 +53,10 @@ const (
 	TOKEN_ASM
 	TOKEN_BANG_EQUAL
 	TOKEN_CONST
-	TOKEN_ELSE
 	TOKEN_EQUAL
 	TOKEN_FN
 	TOKEN_GREATER
 	TOKEN_GREATER_EQUAL
-	TOKEN_IF
 	TOKEN_LEAVE
 	TOKEN_LESS
 	TOKEN_LESS_EQUAL
@@ -94,14 +96,15 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_IN,             word: "in"     },
 	reserved{typ: TOKEN_DONE,           word: "done"   },
 
-
 	reserved{typ: TOKEN_DTYPE_ANY,      word: "any"    },
 	reserved{typ: TOKEN_DTYPE_BOOL,     word: "bool"   },
 	reserved{typ: TOKEN_DTYPE_CHAR,     word: "char"   },
 	reserved{typ: TOKEN_DTYPE_INT,      word: "int"    },
 	reserved{typ: TOKEN_DTYPE_PTR,      word: "ptr"    },
 
+	reserved{typ: TOKEN_FI,             word: "fi"     },
 	reserved{typ: TOKEN_FOR,            word: "for"    },
+	reserved{typ: TOKEN_IF,             word: "if"     },
 	reserved{typ: TOKEN_LOOP,           word: "loop"   },
 	reserved{typ: TOKEN_UNTIL,          word: "until"  },
 	reserved{typ: TOKEN_WHILE,          word: "while"  },
@@ -117,7 +120,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_FN,             word: "fn"     },
 	reserved{typ: TOKEN_GREATER,        word: ">"      },
 	reserved{typ: TOKEN_GREATER_EQUAL,  word: ">="     },
-	reserved{typ: TOKEN_IF,             word: "if"     },
 	reserved{typ: TOKEN_LEAVE,          word: "leave"  },
 	reserved{typ: TOKEN_LESS,           word: "<"      },
 	reserved{typ: TOKEN_LESS_EQUAL,     word: "<="     },

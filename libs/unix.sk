@@ -73,10 +73,10 @@ const O_CREATE       64
 ;     throws an error and stops execution.
 fn argv-array (int --- ptr)
 	8 * argv int + ptr ->64
-	if dup int 0 = (
+	dup int 0 = if
 		dup print
 		"argv empty" panic
-	)
+	fi
 ret
 
 ; Helper function to clear the console screen. Widely supported, but not for
@@ -144,30 +144,23 @@ ret
 ; Calling:
 ;   - <bool> print
 fn print (bool)
-	if take 1 = (
-		"true" print
-	else
-		"false" print
-	)
+	take 1 = if "true" print else "false" print fi
 ret
 
 ; Helper function internally calling "print", but adds a newline after printing.
 ; Calling:
-;   - <any> println
-fn println (bool)
-	print
-	"\n" print
-ret
+;   - <ptr> println
+fn println (ptr) print "\n" print ret
 
-fn println (int)
-	print
-	"\n" print
-ret
+; Helper function internally calling "print", but adds a newline after printing.
+; Calling:
+;   - <int> println
+fn println (int) print "\n" print ret
 
-fn println (ptr)
-	print
-	"\n" print
-ret
+; Helper function internally calling "print", but adds a newline after printing.
+; Calling:
+;   - <bool> println
+fn println (bool) print "\n" print ret
 
 ; Helper function to read from standard input.
 ; Note: Requires a pointer buffer with sufficient capacity.

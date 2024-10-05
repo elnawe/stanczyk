@@ -11,6 +11,10 @@ const (
 	OP_PUSH_PTR		    =  "OP_PUSH_PTR"
 	OP_PUSH_STR		    =  "OP_PUSH_STR"
 
+	// FLOW CONTROL
+	OP_IF_START         =  "OP_IF_START"
+	OP_IF_ELSE          =  "OP_IF_ELSE"
+	OP_IF_END           =  "OP_IF_END"
 	OP_LOOP_END		    =  "OP_LOOP_END"
 	OP_LOOP_SETUP	    =  "OP_LOOP_SETUP"
 	OP_LOOP_START	    =  "OP_LOOP_START"
@@ -107,6 +111,8 @@ const (
 const (
 	SCOPE_BIND ScopeType = iota
 	SCOPE_LOOP
+	SCOPE_IF
+	SCOPE_ELSE
 )
 
 type Scope struct {

@@ -7,21 +7,21 @@ ret
 fn main ()
   "Testing strings in Stańczyk is a little bit more complicated" println
 
-  if "Stańczyk" "Stańczyk" strequal (
+  "Stańczyk" "Stańczyk" strequal if
     "1- test success" println
   else
     "1- test failed!" println
-  )
+  fi
 
-  if get-str get-str strequal (
+  get-str get-str strequal if
     "2- test success" println
   else
     "2- test failed!" println
-  )
+  fi
 
-  if "Stańczyk" "Nope" strequal (
+  "Stańczyk" "Nope" strequal if
     "3- test failed!" println
   else
     "3- test success" println
-  )
+  fi
 ret

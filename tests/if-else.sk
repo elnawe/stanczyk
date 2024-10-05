@@ -1,0 +1,27 @@
+using io
+
+;; Test: flow-control
+;; Description:
+;    Test the control flow mechanism
+
+fn main ()
+  "if true -> 13  " print
+  true if
+    13 println
+	fi
+  "-----------" println
+
+  "if false -> (nothing)" println
+  false if
+    13 println
+  fi
+  "-----------" println
+
+  "if false else -> 13  " print
+  false if
+    31 println
+  else
+    13 println
+  fi
+  "-----------" println
+ret

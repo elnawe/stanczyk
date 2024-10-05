@@ -750,18 +750,47 @@ func parseToken(token Token) {
 
 		closeScopeAfterCheck(SCOPE_LOOP)
 	case TOKEN_IF:
-		*sLevel++
-		frontend.scopeOld[*sLevel].tt = token.typ
-	case TOKEN_ELSE:
-		if *sLevel > 0 {
-			prevThen := frontend.scopeOld[*sLevel].thenIP
-			frontend.scopeOld[*sLevel].thenIP = len(frontend.current.code)
-			code.op = OP_JUMP
+		c := openScope(SCOPE_IF, token)
+
+		code.op = OP_IF_START
+		code.value = c.ipStart
+		emit(code)
+	case TOKEN_FI:
+		c := getCurrentScope()
+
+		switch c.typ {
+		case SCOPE_IF:
+			code.op = OP_IF_ELSE
+			code.value = c.ipStart
 			emit(code)
-			frontend.current.code[prevThen].value = len(frontend.current.code)
-		} else {
-			errorAt(&token, MsgParseElseOrphanTokenFound)
+			code.op = OP_IF_END
+			emit(code)
+			closeScopeAfterCheck(SCOPE_IF)
+		case SCOPE_ELSE:
+			code.op = OP_IF_END
+			code.value = c.ipStart
+			emit(code)
+			closeScopeAfterCheck(SCOPE_ELSE)
+		default:
+			errorAt(&c.tokenStart, "TODO: ERROR MESSAGE")
+			errorAt(&token, "TODO: ERROR MESSAGE")
+			ExitWithError(CodeParseError)
 		}
+	case TOKEN_CASE:
+
+	case TOKEN_ELSE:
+		c := getCurrentScope()
+
+		if c.typ != SCOPE_IF {
+			errorAt(&c.tokenStart, "TODO: ERROR MESSAGE")
+			errorAt(&token, "TODO: ERROR MESSAGE")
+			ExitWithError(CodeParseError)
+		}
+
+		c.typ = SCOPE_ELSE
+		code.op = OP_IF_ELSE
+		code.value = c.ipStart
+		emit(code)
 	case TOKEN_FOR:
 		*sLevel++
 		frontend.scopeOld[*sLevel].tt = token.typ
@@ -774,10 +803,6 @@ func parseToken(token Token) {
 		cScope := frontend.scopeOld[*sLevel]
 
 		switch cScope.tt {
-		case TOKEN_IF:
-			code.op = OP_END_IF
-			emit(code)
-			frontend.current.code[cScope.thenIP].value = len(frontend.current.code)
 		case TOKEN_FOR:
 			code.op = OP_LOOP
 			code.value = cScope.loopIP

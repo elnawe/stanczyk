@@ -6,11 +6,11 @@ using io
 const ORIGINAL 10
 
 fn add-3-to-original (int --- int)
-  if dup ORIGINAL 3 + = (
+  dup ORIGINAL 3 + = if
     leave
   else
     ++ add-3-to-original leave
-  )
+  fi
 ret
 
 fn main ()
