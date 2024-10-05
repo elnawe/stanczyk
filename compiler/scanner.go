@@ -225,7 +225,15 @@ func makeString(c byte, line string, index *int) {
 	result := ""
 
 	for Advance(&c, line, index) && c != '"' {
-		result += string(c)
+		if c == '\\' {
+			Advance(&c, line, index)
+			switch c {
+			case '"': result += string(34)
+			default: result += "\\" + string(c)
+			}
+		} else {
+			result += string(c)
+		}
 	}
 
 	makeToken(TOKEN_STR, result)

@@ -47,36 +47,47 @@ fn len (ptr --- int)
 	done
 ret
 
+; Compares two strings and returns the results of the comparison
+; Calling:
+;   - <str1> <str2> strequal
+; Returns:
+;   - A boolean true if the arguments are equal, false if they are different.
 fn strequal (ptr ptr --- bool)
 	over len swap dup len
 	let s1 l1 s2 l2 in
-		false
-		l1 l2 = if
-			0 for s1 over + ->8 swap s2 over + ->8 rot = (
-				++
-			)
-			dup l1 = swap l2 = = nip leave
+		l1 l2 = dup if
+			0 l1 <= until
+				s1 I + ->8 s2 I + ->8 != if false nip leave fi
+			I -- loop
 		fi
 	done
 ret
 
+; Converts an integer to a string and returns the buffer where the result is saved
+; Calling:
+;   - <int> itoa
+; Returns:
+;   - The pointer to the static memory where the string is saved
 const ITOA_BUFFER_CAP 20
 var itoa-buffer ITOA_BUFFER_CAP
 
 fn itoa (int --- ptr)
-	0 for dup ITOA_BUFFER_CAP <= (
-		dup itoa-buffer swap + '\0' <-8 ++
-	) drop
+  let x in
+		ITOA_BUFFER_CAP 0 >= until
+			itoa-buffer I + '\0' <-8
+		I ++ loop
 
-	dup len 0 = if
-		itoa-buffer '0' <-8
-	fi
+		x len 0 = if
+			itoa-buffer '0' <-8
+		fi
 
-	for dup len 0 > (
-		dup 10 % 48 + char
-		over len -- itoa-buffer swap + swap <-8
-		10 /
-	) drop
+		x
+		0 x len 1 - <= until
+			dup 10 % 48 + char itoa-buffer I + swap <-8
+			take 10 /
+		I -- loop
+		drop
+	done
 
 	itoa-buffer
 ret

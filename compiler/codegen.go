@@ -29,6 +29,8 @@ func getAsciiValues(s string) string {
 				ascii += "10,"
 			case 'e':
 				ascii += "27,"
+			case '"':
+				ascii += "34,"
 			}
 
 			nextEscaped = false
