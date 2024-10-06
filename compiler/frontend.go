@@ -7,15 +7,6 @@ import (
 	"strings"
 )
 
-type ScopeOld struct {
-	typ           ScopeType
-	tt            TokenType
-	loopCondition ScopeCondition
-	startIP       int
-	thenIP        int
-	loopIP        int
-}
-
 type ObjectType int
 
 const (
@@ -29,15 +20,8 @@ type Object struct {
 	word  string
 }
 
-type Variable struct {
-	dtype  DataType
-	offset int
-	word   string
-}
-
 type Frontend struct {
 	globals    []Object
-	variables  []Variable
 	current	   *Function
 	error      bool
 }
@@ -340,6 +324,48 @@ func registerFunction(token Token) {
 	TheProgram.chunks = append(TheProgram.chunks, function)
 }
 
+// Gets the initial token and the current offset. Returns the
+// new Variable object and the new offset.
+func newVariable(token Token, offset int) (Variable, int) {
+	var newVar Variable
+	var newOffset int
+	const SIZE_64b = 8
+	const SIZE_8b  = 1
+
+	if !match(TOKEN_WORD) {
+		errorAt(&token, MsgParseVarMissingWord)
+		ExitWithError(CodeParseError)
+	}
+
+	newVar.word = parser.previous.value.(string)
+	newVar.offset = offset
+	newOffset = offset
+
+	// TODO: Check for duplicated name
+
+	advance()
+	vt := parser.previous
+
+	switch vt.typ {
+	case TOKEN_DTYPE_BOOL:
+		newVar.dtype = DATA_BOOL
+		newOffset += SIZE_64b
+	case TOKEN_DTYPE_INT:
+		newVar.dtype = DATA_INT
+		newOffset += SIZE_64b
+	case TOKEN_DTYPE_PTR:
+		newVar.dtype = DATA_PTR
+		newOffset += SIZE_64b
+	case TOKEN_DTYPE_CHAR:
+		newVar.dtype = DATA_CHAR
+		newOffset += SIZE_8b
+	default:
+		errorAt(&parser.previous, MsgParseVarMissingValue)
+		ExitWithError(CodeParseError)
+	}
+
+	return newVar, newOffset
+}
 
 /*    ___ ___  __  __ ___ ___ _      _ _____ ___ ___  _  _
  *   / __/ _ \|  \/  | _ \_ _| |    /_\_   _|_ _/ _ \| \| |
@@ -375,10 +401,11 @@ func getGlobal(token Token) (Code, bool) {
 
 	for _, g := range frontend.globals {
 		if g.word == word {
-			switch g.typ {
-			case OBJ_CONSTANT:
-				return Code{op: OP_PUSH_INT, loc: token.loc, value: g.value}, true
-			}
+			return Code{
+				op: OP_PUSH_INT,
+				loc: token.loc,
+				value: g.value,
+			}, true
 		}
 	}
 
@@ -388,9 +415,23 @@ func getGlobal(token Token) (Code, bool) {
 func getVariable(token Token) (Code, bool) {
 	word := token.value.(string)
 
-	for _, v := range frontend.variables {
+	for _, v := range frontend.current.variables {
 		if v.word == word {
-			return Code{op: OP_PUSH_VAR, loc: token.loc, value: v.offset}, true
+			return Code{
+				op: OP_PUSH_VAR_LOCAL,
+				loc: token.loc,
+				value: v.offset,
+			}, true
+		}
+	}
+
+	for _, v := range TheProgram.variables {
+		if v.word == word {
+			return Code{
+				op: OP_PUSH_VAR_GLOBAL,
+				loc: token.loc,
+				value: v.offset,
+			}, true
 		}
 	}
 
@@ -543,13 +584,19 @@ func parseToken(token Token) {
 			emit(code)
 			return
 		}
-		// g, gfound := getGlobal(token)
-		// if gfound {
-		// 	fmt.Println(g)
-		// 	code.op = OP_PUSH_PTR_ADDR
-		// 	code.value = g.value
-		// 	return
-		// }
+		v, vfound := getVariable(token)
+		if vfound {
+			switch v.op {
+			case OP_PUSH_VAR_LOCAL: code.op = OP_PUSH_VAR_LOCAL_ADDR
+			case OP_PUSH_VAR_GLOBAL: code.op = OP_PUSH_VAR_GLOBAL_ADDR
+			}
+			code.value = v.value
+			emit(code)
+		}
+	case TOKEN_VAR:
+		newVar, newOffset := newVariable(token, frontend.current.localMemorySize)
+		frontend.current.variables = append(frontend.current.variables, newVar)
+		frontend.current.localMemorySize = newOffset
 
 	// TYPE CASTING
 	case TOKEN_DTYPE_BOOL:
@@ -942,42 +989,9 @@ func compilationSecondPass(index int) {
 		// The second pass will care about the following tokens:
 		case TOKEN_CONST: registerConstant(token)
 		case TOKEN_VAR:
-			var newVar Variable
-			const SIZE_64b = 8
-			const SIZE_8b  = 1
-
-			if !match(TOKEN_WORD) {
-				errorAt(&token, MsgParseVarMissingWord)
-				ExitWithError(CodeParseError)
-			}
-
-			newVar.word = parser.previous.value.(string)
-			newVar.offset = TheProgram.staticMemorySize
-
-			// TODO: Check for duplicated name
-
-			advance()
-			vt := parser.previous
-
-			switch vt.typ {
-			case TOKEN_DTYPE_BOOL:
-				newVar.dtype = DATA_BOOL
-				TheProgram.staticMemorySize += SIZE_64b
-			case TOKEN_DTYPE_INT:
-				newVar.dtype = DATA_INT
-				TheProgram.staticMemorySize += SIZE_64b
-			case TOKEN_DTYPE_PTR:
-				newVar.dtype = DATA_PTR
-				TheProgram.staticMemorySize += SIZE_64b
-			case TOKEN_DTYPE_CHAR:
-				newVar.dtype = DATA_CHAR
-				TheProgram.staticMemorySize += SIZE_8b
-			default:
-				errorAt(&parser.previous, MsgParseVarMissingValue)
-				ExitWithError(CodeParseError)
-			}
-
-			frontend.variables = append(frontend.variables, newVar)
+			newVar, newOffset := newVariable(token, TheProgram.staticMemorySize)
+			TheProgram.variables = append(TheProgram.variables, newVar)
+			TheProgram.staticMemorySize = newOffset
 
 		case TOKEN_FN: registerFunction(token)
 

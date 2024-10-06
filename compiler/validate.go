@@ -201,6 +201,7 @@ func ValidateRun() {
 		for icode, code := range function.code {
 			instruction := code.op
 			loc := code.loc
+			value := code.value
 
 			switch instruction {
 			// CONSTANT
@@ -217,7 +218,23 @@ func ValidateRun() {
 				tc.push(DATA_INT)
 			case OP_PUSH_STR:
 				tc.push(DATA_PTR)
-			case OP_PUSH_VAR:
+			case OP_PUSH_VAR_GLOBAL:
+				tc.push(DATA_PTR)
+				// for _, v := range TheProgram.variables {
+				// 	if v.offset == value.(int) {
+				// 		tc.push(v.dtype)
+				// 	}
+				// }
+			case OP_PUSH_VAR_GLOBAL_ADDR:
+				tc.push(DATA_PTR)
+			case OP_PUSH_VAR_LOCAL:
+				tc.push(DATA_PTR)
+				// for _, v := range function.variables {
+				// 	if v.offset == value.(int) {
+				// 		tc.push(v.dtype)
+				// 	}
+				// }
+			case OP_PUSH_VAR_LOCAL_ADDR:
 				tc.push(DATA_PTR)
 
 			// MATH ARITHMETICS
@@ -271,9 +288,9 @@ func ValidateRun() {
 			case OP_ASSEMBLY:
 				var have []DataType
 				var want []DataType
-				value := code.value.(Assembly)
+				val := value.(Assembly)
 
-				for _, d := range value.arguments.types {
+				for _, d := range val.arguments.types {
 					t := tc.pop()
 					have = append([]DataType{t}, have...)
 					want = append(want, d.typ)
@@ -281,7 +298,7 @@ func ValidateRun() {
 
 				assertArgumentType(have, want, code, loc)
 
-				for _, dt := range value.returns.types {
+				for _, dt := range val.returns.types {
 					tc.push(dt.typ)
 				}
 			case OP_ADD, OP_SUBSTRACT:

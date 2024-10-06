@@ -80,7 +80,7 @@ func generateLinuxX64() {
 		out.WriteText("fn%d:", function.ip)
 		out.WriteText(";; start fn %s (%s:%d:%d)", function.name,
 			function.loc.f, function.loc.l, function.loc.c)
-		out.WriteText("    sub rsp, 0")
+		out.WriteText("    sub rsp, %d", function.localMemorySize)
 		out.WriteText("    mov [return_stack_rsp], rsp")
 		out.WriteText("    mov rsp, rax")
 
@@ -118,9 +118,35 @@ func generateLinuxX64() {
 				ascii := getAsciiValues(value.(string))
 				out.WriteText("    push str_%d", len(out.data))
 				out.WriteData("str_%d: db %s", len(out.data), ascii)
-			case OP_PUSH_VAR:
+			case OP_PUSH_VAR_GLOBAL:
 				offset := value.(int)
 				out.WriteText("    mov rax, program_static_mem")
+				out.WriteText("    add rax, %d", offset)
+				out.WriteText("    push rax")
+				// offset := value.(int)
+				// out.WriteText("    mov rax, program_static_mem")
+				// out.WriteText("    add rax, %d", offset)
+				// out.WriteText("    push QWORD [rax]")
+			case OP_PUSH_VAR_GLOBAL_ADDR:
+				offset := value.(int)
+				out.WriteText("    mov rax, program_static_mem")
+				out.WriteText("    add rax, %d", offset)
+				out.WriteText("    push rax")
+			case OP_PUSH_VAR_LOCAL:
+				val := value.(int)
+				offset := val + (currentBindsCount * 8)
+				out.WriteText("    mov rax, [return_stack_rsp]")
+				out.WriteText("    add rax, %d", offset)
+				out.WriteText("    push rax")
+				// val := value.(int)
+				// offset := val + (currentBindsCount * 8)
+				// out.WriteText("    mov rax, [return_stack_rsp]")
+				// out.WriteText("    add rax, %d", offset)
+				// out.WriteText("    push QWORD [rax]")
+			case OP_PUSH_VAR_LOCAL_ADDR:
+				val := value.(int)
+				offset := val + (currentBindsCount * 8)
+				out.WriteText("    mov rax, [return_stack_rsp]")
 				out.WriteText("    add rax, %d", offset)
 				out.WriteText("    push rax")
 
@@ -302,7 +328,7 @@ func generateLinuxX64() {
 				}
 				out.WriteText("    mov rax, rsp")
 				out.WriteText("    mov rsp, [return_stack_rsp]")
-				out.WriteText("    add rsp, %d", value)
+				out.WriteText("    add rsp, %d", function.localMemorySize)
 				out.WriteText("    ret")
 
 			// Special

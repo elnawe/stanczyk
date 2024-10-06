@@ -4,54 +4,57 @@ type OpCode string
 
 const (
 	// Constants
-	OP_PUSH_BOOL OpCode =  "OP_PUSH_BOOL"
-	OP_PUSH_BIND        =  "OP_PUSH_BIND"
-	OP_PUSH_BIND_ADDR   =  "OP_PUSH_BIND_ADDR"
-	OP_PUSH_CHAR	    =  "OP_PUSH_CHAR"
-	OP_PUSH_INT		    =  "OP_PUSH_INT"
-	OP_PUSH_VAR      	=  "OP_PUSH_VAR"
-	OP_PUSH_STR		    =  "OP_PUSH_STR"
+	OP_PUSH_BOOL OpCode		=  "OP_PUSH_BOOL"
+	OP_PUSH_BIND			=  "OP_PUSH_BIND"
+	OP_PUSH_BIND_ADDR		=  "OP_PUSH_BIND_ADDR"
+	OP_PUSH_CHAR			=  "OP_PUSH_CHAR"
+	OP_PUSH_INT				=  "OP_PUSH_INT"
+	OP_PUSH_STR				=  "OP_PUSH_STR"
+	OP_PUSH_VAR_GLOBAL		=  "OP_PUSH_VAR_GLOBAL"
+	OP_PUSH_VAR_GLOBAL_ADDR	=  "OP_PUSH_VAR_GLOBAL_ADDR"
+	OP_PUSH_VAR_LOCAL		=  "OP_PUSH_VAR_LOCAL"
+	OP_PUSH_VAR_LOCAL_ADDR	= "OP_PUSH_VAR_LOCAL_ADDR"
 
 	// FLOW CONTROL
-	OP_IF_START         =  "OP_IF_START"
-	OP_IF_ELSE          =  "OP_IF_ELSE"
-	OP_IF_END           =  "OP_IF_END"
-	OP_LOOP_END		    =  "OP_LOOP_END"
-	OP_LOOP_SETUP	    =  "OP_LOOP_SETUP"
-	OP_LOOP_START	    =  "OP_LOOP_START"
+	OP_IF_START				=  "OP_IF_START"
+	OP_IF_ELSE				=  "OP_IF_ELSE"
+	OP_IF_END				=  "OP_IF_END"
+	OP_LOOP_END				=  "OP_LOOP_END"
+	OP_LOOP_SETUP			=  "OP_LOOP_SETUP"
+	OP_LOOP_START			=  "OP_LOOP_START"
 
-	OP_LET_BIND		    =  "OP_LET_BIND"
-	OP_LET_UNBIND	    =  "OP_LET_UNBIND"
-	OP_REBIND		    =  "OP_REBIND"
+	OP_LET_BIND				=  "OP_LET_BIND"
+	OP_LET_UNBIND			=  "OP_LET_UNBIND"
+	OP_REBIND				=  "OP_REBIND"
 
-	OP_LOAD             =  "OP_LOAD"
-	OP_STORE            =  "OP_STORE"
-	OP_LOAD_CHAR        =  "OP_LOAD_CHAR"
-	OP_STORE_CHAR       =  "OP_STORE_CHAR"
+	OP_LOAD					=  "OP_LOAD"
+	OP_STORE				=  "OP_STORE"
+	OP_LOAD_CHAR			=  "OP_LOAD_CHAR"
+	OP_STORE_CHAR			=  "OP_STORE_CHAR"
 
 	// ARITHMETICS
-	OP_ADD			    =  "OP_ADD"
-	OP_DIVIDE		    =  "OP_DIVIDE"
-	OP_MODULO		    =  "OP_MODULO"
-	OP_MULTIPLY		    =  "OP_MULTIPLY"
-	OP_SUBSTRACT	    =  "OP_SUBSTRACT"
+	OP_ADD					=  "OP_ADD"
+	OP_DIVIDE				=  "OP_DIVIDE"
+	OP_MODULO				=  "OP_MODULO"
+	OP_MULTIPLY				=  "OP_MULTIPLY"
+	OP_SUBSTRACT			=  "OP_SUBSTRACT"
 
 	// BOOLEAN ARITHMETICS
-	OP_GREATER		    =  "OP_GREATER"
-	OP_GREATER_EQUAL    =  "OP_GREATER_EQUAL"
-	OP_LESS			    =  "OP_LESS"
-	OP_LESS_EQUAL	    =  "OP_LESS_EQUAL"
-	OP_NOT_EQUAL	    =  "OP_NOT_EQUAL"
+	OP_GREATER				=  "OP_GREATER"
+	OP_GREATER_EQUAL		=  "OP_GREATER_EQUAL"
+	OP_LESS					=  "OP_LESS"
+	OP_LESS_EQUAL			=  "OP_LESS_EQUAL"
+	OP_NOT_EQUAL			=  "OP_NOT_EQUAL"
 
-	OP_ARGC			    =  "OP_ARGC"
-	OP_ARGV			    =  "OP_ARGV"
-	OP_ASSEMBLY		    =  "OP_ASSEMBLY"
-	OP_CAST			    =  "OP_CAST"
-	OP_EQUAL		    =  "OP_EQUAL"
-	OP_FUNCTION_CALL    =  "OP_FUNCTION_CALL"
-	OP_RET			    =  "OP_RET"
+	OP_ARGC					=  "OP_ARGC"
+	OP_ARGV					=  "OP_ARGV"
+	OP_ASSEMBLY				=  "OP_ASSEMBLY"
+	OP_CAST					=  "OP_CAST"
+	OP_EQUAL				=  "OP_EQUAL"
+	OP_FUNCTION_CALL		=  "OP_FUNCTION_CALL"
+	OP_RET					=  "OP_RET"
 
-	OP_EOC			    =  "OP_EOC"
+	OP_EOC					=  "OP_EOC"
 )
 
 type DataType int
@@ -68,6 +71,7 @@ const (
 
 type Program struct {
 	chunks           []Function
+	variables        []Variable
 	staticMemorySize int
 }
 
@@ -92,18 +96,7 @@ type Binding struct {
 	words []string
 }
 
-type ScopeCondition string
 type ScopeType int
-
-const (
-	LC_NONE ScopeCondition	= ""
-	LC_LESS					= "jl"
-	LC_LESS_EQUAL			= "jle"
-	LC_GREATER				= "jg"
-	LC_GREATER_EQUAL		= "jge"
-	LC_EQUAL				= "je"
-	LC_NOT_EQUAL			= "jne"
-)
 
 const (
 	SCOPE_BIND ScopeType = iota
@@ -113,27 +106,34 @@ const (
 )
 
 type Scope struct {
-	condition  ScopeCondition
 	ipStart    int
 	ipThen     int
 	tokenStart Token
 	typ        ScopeType
 }
 
+type Variable struct {
+	dtype  DataType
+	offset int
+	word   string
+}
+
 type Function struct {
-	ip          int
-	name        string
-	loc         Location
+	ip              int
+	name            string
+	loc             Location
 
-	arguments   Arity
-	returns     Arity
-	bindings    Binding
-	code        []Code
-	scope       []Scope
+	arguments       Arity
+	returns         Arity
+	bindings        Binding
+	code            []Code
+	scope           []Scope
+	variables       []Variable
 
-	parsed      bool
-	called      bool
-	internal    bool
+	localMemorySize int
+	parsed          bool
+	called          bool
+	internal        bool
 }
 
 type Assembly struct {
