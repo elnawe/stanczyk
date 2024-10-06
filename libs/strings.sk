@@ -64,8 +64,8 @@ ret
 ;   - <int> itoa
 ; Returns:
 ;   - The pointer to the static memory where the string is saved
-const ITOA_BUFFER_CAP 20
-var itoa-buffer ITOA_BUFFER_CAP
+const ITOA_BUFFER_CAP 8 ; TODO: ptr sizeof
+var itoa-buffer ptr
 
 fn itoa (int --- ptr)
   let x in

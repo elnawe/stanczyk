@@ -51,6 +51,7 @@ const SYS_READ      0
 const SYS_WRITE     1
 const SYS_OPEN      2
 const SYS_CLOSE     3
+const SYS_LSEEK     8
 const SYS_SOCKET    41
 const SYS_BIND      49
 const SYS_EXIT      60

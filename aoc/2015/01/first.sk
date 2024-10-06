@@ -1,0 +1,35 @@
+using io
+
+var buf 1024
+var test 8
+
+fn open (ptr --- int)
+  asm ptr -> int (
+    mov rax, SYS_OPEN
+    mov rsi, O_READONLY
+    pop rdi
+    syscall
+    push rax
+  )
+ret
+
+fn lseek (int --- int)
+  asm int -> int (
+    mov rax, 8
+    xor rsi, rsi
+    mov rdx, 2 ; SEEK_END
+    pop rdi
+    syscall
+    push rax
+  )
+ret
+
+fn main ()
+  "input.txt" open dup lseek
+  let fd file-size in
+    13 test !
+    test println
+    ; fd println
+    ; file-size println
+  done
+ret

@@ -58,7 +58,7 @@ func generateLinuxX64() {
 
 	out.WriteBss("section .bss")
 	out.WriteBss("args: resq 1")
-	out.WriteBss("return_stack_rsp: resq 1024")
+	out.WriteBss("return_stack_rsp: resq 1")
 	out.WriteBss("return_stack: resb 65536")
 	out.WriteBss("return_stack_rsp_end:")
 
@@ -114,18 +114,15 @@ func generateLinuxX64() {
 			case OP_PUSH_INT:
 				out.WriteText("    mov rax, %d", value)
 				out.WriteText("    push rax")
-			case OP_PUSH_PTR:
-				mem := value.(Object)
-				out.WriteText("    mov rax, mem_%d", mem.id)
-				out.WriteText("    push rax")
-			case OP_PUSH_PTR_ADDR:
-				mem := value.(Object)
-				out.WriteText("    mov rax, mem_%d", mem.id)
-				out.WriteText("    push QWORD [rax]")
 			case OP_PUSH_STR:
 				ascii := getAsciiValues(value.(string))
 				out.WriteText("    push str_%d", len(out.data))
 				out.WriteData("str_%d: db %s", len(out.data), ascii)
+			case OP_PUSH_VAR:
+				offset := value.(int)
+				out.WriteText("    mov rax, program_static_mem")
+				out.WriteText("    add rax, %d", offset)
+				out.WriteText("    push rax")
 
 			case OP_STORE:
 				out.WriteText("    pop rax")
@@ -327,9 +324,7 @@ func generateLinuxX64() {
 	out.WriteText("    mov rdi, 0")
 	out.WriteText("    syscall")
 
-	for _, v := range TheProgram.variables {
-		out.WriteBss("mem_%d: resb %d", v.id, v.value)
-	}
+	out.WriteBss("program_static_mem: resb %d", TheProgram.staticMemorySize)
 }
 
 func CodegenRun(out *OutputCode) {

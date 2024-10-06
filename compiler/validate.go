@@ -215,11 +215,9 @@ func ValidateRun() {
 				tc.push(DATA_CHAR)
 			case OP_PUSH_INT:
 				tc.push(DATA_INT)
-			case OP_PUSH_PTR:
-				tc.push(DATA_PTR)
-			case OP_PUSH_PTR_ADDR:
-				tc.push(DATA_PTR)
 			case OP_PUSH_STR:
+				tc.push(DATA_PTR)
+			case OP_PUSH_VAR:
 				tc.push(DATA_PTR)
 
 			// MATH ARITHMETICS

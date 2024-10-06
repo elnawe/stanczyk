@@ -20,18 +20,24 @@ type ObjectType int
 
 const (
 	OBJ_CONSTANT ObjectType = iota
-	OBJ_VARIABLE
 )
 
 type Object struct {
-	id    int
+	dtype DataType
 	value any
 	typ   ObjectType
 	word  string
 }
 
+type Variable struct {
+	dtype  DataType
+	offset int
+	word   string
+}
+
 type Frontend struct {
 	globals    []Object
+	variables  []Variable
 	current	   *Function
 	error      bool
 }
@@ -193,7 +199,6 @@ func emitReturn() {
  *  |_| |_|_\___|_| |_|_\\___/ \___|___|___/___/\___/|_|_\
  */
 func addGlobal(obj Object) {
-	obj.id = len(frontend.globals)
 	frontend.globals = append(frontend.globals, obj)
 }
 
@@ -335,47 +340,6 @@ func registerFunction(token Token) {
 	TheProgram.chunks = append(TheProgram.chunks, function)
 }
 
-func registerVar(token Token) {
-	var variable Object
-
-	if !match(TOKEN_WORD) {
-		errorAt(&token, MsgParseVarMissingWord)
-		ExitWithError(CodeParseError)
-	}
-	variable.word = parser.previous.value.(string)
-	variable.typ = OBJ_VARIABLE
-
-	_, found := getGlobal(parser.previous)
-
-	if found {
-		msg := fmt.Sprintf(MsgParseVarOverrideNotAllowed, variable.word)
-		errorAt(&parser.previous, msg)
-		ExitWithError(CodeParseError)
-	}
-
-	advance()
-	vt := parser.previous
-
-	switch vt.typ {
-	case TOKEN_WORD:
-		g, found := getGlobal(vt)
-
-		if found && g.op == OP_PUSH_INT {
-			variable.value = g.value
-		} else {
-			msg := fmt.Sprintf(MsgParseVarValueIsNotConst, vt.value)
-			errorAt(&vt, msg)
-			ExitWithError(CodeParseError)
-		}
-	case TOKEN_INT:
-		variable.value = vt.value.(int)
-	default:
-		errorAt(&parser.previous, MsgParseVarMissingValue)
-		ExitWithError(CodeParseError)
-	}
-
-	addGlobal(variable)
-}
 
 /*    ___ ___  __  __ ___ ___ _      _ _____ ___ ___  _  _
  *   / __/ _ \|  \/  | _ \_ _| |    /_\_   _|_ _/ _ \| \| |
@@ -392,18 +356,6 @@ func takeFromFunctionCode(quant int) []Code {
 
 	frontend.current.code = frontend.current.code[:codeLength-quant]
 	return result
-}
-
-func getVariables() []Object {
-	var vars []Object
-
-	for _, g := range frontend.globals {
-		if g.typ == OBJ_VARIABLE {
-			vars = append(vars, g)
-		}
-	}
-
-	return vars
 }
 
 func getBind(token Token) (Code, bool) {
@@ -426,9 +378,19 @@ func getGlobal(token Token) (Code, bool) {
 			switch g.typ {
 			case OBJ_CONSTANT:
 				return Code{op: OP_PUSH_INT, loc: token.loc, value: g.value}, true
-			case OBJ_VARIABLE:
-				return Code{op: OP_PUSH_PTR, loc: token.loc, value: g}, true
 			}
+		}
+	}
+
+	return Code{}, false
+}
+
+func getVariable(token Token) (Code, bool) {
+	word := token.value.(string)
+
+	for _, v := range frontend.variables {
+		if v.word == word {
+			return Code{op: OP_PUSH_VAR, loc: token.loc, value: v.offset}, true
 		}
 	}
 
@@ -457,6 +419,12 @@ func expandWord(token Token) {
 
 	if bfound {
 		emit(b)
+		return
+	}
+
+	v, vfound := getVariable(token)
+	if vfound {
+		emit(v)
 		return
 	}
 
@@ -575,13 +543,13 @@ func parseToken(token Token) {
 			emit(code)
 			return
 		}
-		g, gfound := getGlobal(token)
-		if gfound {
-			fmt.Println(g)
-			code.op = OP_PUSH_PTR_ADDR
-			code.value = g.value
-			return
-		}
+		// g, gfound := getGlobal(token)
+		// if gfound {
+		// 	fmt.Println(g)
+		// 	code.op = OP_PUSH_PTR_ADDR
+		// 	code.value = g.value
+		// 	return
+		// }
 
 	// TYPE CASTING
 	case TOKEN_DTYPE_BOOL:
@@ -688,8 +656,7 @@ func parseToken(token Token) {
 		emit(code)
 
 	// Special
-	case TOKEN_WORD:
-		expandWord(token)
+	case TOKEN_WORD: expandWord(token)
 
 	// FLOW CONTROL
 	case TOKEN_UNTIL:
@@ -974,7 +941,44 @@ func compilationSecondPass(index int) {
 		switch token.typ {
 		// The second pass will care about the following tokens:
 		case TOKEN_CONST: registerConstant(token)
-		case TOKEN_VAR: registerVar(token)
+		case TOKEN_VAR:
+			var newVar Variable
+			const SIZE_64b = 8
+			const SIZE_8b  = 1
+
+			if !match(TOKEN_WORD) {
+				errorAt(&token, MsgParseVarMissingWord)
+				ExitWithError(CodeParseError)
+			}
+
+			newVar.word = parser.previous.value.(string)
+			newVar.offset = TheProgram.staticMemorySize
+
+			// TODO: Check for duplicated name
+
+			advance()
+			vt := parser.previous
+
+			switch vt.typ {
+			case TOKEN_DTYPE_BOOL:
+				newVar.dtype = DATA_BOOL
+				TheProgram.staticMemorySize += SIZE_64b
+			case TOKEN_DTYPE_INT:
+				newVar.dtype = DATA_INT
+				TheProgram.staticMemorySize += SIZE_64b
+			case TOKEN_DTYPE_PTR:
+				newVar.dtype = DATA_PTR
+				TheProgram.staticMemorySize += SIZE_64b
+			case TOKEN_DTYPE_CHAR:
+				newVar.dtype = DATA_CHAR
+				TheProgram.staticMemorySize += SIZE_8b
+			default:
+				errorAt(&parser.previous, MsgParseVarMissingValue)
+				ExitWithError(CodeParseError)
+			}
+
+			frontend.variables = append(frontend.variables, newVar)
+
 		case TOKEN_FN: registerFunction(token)
 
 		// But it needs to do nothing when it sees the followings:
@@ -1032,8 +1036,6 @@ func FrontendRun() {
 	for index := 0; index < len(file.files); index++ {
 		compilationThirdPass(index)
 	}
-
-	TheProgram.variables = getVariables()
 
 	if frontend.error {
 		ExitWithError(CodeParseError)

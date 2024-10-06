@@ -9,8 +9,7 @@ const (
 	OP_PUSH_BIND_ADDR   =  "OP_PUSH_BIND_ADDR"
 	OP_PUSH_CHAR	    =  "OP_PUSH_CHAR"
 	OP_PUSH_INT		    =  "OP_PUSH_INT"
-	OP_PUSH_PTR		    =  "OP_PUSH_PTR"
-	OP_PUSH_PTR_ADDR    =  "OP_PUSH_PTR_ADDR"
+	OP_PUSH_VAR      	=  "OP_PUSH_VAR"
 	OP_PUSH_STR		    =  "OP_PUSH_STR"
 
 	// FLOW CONTROL
@@ -68,8 +67,8 @@ const (
 )
 
 type Program struct {
-	chunks    []Function
-	variables []Object
+	chunks           []Function
+	staticMemorySize int
 }
 
 type Argument struct {
