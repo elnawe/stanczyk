@@ -13,6 +13,7 @@ const (
 	TOKEN_CHAR TokenType = iota
 	TOKEN_FALSE
 	TOKEN_INT
+	TOKEN_PTR
 	TOKEN_STR
 	TOKEN_TRUE
 
@@ -32,6 +33,13 @@ const (
 	TOKEN_LOOP
 	TOKEN_UNTIL
 	TOKEN_WHILE
+
+	TOKEN_BANG
+	TOKEN_C_BANG
+	TOKEN_AT
+	TOKEN_C_AT
+
+	TOKEN_AMPERSAND
 
 	// Single characters
 	TOKEN_BRACKET_CLOSE
@@ -59,10 +67,6 @@ const (
 	TOKEN_LEAVE
 	TOKEN_LESS
 	TOKEN_LESS_EQUAL
-	TOKEN_LOAD8
-	TOKEN_LOAD16
-	TOKEN_LOAD32
-	TOKEN_LOAD64
 	TOKEN_MINUS
 	TOKEN_PERCENT
 	TOKEN_PLUS
@@ -70,10 +74,6 @@ const (
 	TOKEN_RIGHT_ARROW
 	TOKEN_SLASH
 	TOKEN_STAR
-	TOKEN_STORE8
-	TOKEN_STORE16
-	TOKEN_STORE32
-	TOKEN_STORE64
 	TOKEN_THIS
 	TOKEN_USING
 	TOKEN_VAR
@@ -101,6 +101,11 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_DTYPE_INT,      word: "int"    },
 	reserved{typ: TOKEN_DTYPE_PTR,      word: "ptr"    },
 
+	reserved{typ: TOKEN_BANG,           word: "!"      },
+	reserved{typ: TOKEN_AT,             word: "@"      },
+	reserved{typ: TOKEN_C_BANG,         word: "c!"     },
+	reserved{typ: TOKEN_C_AT,           word: "c@"     },
+
 	reserved{typ: TOKEN_FI,             word: "fi"     },
 	reserved{typ: TOKEN_IF,             word: "if"     },
 	reserved{typ: TOKEN_LOOP,           word: "loop"   },
@@ -121,10 +126,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_LEAVE,          word: "leave"  },
 	reserved{typ: TOKEN_LESS,           word: "<"      },
 	reserved{typ: TOKEN_LESS_EQUAL,     word: "<="     },
-	reserved{typ: TOKEN_LOAD8,          word: "->8"    },
-	reserved{typ: TOKEN_LOAD16,         word: "->16"   },
-	reserved{typ: TOKEN_LOAD32,         word: "->32"   },
-	reserved{typ: TOKEN_LOAD64,         word: "->64"   },
 	reserved{typ: TOKEN_MINUS,          word: "-"      },
 	reserved{typ: TOKEN_PERCENT,        word: "%"      },
 	reserved{typ: TOKEN_PLUS,           word: "+"      },
@@ -132,10 +133,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_RIGHT_ARROW,    word: "->"     },
 	reserved{typ: TOKEN_SLASH,          word: "/"      },
 	reserved{typ: TOKEN_STAR,           word: "*"      },
-	reserved{typ: TOKEN_STORE8,         word: "<-8"    },
-	reserved{typ: TOKEN_STORE16,        word: "<-16"   },
-	reserved{typ: TOKEN_STORE32,        word: "<-32"   },
-	reserved{typ: TOKEN_STORE64,        word: "<-64"   },
 	reserved{typ: TOKEN_THIS,           word: "this"   },
 	reserved{typ: TOKEN_TRUE,           word: "true"   },
 	reserved{typ: TOKEN_USING,          word: "using"  },
@@ -271,14 +268,24 @@ func makeChar(c byte, line string, index *int) {
 }
 
 func makeWord(c byte, line string, index *int) {
-	word := string(c)
+	var typ TokenType
+	var word string
+
+	if c == '&' {
+		typ = TOKEN_AMPERSAND
+		word = ""
+	} else {
+		typ = TOKEN_WORD
+		word = string(c)
+	}
 
 	for AdvanceWithChecks(&c, line, index) {
 		word += string(c)
 	}
 
+
 	if !makeReservedToken(word) {
-		makeToken(TOKEN_WORD, word)
+		makeToken(typ, word)
 	}
 }
 
@@ -317,6 +324,7 @@ func TokenizeFile(f string, s string) []Token {
 			case c == ']': makeToken(TOKEN_BRACKET_CLOSE)
 			case c == '(': makeToken(TOKEN_PAREN_OPEN)
 			case c == ')': makeToken(TOKEN_PAREN_CLOSE)
+			case c == '&': makeWord(c, line, &index)
 			case c == '$':
 				makeParapolyToken(c, line, &index)
 			case c == '"':

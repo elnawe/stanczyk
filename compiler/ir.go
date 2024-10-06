@@ -4,8 +4,9 @@ type OpCode string
 
 const (
 	// Constants
-	OP_PUSH_BOOL OpCode = "OP_PUSH_BOOL"
+	OP_PUSH_BOOL OpCode =  "OP_PUSH_BOOL"
 	OP_PUSH_BIND        =  "OP_PUSH_BIND"
+	OP_PUSH_BIND_PTR    =  "OP_PUSH_BIND_PTR"
 	OP_PUSH_CHAR	    =  "OP_PUSH_CHAR"
 	OP_PUSH_INT		    =  "OP_PUSH_INT"
 	OP_PUSH_PTR		    =  "OP_PUSH_PTR"
@@ -22,6 +23,11 @@ const (
 	OP_LET_BIND		    =  "OP_LET_BIND"
 	OP_LET_UNBIND	    =  "OP_LET_UNBIND"
 	OP_REBIND		    =  "OP_REBIND"
+
+	OP_LOAD             =  "OP_LOAD"
+	OP_STORE            =  "OP_STORE"
+	OP_LOAD_CHAR        =  "OP_LOAD_CHAR"
+	OP_STORE_CHAR       =  "OP_STORE_CHAR"
 
 	// ARITHMETICS
 	OP_ADD			    =  "OP_ADD"
@@ -43,15 +49,7 @@ const (
 	OP_CAST			    =  "OP_CAST"
 	OP_EQUAL		    =  "OP_EQUAL"
 	OP_FUNCTION_CALL    =  "OP_FUNCTION_CALL"
-	OP_LOAD8		    =  "OP_LOAD8"
-	OP_LOAD16		    =  "OP_LOAD16"
-	OP_LOAD32		    =  "OP_LOAD32"
-	OP_LOAD64		    =  "OP_LOAD64"
 	OP_RET			    =  "OP_RET"
-	OP_STORE8		    =  "OP_STORE8"
-	OP_STORE16		    =  "OP_STORE16"
-	OP_STORE32		    =  "OP_STORE32"
-	OP_STORE64		    =  "OP_STORE64"
 
 	OP_EOC			    =  "OP_EOC"
 )
@@ -59,7 +57,7 @@ const (
 type DataType int
 
 const (
-	DATA_NONE DataType = iota
+	DATA_NONE DataType	= iota
 	DATA_ANY
 	DATA_BOOL
 	DATA_CHAR

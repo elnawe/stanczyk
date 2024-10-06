@@ -43,7 +43,7 @@ fn len (int --- int) 0 dup rot < until ++ I 10 / loop ret
 ;   - The number of characters in teh string. "Stanczyk" returns 8
 fn len (ptr --- int)
 	let s in
-		0 dup s ->8 != until ++ dup s swap + ->8 loop
+		0 0 dup s c@ != until ++ dup s c@ loop
 	done
 ret
 
@@ -57,7 +57,7 @@ fn strequal (ptr ptr --- bool)
 	let s1 l1 s2 l2 in
 		l1 l2 = dup if
 			0 l1 <= until
-				s1 I + ->8 s2 I + ->8 != if false nip leave fi
+				I s1 c@ I s2 c@ != if false nip leave fi
 			I -- loop
 		fi
 	done
@@ -74,16 +74,16 @@ var itoa-buffer ITOA_BUFFER_CAP
 fn itoa (int --- ptr)
   let x in
 		ITOA_BUFFER_CAP 0 >= until
-			itoa-buffer I + '\0' <-8
+			I '\0' itoa-buffer c!
 		I ++ loop
 
 		x len 0 = if
-			itoa-buffer '0' <-8
+			0 '0' itoa-buffer c!
 		fi
 
 		x
 		0 x len 1 - <= until
-			dup 10 % 48 + char itoa-buffer I + swap <-8
+			dup 10 % 48 + char I swap itoa-buffer c!
 			take 10 /
 		I -- loop
 		drop

@@ -209,6 +209,8 @@ func ValidateRun() {
 			case OP_PUSH_BIND:
 				value := code.value.(int)
 				tc.push(bindings[value])
+			case OP_PUSH_BIND_PTR:
+				tc.push(DATA_PTR)
 			case OP_PUSH_CHAR:
 				tc.push(DATA_CHAR)
 			case OP_PUSH_INT:
@@ -217,6 +219,28 @@ func ValidateRun() {
 				tc.push(DATA_PTR)
 			case OP_PUSH_STR:
 				tc.push(DATA_PTR)
+
+			case OP_STORE:
+				b := tc.pop()
+				a := tc.pop()
+				assertArgumentType(dtArray(DATA_ANY, DATA_PTR), dtArray(a, b), code, loc)
+			case OP_STORE_CHAR:
+				c := tc.pop()
+				b := tc.pop()
+				a := tc.pop()
+				assertArgumentType(
+					dtArray(DATA_INT, DATA_CHAR, DATA_PTR),
+					dtArray(a, b, c), code, loc,
+				)
+			case OP_LOAD:
+				a := tc.pop()
+				assertArgumentType(dtArray(DATA_PTR), dtArray(a), code, loc)
+				tc.push(DATA_PTR)
+			case OP_LOAD_CHAR:
+				b := tc.pop()
+				a := tc.pop()
+				assertArgumentType(dtArray(DATA_INT, DATA_PTR), dtArray(a, b), code, loc)
+				tc.push(DATA_CHAR)
 
 			case OP_LET_BIND:
 				var have []DataType
@@ -376,23 +400,11 @@ func ValidateRun() {
 				tc.scope++
 				snapshots[tc.scope] = tc
 			case OP_IF_END, OP_IF_ELSE:
-			case OP_LOAD8, OP_LOAD16, OP_LOAD32, OP_LOAD64:
-				a := tc.pop()
-				assertArgumentType(dtArray(a), dtArray(DATA_PTR), code, loc)
-				tc.push(DATA_PTR)
 			case OP_MULTIPLY:
 				b := tc.pop()
 				a := tc.pop()
 				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
 				tc.push(DATA_INT)
-			case OP_STORE8, OP_STORE16, OP_STORE32, OP_STORE64:
-				allowedTypes := [][]DataType{
-					dtArray(DATA_PTR, DATA_PTR),
-					dtArray(DATA_PTR, DATA_CHAR),
-				}
-				b := tc.pop()
-				a := tc.pop()
-				assertArgumentTypes(dtArray(a, b), allowedTypes, code, loc)
 
 			case OP_LOOP_END:
 				tc.scope--

@@ -103,6 +103,11 @@ func generateLinuxX64() {
 				out.WriteText("    mov rax, [return_stack_rsp]")
 				out.WriteText("    add rax, %d", val * 8)
 				out.WriteText("    push QWORD [rax]")
+			case OP_PUSH_BIND_PTR:
+				val := value.(int)
+				out.WriteText("    mov rax, [return_stack_rsp]")
+				out.WriteText("    add rax, %d", val * 8)
+				out.WriteText("    push rax")
 			case OP_PUSH_CHAR:
 				out.WriteText("    mov rax, %d", value)
 				out.WriteText("    push rax")
@@ -117,6 +122,29 @@ func generateLinuxX64() {
 				ascii := getAsciiValues(value.(string))
 				out.WriteText("    push str_%d", len(out.data))
 				out.WriteData("str_%d: db %s", len(out.data), ascii)
+
+			case OP_STORE:
+				out.WriteText("    pop rax")
+				out.WriteText("    pop rbx")
+				out.WriteText("    mov [rax], rbx")
+			case OP_STORE_CHAR:
+				out.WriteText("    pop rcx")
+				out.WriteText("    pop rbx")
+                out.WriteText("    pop rax")
+				out.WriteText("    add rcx, rax")
+                out.WriteText("    mov [rcx], bl")
+			case OP_LOAD:
+				out.WriteText("    pop rax")
+                out.WriteText("    xor rbx, rbx")
+                out.WriteText("    mov rbx, [rax]")
+                out.WriteText("    push rbx")
+			case OP_LOAD_CHAR:
+				out.WriteText("    pop rbx")
+				out.WriteText("    pop rax")
+				out.WriteText("    add rbx, rax")
+                out.WriteText("    xor rcx, rcx")
+                out.WriteText("    mov cl, [rbx]")
+                out.WriteText("    push rcx")
 
 			// NUMBER ARITHMETICS
 			case OP_ADD:
@@ -257,26 +285,6 @@ func generateLinuxX64() {
 				out.WriteText("    add rax, %d", unbindCount * 8)
 				out.WriteText("    mov [return_stack_rsp], rax")
 				currentBindsCount -= unbindCount
-			case OP_LOAD8:
-				out.WriteText("    pop rax")
-                out.WriteText("    xor rbx, rbx")
-                out.WriteText("    mov bl, [rax]")
-                out.WriteText("    push rbx")
-			case OP_LOAD16:
-				out.WriteText("    pop rax")
-                out.WriteText("    xor rbx, rbx")
-                out.WriteText("    mov bx, [rax]")
-                out.WriteText("    push rbx")
-			case OP_LOAD32:
-				out.WriteText("    pop rax")
-                out.WriteText("    xor rbx, rbx")
-                out.WriteText("    mov ebx, [rax]")
-                out.WriteText("    push rbx")
-			case OP_LOAD64:
-				out.WriteText("    pop rax")
-                out.WriteText("    xor rbx, rbx")
-                out.WriteText("    mov rbx, [rax]")
-                out.WriteText("    push rbx")
 			case OP_NOT_EQUAL:
 				out.WriteText("    xor rcx, rcx")
 				out.WriteText("    mov rdx, 1")
@@ -295,22 +303,6 @@ func generateLinuxX64() {
 				out.WriteText("    mov rsp, [return_stack_rsp]")
 				out.WriteText("    add rsp, %d", value)
 				out.WriteText("    ret")
-			case OP_STORE8:
-                out.WriteText("    pop rbx")
-                out.WriteText("    pop rax")
-                out.WriteText("    mov [rax], bl")
-			case OP_STORE16:
-                out.WriteText("    pop rbx")
-                out.WriteText("    pop rax")
-                out.WriteText("    mov [rax], bx")
-			case OP_STORE32:
-                out.WriteText("    pop rbx")
-                out.WriteText("    pop rax")
-                out.WriteText("    mov [rax], ebx")
-			case OP_STORE64:
-                out.WriteText("    pop rbx")
-                out.WriteText("    pop rax")
-                out.WriteText("    mov [rax], rbx")
 
 			// Special
 			case OP_CAST:

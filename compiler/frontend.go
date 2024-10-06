@@ -567,6 +567,14 @@ func parseToken(token Token) {
 		code.op = OP_PUSH_BOOL
 		code.value = 1
 		emit(code)
+	case TOKEN_AMPERSAND:
+		b, found := getBind(token)
+		if found {
+			code.op = OP_PUSH_BIND_PTR
+			code.value = b.value
+			emit(code)
+			return
+		}
 
 	// Casting
 	case TOKEN_DTYPE_BOOL:
@@ -638,18 +646,6 @@ func parseToken(token Token) {
 		code.op = OP_LET_UNBIND
 		code.value = unbind()
 		emit(code)
-	case TOKEN_LOAD8:
-		code.op = OP_LOAD8
-		emit(code)
-	case TOKEN_LOAD16:
-		code.op = OP_LOAD16
-		emit(code)
-	case TOKEN_LOAD32:
-		code.op = OP_LOAD32
-		emit(code)
-	case TOKEN_LOAD64:
-		code.op = OP_LOAD64
-		emit(code)
 	case TOKEN_MINUS:
 		code.op = OP_SUBSTRACT
 		emit(code)
@@ -665,22 +661,23 @@ func parseToken(token Token) {
 	case TOKEN_STAR:
 		code.op = OP_MULTIPLY
 		emit(code)
-	case TOKEN_STORE8:
-		code.op = OP_STORE8
-		emit(code)
-	case TOKEN_STORE16:
-		code.op = OP_STORE16
-		emit(code)
-	case TOKEN_STORE32:
-		code.op = OP_STORE32
-		emit(code)
-	case TOKEN_STORE64:
-		code.op = OP_STORE64
-		emit(code)
 	case TOKEN_THIS:
 		loc := code.loc
 		code.op = OP_PUSH_STR
 		code.value = fmt.Sprintf("%s:%d:%d", loc.f, loc.l, loc.c)
+		emit(code)
+
+	case TOKEN_AT:
+		code.op = OP_LOAD
+		emit(code)
+	case TOKEN_C_AT:
+		code.op = OP_LOAD_CHAR
+		emit(code)
+	case TOKEN_BANG:
+		code.op = OP_STORE
+		emit(code)
+	case TOKEN_C_BANG:
+		code.op = OP_STORE_CHAR
 		emit(code)
 
 	// Special
