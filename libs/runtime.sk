@@ -44,13 +44,13 @@
 ; bool SK_TEST    - True if program is running in test mode (`skc test`)
 ; str  SK_VERSION - The Stańczyk Compiler version (`skc version`)
 
-;; Maximum Values for Signed Integers (int).
+;; Maximum Values for Signed Integers (int)
 const MAX_INT8     127
 const MAX_INT16    32767
 const MAX_INT32    2147483647
 const MAX_INT64    9223372036854775807
 
-;; Minimum Values for Signed Integers (int).
+;; Minimum Values for Signed Integers (int)
 ; const MIN_INT8     -128
 ; const MIN_INT16    -32768
 ; const MIN_INT32    -2147483648

@@ -203,13 +203,13 @@ func ValidateRun() {
 			loc := code.loc
 
 			switch instruction {
-			// Constants
+			// CONSTANT
 			case OP_PUSH_BOOL:
 				tc.push(DATA_BOOL)
 			case OP_PUSH_BIND:
 				value := code.value.(int)
 				tc.push(bindings[value])
-			case OP_PUSH_BIND_PTR:
+			case OP_PUSH_BIND_ADDR:
 				tc.push(DATA_PTR)
 			case OP_PUSH_CHAR:
 				tc.push(DATA_CHAR)
@@ -217,8 +217,17 @@ func ValidateRun() {
 				tc.push(DATA_INT)
 			case OP_PUSH_PTR:
 				tc.push(DATA_PTR)
+			case OP_PUSH_PTR_ADDR:
+				tc.push(DATA_PTR)
 			case OP_PUSH_STR:
 				tc.push(DATA_PTR)
+
+			// MATH ARITHMETICS
+			case OP_MULTIPLY:
+				b := tc.pop()
+				a := tc.pop()
+				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
+				tc.push(DATA_INT)
 
 			case OP_STORE:
 				b := tc.pop()
@@ -400,11 +409,6 @@ func ValidateRun() {
 				tc.scope++
 				snapshots[tc.scope] = tc
 			case OP_IF_END, OP_IF_ELSE:
-			case OP_MULTIPLY:
-				b := tc.pop()
-				a := tc.pop()
-				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_INT), code, loc)
-				tc.push(DATA_INT)
 
 			case OP_LOOP_END:
 				tc.scope--

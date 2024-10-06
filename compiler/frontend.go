@@ -568,15 +568,22 @@ func parseToken(token Token) {
 		code.value = 1
 		emit(code)
 	case TOKEN_AMPERSAND:
-		b, found := getBind(token)
-		if found {
-			code.op = OP_PUSH_BIND_PTR
+		b, bfound := getBind(token)
+		if bfound {
+			code.op = OP_PUSH_BIND_ADDR
 			code.value = b.value
 			emit(code)
 			return
 		}
+		g, gfound := getGlobal(token)
+		if gfound {
+			fmt.Println(g)
+			code.op = OP_PUSH_PTR_ADDR
+			code.value = g.value
+			return
+		}
 
-	// Casting
+	// TYPE CASTING
 	case TOKEN_DTYPE_BOOL:
 		code.op = OP_CAST
 		code.value = DATA_BOOL

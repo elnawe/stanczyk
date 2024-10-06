@@ -41,11 +41,7 @@ fn len (int --- int) 0 dup rot < until ++ I 10 / loop ret
 ;   - <string> len
 ; Returns:
 ;   - The number of characters in teh string. "Stanczyk" returns 8
-fn len (ptr --- int)
-	let s in
-		0 0 dup s c@ != until ++ dup s c@ loop
-	done
-ret
+fn len (ptr --- int) let s in 0 0 dup s c@ != until ++ dup s c@ loop done ret
 
 ; Compares two strings and returns the results of the comparison
 ; Calling:
@@ -53,14 +49,14 @@ ret
 ; Returns:
 ;   - A boolean true if the arguments are equal, false if they are different.
 fn strequal (ptr ptr --- bool)
-	over len swap dup len
-	let s1 l1 s2 l2 in
-		l1 l2 = dup if
-			0 l1 <= until
-				I s1 c@ I s2 c@ != if false nip leave fi
-			I -- loop
-		fi
-	done
+  over len swap dup len
+  let s1 l1 s2 l2 in
+    l1 l2 = dup if
+      0 l1 <= until
+        I s1 c@ I s2 c@ != if false nip leave fi
+      I -- loop
+    fi
+  done
 ret
 
 ; Converts an integer to a string and returns the buffer where the result is saved
@@ -73,21 +69,21 @@ var itoa-buffer ITOA_BUFFER_CAP
 
 fn itoa (int --- ptr)
   let x in
-		ITOA_BUFFER_CAP 0 >= until
-			I '\0' itoa-buffer c!
-		I ++ loop
+    ITOA_BUFFER_CAP 0 >= until
+      I '\0' itoa-buffer c!
+    I ++ loop
 
-		x len 0 = if
-			0 '0' itoa-buffer c!
-		fi
+    x len 0 = if
+      0 '0' itoa-buffer c!
+    fi
 
-		x
-		0 x len 1 - <= until
-			dup 10 % 48 + char I swap itoa-buffer c!
-			take 10 /
-		I -- loop
-		drop
-	done
+    x
+    0 x len 1 - <= until
+      dup 10 % 48 + char I swap itoa-buffer c!
+      take 10 /
+    I -- loop
+    drop
+  done
 
-	itoa-buffer
+  itoa-buffer
 ret

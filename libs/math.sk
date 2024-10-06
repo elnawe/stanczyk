@@ -29,6 +29,16 @@
 
 ;; The Stańczyk Math Library
 
+; Returns the highest number out of the two given numbers
+; Calling:
+;   - <int1> <int2> max
+; Returns:
+;   - <int1> if is bigger than <int2>, <int2> otherwise
 fn max (int int --- int) let x y in x x y < if drop y fi done ret
 
+; Returns the lowest number out of the two given numbers
+; Calling:
+;   - <int1> <int2> min
+; Returns:
+;   - <int1> if is smaller than <int2>, <int2> otherwise
 fn min (int int --- int) let x y in x x y > if drop y fi done ret

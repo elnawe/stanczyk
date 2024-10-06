@@ -103,7 +103,7 @@ func generateLinuxX64() {
 				out.WriteText("    mov rax, [return_stack_rsp]")
 				out.WriteText("    add rax, %d", val * 8)
 				out.WriteText("    push QWORD [rax]")
-			case OP_PUSH_BIND_PTR:
+			case OP_PUSH_BIND_ADDR:
 				val := value.(int)
 				out.WriteText("    mov rax, [return_stack_rsp]")
 				out.WriteText("    add rax, %d", val * 8)
@@ -118,6 +118,10 @@ func generateLinuxX64() {
 				mem := value.(Object)
 				out.WriteText("    mov rax, mem_%d", mem.id)
 				out.WriteText("    push rax")
+			case OP_PUSH_PTR_ADDR:
+				mem := value.(Object)
+				out.WriteText("    mov rax, mem_%d", mem.id)
+				out.WriteText("    push QWORD [rax]")
 			case OP_PUSH_STR:
 				ascii := getAsciiValues(value.(string))
 				out.WriteText("    push str_%d", len(out.data))
