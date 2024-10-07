@@ -231,6 +231,7 @@ func ValidateRun() {
 				tc.push(DATA_PTR)
 				// for _, v := range function.variables {
 				// 	if v.offset == value.(int) {
+				// 		fmt.Println(v)
 				// 		tc.push(v.dtype)
 				// 	}
 				// }
@@ -259,7 +260,7 @@ func ValidateRun() {
 			case OP_LOAD:
 				a := tc.pop()
 				assertArgumentType(dtArray(DATA_PTR), dtArray(a), code, loc)
-				tc.push(DATA_PTR)
+				tc.push(DATA_INT)
 			case OP_LOAD_CHAR:
 				b := tc.pop()
 				a := tc.pop()

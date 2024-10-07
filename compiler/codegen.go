@@ -123,6 +123,7 @@ func generateLinuxX64() {
 				out.WriteText("    mov rax, program_static_mem")
 				out.WriteText("    add rax, %d", offset)
 				out.WriteText("    push rax")
+			// case OP_PUSH_VAR_GLOBAL:
 				// offset := value.(int)
 				// out.WriteText("    mov rax, program_static_mem")
 				// out.WriteText("    add rax, %d", offset)
@@ -138,6 +139,7 @@ func generateLinuxX64() {
 				out.WriteText("    mov rax, [return_stack_rsp]")
 				out.WriteText("    add rax, %d", offset)
 				out.WriteText("    push rax")
+			// case OP_PUSH_VAR_LOCAL:
 				// val := value.(int)
 				// offset := val + (currentBindsCount * 8)
 				// out.WriteText("    mov rax, [return_stack_rsp]")
