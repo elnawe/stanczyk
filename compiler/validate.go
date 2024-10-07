@@ -228,13 +228,11 @@ func ValidateRun() {
 			case OP_PUSH_VAR_GLOBAL_ADDR:
 				tc.push(DATA_PTR)
 			case OP_PUSH_VAR_LOCAL:
-				tc.push(DATA_PTR)
-				// for _, v := range function.variables {
-				// 	if v.offset == value.(int) {
-				// 		fmt.Println(v)
-				// 		tc.push(v.dtype)
-				// 	}
-				// }
+				for _, v := range function.variables {
+					if v.offset == value.(int) {
+						tc.push(v.dtype)
+					}
+				}
 			case OP_PUSH_VAR_LOCAL_ADDR:
 				tc.push(DATA_PTR)
 
@@ -250,12 +248,11 @@ func ValidateRun() {
 				a := tc.pop()
 				assertArgumentType(dtArray(DATA_ANY, DATA_PTR), dtArray(a, b), code, loc)
 			case OP_STORE_CHAR:
-				c := tc.pop()
 				b := tc.pop()
 				a := tc.pop()
 				assertArgumentType(
-					dtArray(DATA_INT, DATA_CHAR, DATA_PTR),
-					dtArray(a, b, c), code, loc,
+					dtArray(DATA_ANY, DATA_PTR),
+					dtArray(a, b), code, loc,
 				)
 			case OP_LOAD:
 				a := tc.pop()

@@ -64,26 +64,24 @@ ret
 ;   - <int> itoa
 ; Returns:
 ;   - The pointer to the static memory where the string is saved
-const ITOA_BUFFER_CAP 8 ; TODO: ptr sizeof
-var itoa-buffer ptr
 
-fn itoa (int --- ptr)
-  let x in
-    ITOA_BUFFER_CAP 0 >= until
-      I '\0' itoa-buffer c!
-    I ++ loop
+fn itoa (int ptr)
+  ;; TODO: There should be a way to initialize buffer automatically
+  const BUFFER_CAP 20
+  var buffer ptr &buffer !
+  var number int &number !
+  "00000000000000000000" buffer !
+  buffer @ ptr &buffer !
+  48 buffer !
 
-    x len 0 = if
-      0 '0' itoa-buffer c!
-    fi
+  number 0 != if
+  	0 BUFFER_CAP <= until
+  	  0 buffer I + c!
+  	I -- loop
 
-    x
-    0 x len 1 - <= until
-      dup 10 % 48 + char I swap itoa-buffer c!
-      take 10 /
+    0 number len 1 - <= until
+      '0' number 10 % + char buffer I + c!
+      number 10 / &number !
     I -- loop
-    drop
-  done
-
-  itoa-buffer
+  fi
 ret

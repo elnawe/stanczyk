@@ -50,17 +50,11 @@ func generateLinuxX64() {
 	mainFuncIP := -1
 	out := codegen.out
 
-	out.WriteText("section .text")
-    out.WriteText("global _start")
+	out.WriteText("format ELF64 executable 3")
+	out.WriteText("segment readable executable")
     out.WriteText(";; user program definitions starts here")
 
-	out.WriteData("section .data")
-
-	out.WriteBss("section .bss")
-	out.WriteBss("args: resq 1")
-	out.WriteBss("return_stack_rsp: resq 1")
-	out.WriteBss("return_stack: resb 65536")
-	out.WriteBss("return_stack_rsp_end:")
+	out.WriteData("segment readable writable")
 
 	for _, function := range TheProgram.chunks {
 		currentBindsCount := 0
@@ -138,13 +132,7 @@ func generateLinuxX64() {
 				offset := val + (currentBindsCount * 8)
 				out.WriteText("    mov rax, [return_stack_rsp]")
 				out.WriteText("    add rax, %d", offset)
-				out.WriteText("    push rax")
-			// case OP_PUSH_VAR_LOCAL:
-				// val := value.(int)
-				// offset := val + (currentBindsCount * 8)
-				// out.WriteText("    mov rax, [return_stack_rsp]")
-				// out.WriteText("    add rax, %d", offset)
-				// out.WriteText("    push QWORD [rax]")
+				out.WriteText("    push QWORD [rax]")
 			case OP_PUSH_VAR_LOCAL_ADDR:
 				val := value.(int)
 				offset := val + (currentBindsCount * 8)
@@ -157,11 +145,17 @@ func generateLinuxX64() {
 				out.WriteText("    pop rbx")
 				out.WriteText("    mov [rax], rbx")
 			case OP_STORE_CHAR:
-				out.WriteText("    pop rcx")
+				out.WriteText("    pop rax")
 				out.WriteText("    pop rbx")
-                out.WriteText("    pop rax")
-				out.WriteText("    add rcx, rax")
-                out.WriteText("    mov [rcx], bl")
+				out.WriteText("    mov [rax], bl")
+
+				// out.WriteText("    xor rbx, rbx")
+				// out.WriteText("    xor rax, rax")
+				// out.WriteText("    pop rcx")
+				// out.WriteText("    pop rbx")
+                // out.WriteText("    pop rax")
+				// out.WriteText("    add rcx, rax")
+                // out.WriteText("    mov [rcx], bl")
 			case OP_LOAD:
 				out.WriteText("    pop rax")
                 out.WriteText("    xor rbx, rbx")
@@ -274,11 +268,11 @@ func generateLinuxX64() {
 
 			// INTRINSICS
 			case OP_ARGC:
-				out.WriteText("    mov rax, [args]")
+				out.WriteText("    mov rax, [args_ptr]")
                 out.WriteText("    mov rax, [rax]")
                 out.WriteText("    push rax")
 			case OP_ARGV:
-				out.WriteText("    mov rax, [args]")
+				out.WriteText("    mov rax, [args_ptr]")
 				out.WriteText("    add rax, 8")
                 out.WriteText("    push rax")
 			case OP_ASSEMBLY:
@@ -343,8 +337,9 @@ func generateLinuxX64() {
 	}
 
 	out.WriteText(";; user program definition ends here")
-	out.WriteText("_start:")
-	out.WriteText("    mov [args], rsp")
+	out.WriteText("entry start")
+	out.WriteText("start:")
+	out.WriteText("    mov [args_ptr], rsp")
 	out.WriteText("    mov rax, return_stack_rsp_end")
 	out.WriteText("    mov [return_stack_rsp], rax")
 	out.WriteText("    call fn%d", mainFuncIP)
@@ -352,7 +347,11 @@ func generateLinuxX64() {
 	out.WriteText("    mov rdi, 0")
 	out.WriteText("    syscall")
 
-	out.WriteBss("program_static_mem: resb %d", TheProgram.staticMemorySize)
+	out.WriteData("args_ptr: rq 1")
+	out.WriteData("return_stack_rsp: rq 1")
+	out.WriteData("return_stack: rb 65536")
+	out.WriteData("return_stack_rsp_end:")
+	out.WriteData("program_static_mem: rb %d", TheProgram.staticMemorySize)
 }
 
 func CodegenRun(out *OutputCode) {

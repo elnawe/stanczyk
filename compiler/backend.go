@@ -7,13 +7,16 @@ import (
 )
 
 func BackendRun() {
-	compilerArgs := strings.Split("-f elf64 -g output.asm", " ")
-	linkerArgs := strings.Split("-o output output.o -m elf_x86_64", " ")
+	compilerArgs := strings.Split("-m 524288 output.asm", " ")
+	chmodArgs := strings.Split("+x output", " ")
+	// linkerArgs := strings.Split("-o output output.o -m elf_x86_64", " ")
 
-	_, err := exec.Command("nasm", compilerArgs...).Output()
+	_, err := exec.Command("fasm", compilerArgs...).Output()
 	CheckError(err, "backend.go-1")
-	_, err = exec.Command("ld", linkerArgs...).Output()
+	_, err = exec.Command("chmod", chmodArgs...).Output()
 	CheckError(err, "backend.go-2")
+	// _, err = exec.Command("ld", linkerArgs...).Output()
+	// CheckError(err, "backend.go-2")
 
 	if Stanczyk.options.clean {
 		_, err = exec.Command("rm", "output.o").Output()

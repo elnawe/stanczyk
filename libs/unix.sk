@@ -137,12 +137,20 @@ ret
 ; Helper function to print a character on the standard output.
 ; Calling:
 ;   - <char> print
-fn print (char) int itoa print ret
+fn print (char)
+  var buffer ptr
+  take int &buffer itoa
+  buffer print
+ret
 
 ; Helper function to print an integer on the standard output.
 ; Calling:
 ;   - <int> print
-fn print (int) itoa print ret
+fn print (int)
+  var buffer ptr
+  take &buffer itoa
+  buffer print
+ret
 
 ; Helper function to print a boolean value on the standard output.
 ; Calling:
