@@ -8,6 +8,6 @@ jobs:
             - name: run tests
               run: |
                    sudo apt-get update
-                   sudo apt-get install -qq make nasm
+                   sudo apt-get install -qq make fasm
                    make
                    bash ./test.sh
