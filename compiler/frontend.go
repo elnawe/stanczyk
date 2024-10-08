@@ -528,7 +528,7 @@ func addAssembly(token Token) {
 				val = strconv.Itoa(g.value.(int))
 			}
 
-		case TOKEN_INT: val = strconv.Itoa(t.value.(int))
+		case TOKEN_CONSTANT_INT: val = strconv.Itoa(t.value.(int))
 		}
 
 		line = append(line, val)
@@ -559,20 +559,20 @@ func parseToken(token Token) {
 
 	switch token.typ {
 	// Constants
-	case TOKEN_CHAR:
+	case TOKEN_CONSTANT_CHAR:
 		code.op = OP_PUSH_CHAR
 		emit(code)
-	case TOKEN_FALSE:
+	case TOKEN_CONSTANT_FALSE:
 		code.op = OP_PUSH_BOOL
 		code.value = 0
 		emit(code)
-	case TOKEN_INT:
+	case TOKEN_CONSTANT_INT:
 		code.op = OP_PUSH_INT
 		emit(code)
-	case TOKEN_STR:
+	case TOKEN_CONSTANT_STR:
 		code.op = OP_PUSH_STR
 		emit(code)
-	case TOKEN_TRUE:
+	case TOKEN_CONSTANT_TRUE:
 		code.op = OP_PUSH_BOOL
 		code.value = 1
 		emit(code)

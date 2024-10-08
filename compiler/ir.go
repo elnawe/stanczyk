@@ -66,7 +66,9 @@ const (
 	DATA_CHAR
 	DATA_INFER
 	DATA_INT
+	DATA_INT_PTR
 	DATA_PTR
+	DATA_STR
 )
 
 type Program struct {

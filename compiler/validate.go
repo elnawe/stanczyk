@@ -338,8 +338,8 @@ func ValidateRun() {
 			case OP_FUNCTION_CALL:
 				var have []DataType
 				var want []DataType
-				var funcRef Function
 				var fns []Function
+				var funcRef Function
 
 				calls := code.value.([]FunctionCall)
 

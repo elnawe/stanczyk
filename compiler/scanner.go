@@ -9,13 +9,12 @@ import (
 type TokenType int
 
 const (
-	// Constants
-	TOKEN_CHAR TokenType = iota
-	TOKEN_FALSE
-	TOKEN_INT
-	TOKEN_PTR
-	TOKEN_STR
-	TOKEN_TRUE
+	// CONSTANTS
+	TOKEN_CONSTANT_CHAR TokenType = iota
+	TOKEN_CONSTANT_FALSE
+	TOKEN_CONSTANT_INT
+	TOKEN_CONSTANT_STR
+	TOKEN_CONSTANT_TRUE
 
 	// Types
 	TOKEN_DTYPE_ANY
@@ -119,7 +118,7 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_CONST,          word: "const"  },
 	reserved{typ: TOKEN_ELSE,           word: "else"   },
 	reserved{typ: TOKEN_EQUAL,          word: "="      },
-	reserved{typ: TOKEN_FALSE,          word: "false"  },
+	reserved{typ: TOKEN_CONSTANT_FALSE, word: "false"  },
 	reserved{typ: TOKEN_FN,             word: "fn"     },
 	reserved{typ: TOKEN_GREATER,        word: ">"      },
 	reserved{typ: TOKEN_GREATER_EQUAL,  word: ">="     },
@@ -134,7 +133,7 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_SLASH,          word: "/"      },
 	reserved{typ: TOKEN_STAR,           word: "*"      },
 	reserved{typ: TOKEN_THIS,           word: "this"   },
-	reserved{typ: TOKEN_TRUE,           word: "true"   },
+	reserved{typ: TOKEN_CONSTANT_TRUE,  word: "true"   },
 	reserved{typ: TOKEN_USING,          word: "using"  },
 	reserved{typ: TOKEN_VAR,            word: "var"    },
 }
@@ -213,7 +212,7 @@ func makeNumber(c byte, line string, index *int) {
 	}
 
 	value, _ := strconv.Atoi(result)
-	makeToken(TOKEN_INT, value)
+	makeToken(TOKEN_CONSTANT_INT, value)
 }
 
 func makeString(c byte, line string, index *int) {
@@ -231,7 +230,7 @@ func makeString(c byte, line string, index *int) {
 		}
 	}
 
-	makeToken(TOKEN_STR, result)
+	makeToken(TOKEN_CONSTANT_STR, result)
 }
 
 func makeChar(c byte, line string, index *int) {
@@ -264,7 +263,7 @@ func makeChar(c byte, line string, index *int) {
 		ExitWithError(CodeParseError)
 	}
 
-	makeToken(TOKEN_CHAR, result)
+	makeToken(TOKEN_CONSTANT_CHAR, result)
 }
 
 func makeWord(c byte, line string, index *int) {
