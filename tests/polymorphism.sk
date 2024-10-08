@@ -8,7 +8,7 @@ fn equal (bool bool --- bool)
   =
 ret
 
-fn equal (ptr ptr --- bool)
+fn equal (str str --- bool)
   strequal
 ret
 

@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-const STACK_SIZE = 10
+const STACK_SIZE = 1024
 
 type Typecheck struct {
 	stack       [STACK_SIZE]DataType
@@ -44,6 +44,7 @@ func getDataTypeName(v DataType) string {
 	case DATA_INFER: r = "$type"
 	case DATA_INT:	 r = "int"
 	case DATA_PTR:   r = "ptr"
+	case DATA_STR:   r = "str"
 	case DATA_ANY:   r = "any"
 	}
 	return r
@@ -121,6 +122,7 @@ func assertArgumentType(test []DataType, want []DataType, code Code, loc Locatio
 	}
 
 	if errFound {
+		fmt.Println(code)
 		msg := fmt.Sprintf(MsgTypecheckArgumentsTypeMismatch,
 			code.op, getDataTypeNames(test), getDataTypeNames(want))
 		ReportErrorAtLocation(msg, loc)
@@ -217,7 +219,7 @@ func ValidateRun() {
 			case OP_PUSH_INT:
 				tc.push(DATA_INT)
 			case OP_PUSH_STR:
-				tc.push(DATA_PTR)
+				tc.push(DATA_STR)
 			case OP_PUSH_VAR_GLOBAL:
 				tc.push(DATA_PTR)
 				// for _, v := range TheProgram.variables {
@@ -246,7 +248,7 @@ func ValidateRun() {
 			case OP_STORE:
 				b := tc.pop()
 				a := tc.pop()
-				assertArgumentType(dtArray(DATA_ANY, DATA_PTR), dtArray(a, b), code, loc)
+				assertArgumentType(dtArray(a, b), dtArray(DATA_ANY, DATA_PTR), code, loc)
 			case OP_STORE_CHAR:
 				b := tc.pop()
 				a := tc.pop()
@@ -256,12 +258,12 @@ func ValidateRun() {
 				)
 			case OP_LOAD:
 				a := tc.pop()
-				assertArgumentType(dtArray(DATA_PTR), dtArray(a), code, loc)
+				assertArgumentType(dtArray(a), dtArray(DATA_PTR), code, loc)
 				tc.push(DATA_INT)
 			case OP_LOAD_CHAR:
 				b := tc.pop()
 				a := tc.pop()
-				assertArgumentType(dtArray(DATA_INT, DATA_PTR), dtArray(a, b), code, loc)
+				assertArgumentType(dtArray(a, b), dtArray(DATA_INT, DATA_PTR), code, loc)
 				tc.push(DATA_CHAR)
 
 			case OP_LET_BIND:

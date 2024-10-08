@@ -19,10 +19,15 @@ const (
 	// Types
 	TOKEN_ANY
 	TOKEN_BOOL
+	TOKEN_STARBOOL
 	TOKEN_CHAR
+	TOKEN_STARCHAR
 	TOKEN_INT
+	TOKEN_STARINT
 	TOKEN_PARAPOLY
 	TOKEN_PTR
+	TOKEN_STR
+	TOKEN_STARSTR
 
 	// Flow Control
 	TOKEN_CASE
@@ -49,7 +54,6 @@ const (
 	// NEW
 	TOKEN_DASH_DASH_DASH
 	TOKEN_LET
-	TOKEN_LETSTAR
 	TOKEN_IN
 	TOKEN_DONE
 
@@ -88,16 +92,24 @@ type reserved struct {
 }
 
 var reservedWords = []reserved{
+	// CONSTANTS
+	reserved{typ: TOKEN_CONSTANT_FALSE, word: "false"  },
+	reserved{typ: TOKEN_CONSTANT_TRUE,  word: "true"   },
+
 	// DATA TYPES
 	reserved{typ: TOKEN_ANY,            word: "any"    },
 	reserved{typ: TOKEN_BOOL,           word: "bool"   },
+	reserved{typ: TOKEN_STARBOOL,       word: "*bool"  },
 	reserved{typ: TOKEN_CHAR,           word: "char"   },
+	reserved{typ: TOKEN_STARCHAR,       word: "*char"  },
 	reserved{typ: TOKEN_INT,            word: "int"    },
+	reserved{typ: TOKEN_STARINT,        word: "*int"   },
 	reserved{typ: TOKEN_PTR,            word: "ptr"    },
+	reserved{typ: TOKEN_STR,            word: "str"    },
+	reserved{typ: TOKEN_STARSTR,        word: "*str"   },
 
 	reserved{typ: TOKEN_DASH_DASH_DASH, word: "---"    },
 	reserved{typ: TOKEN_LET,            word: "let"    },
-	reserved{typ: TOKEN_LETSTAR,        word: "let*"   },
 	reserved{typ: TOKEN_IN,             word: "in"     },
 	reserved{typ: TOKEN_DONE,           word: "done"   },
 
@@ -106,6 +118,7 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_C_BANG,         word: "c!"     },
 	reserved{typ: TOKEN_C_AT,           word: "c@"     },
 
+	reserved{typ: TOKEN_ELSE,           word: "else"   },
 	reserved{typ: TOKEN_FI,             word: "fi"     },
 	reserved{typ: TOKEN_IF,             word: "if"     },
 	reserved{typ: TOKEN_LOOP,           word: "loop"   },
@@ -117,9 +130,7 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_ASM,            word: "asm"    },
 	reserved{typ: TOKEN_BANG_EQUAL,     word: "!="     },
 	reserved{typ: TOKEN_CONST,          word: "const"  },
-	reserved{typ: TOKEN_ELSE,           word: "else"   },
 	reserved{typ: TOKEN_EQUAL,          word: "="      },
-	reserved{typ: TOKEN_CONSTANT_FALSE, word: "false"  },
 	reserved{typ: TOKEN_FN,             word: "fn"     },
 	reserved{typ: TOKEN_GREATER,        word: ">"      },
 	reserved{typ: TOKEN_GREATER_EQUAL,  word: ">="     },
@@ -134,7 +145,6 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_SLASH,          word: "/"      },
 	reserved{typ: TOKEN_STAR,           word: "*"      },
 	reserved{typ: TOKEN_THIS,           word: "this"   },
-	reserved{typ: TOKEN_CONSTANT_TRUE,  word: "true"   },
 	reserved{typ: TOKEN_USING,          word: "using"  },
 	reserved{typ: TOKEN_VAR,            word: "var"    },
 }

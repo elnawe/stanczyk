@@ -68,12 +68,12 @@ const O_CREATE       64
 ; Helper function to access the arguments Array (passed through when calling
 ; the program).
 ; Calling:
-;   - <index> argv[]
+;   - <index> argv-array
 ; Returns:
 ;   - A pointer to the element in the Array. If element is out of reach,
 ;     throws an error and stops execution.
-fn argv-array (int --- ptr)
-	8 * argv int + ptr @
+fn argv-array (int --- str)
+	8 * argv int + ptr @ str
 	dup int 0 = if
 		dup print
 		"argv empty" panic
@@ -87,9 +87,9 @@ fn clear () "\e[H\e[2J" print ret
 ; Helper function to print text on the standard error output for the system.
 ; Calling:
 ;   - <string> eputs
-fn eputs (ptr)
+fn eputs (str)
 	dup len swap
-	asm int ptr (
+	asm int str (
 		mov rax, SYS_WRITE
 		mov rdi, STDERR
 		pop rsi
@@ -113,7 +113,7 @@ ret
 ; program after printing the message.
 ; Calling:
 ;   - <string> panic
-fn panic (ptr)
+fn panic (str)
 	" ERROR: " eputs
 	eputs
 	"\n" eputs
@@ -123,9 +123,9 @@ ret
 ; Helper function to print a string on the standard output.
 ; Calling:
 ;   - <string> print
-fn print (ptr)
+fn print (str)
 	dup len swap
-	asm int ptr (
+	asm int str (
 		mov rax, SYS_WRITE
 		mov rdi, STDOUT
 		pop rsi
@@ -138,7 +138,7 @@ ret
 ; Calling:
 ;   - <char> print
 fn print (char)
-  var buffer ptr
+  var buffer str
   take int &buffer itoa
   buffer print
 ret
@@ -147,7 +147,7 @@ ret
 ; Calling:
 ;   - <int> print
 fn print (int)
-  var buffer ptr
+  var buffer str
   take &buffer itoa
   buffer print
 ret
@@ -160,7 +160,7 @@ fn print (bool) take 1 = if "true" print else "false" print fi ret
 ; Helper function internally calling "print", but adds a newline after printing.
 ; Calling:
 ;   - <ptr> println
-fn println (ptr) print "\n" print ret
+fn println (str) print "\n" print ret
 
 ; Helper function internally calling "print", but adds a newline after printing.
 ; Calling:

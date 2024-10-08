@@ -41,19 +41,19 @@ fn len (int --- int) 0 dup rot < until ++ I 10 / loop ret
 ;   - <string> len
 ; Returns:
 ;   - The number of characters in teh string. "Stanczyk" returns 8
-fn len (ptr --- int) let s in 0 0 dup s c@ != until ++ dup s c@ loop done ret
+fn len (str --- int) let s in 0 0 dup s ptr c@ != until ++ dup s ptr c@ loop done ret
 
 ; Compares two strings and returns the results of the comparison
 ; Calling:
 ;   - <str1> <str2> strequal
 ; Returns:
 ;   - A boolean true if the arguments are equal, false if they are different.
-fn strequal (ptr ptr --- bool)
+fn strequal (str str --- bool)
   over len swap dup len
   let s1 l1 s2 l2 in
     l1 l2 = dup if
       0 l1 <= until
-        I s1 c@ I s2 c@ != if false nip leave fi
+        I s1 ptr c@ I s2 ptr c@ != if false nip leave fi
       I -- loop
     fi
   done

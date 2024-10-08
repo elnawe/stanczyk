@@ -339,7 +339,8 @@ func newVariable(token Token, offset int) (Variable, int) {
 
 	newVar.word = parser.previous.value.(string)
 	newVar.offset = offset
-	newOffset = offset
+	// TODO: This should technically support bigger sizes for arrays
+	newOffset = offset + SIZE_64b
 
 	// TODO: Check for duplicated name
 
@@ -347,18 +348,11 @@ func newVariable(token Token, offset int) (Variable, int) {
 	vt := parser.previous
 
 	switch vt.typ {
-	case TOKEN_BOOL:
-		newVar.dtype = DATA_BOOL
-		newOffset += SIZE_64b
-	case TOKEN_INT:
-		newVar.dtype = DATA_INT
-		newOffset += SIZE_64b
-	case TOKEN_PTR:
-		newVar.dtype = DATA_PTR
-		newOffset += SIZE_64b
-	case TOKEN_CHAR:
-		newVar.dtype = DATA_CHAR
-		newOffset += SIZE_8b
+	case TOKEN_BOOL:	newVar.dtype = DATA_BOOL
+	case TOKEN_CHAR:	newVar.dtype = DATA_CHAR
+	case TOKEN_INT:		newVar.dtype = DATA_INT
+	case TOKEN_PTR:		newVar.dtype = DATA_PTR
+	case TOKEN_STR:		newVar.dtype = DATA_STR
 	default:
 		errorAt(&parser.previous, MsgParseVarMissingValue)
 		ExitWithError(CodeParseError)
@@ -821,6 +815,8 @@ func parseArityInAssembly(token Token, args *Arity) {
 		newArg.typ = DATA_INT
 	case TOKEN_PTR:
 		newArg.typ = DATA_PTR
+	case TOKEN_STR:
+		newArg.typ = DATA_STR
 	default:
 		msg := fmt.Sprintf(MsgParseTypeUnknown, token.value.(string))
 		errorAt(&token, msg)
@@ -849,6 +845,8 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 		newArg.typ = DATA_INT
 	case TOKEN_PTR:
 		newArg.typ = DATA_PTR
+	case TOKEN_STR:
+		newArg.typ = DATA_STR
 	case TOKEN_PARAPOLY:
 		if !parsingArguments {
 			errorAt(&token, MsgParseArityReturnParapolyNotAllowed)

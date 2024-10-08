@@ -1,6 +1,6 @@
 using io
 
-fn get-str (--- ptr)
+fn get-str (--- str)
   "My test string"
 ret
 

@@ -1,8 +1,8 @@
 using io
 
-fn custom-linux-write (ptr int)
+fn custom-linux-write (str int)
 	swap
-	asm int ptr (
+	asm int str (
 		mov rax, SYS_WRITE
 		mov rdi, STDOUT
 		pop rsi
