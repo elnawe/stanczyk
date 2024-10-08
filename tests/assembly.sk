@@ -2,20 +2,20 @@ using io
 
 fn custom-linux-write (str int)
 	swap
-	asm int str (
+	{
 		mov rax, SYS_WRITE
 		mov rdi, STDOUT
 		pop rsi
 		pop rdx
 		syscall
-	)
+	} ASM
 ret
 
 fn return-13 (--- int)
-  asm -> int (
+  {
 		mov rax, 13
 		push rax
-  )
+  } ASM
 ret
 
 fn main ()

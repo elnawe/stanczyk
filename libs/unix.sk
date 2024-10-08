@@ -89,13 +89,13 @@ fn clear () "\e[H\e[2J" print ret
 ;   - <string> eputs
 fn eputs (str)
 	dup len swap
-	asm int str (
+  {
 		mov rax, SYS_WRITE
 		mov rdi, STDERR
 		pop rsi
 		pop rdx
 		syscall
- )
+ } ASM
 ret
 
 ; Helper function to quit the program execution with an specific error code.
@@ -103,10 +103,10 @@ ret
 ; Calling
 ;   - <error-code> exit
 fn exit (int)
-	asm int (
+	{
 		mov rax, SYS_EXIT
 		pop rdi
-	)
+	} ASM
 ret
 
 ; Helper function to show an error, prefixed with "ERROR:" and terminates the
@@ -125,13 +125,13 @@ ret
 ;   - <string> print
 fn print (str)
 	dup len swap
-	asm int str (
+	{
 		mov rax, SYS_WRITE
 		mov rdi, STDOUT
 		pop rsi
 		pop rdx
 		syscall
-	)
+	} ASM
 ret
 
 ; Helper function to print a character on the standard output.
@@ -184,12 +184,12 @@ fn println (bool) print "\n" print ret
 ; Returns:
 ;   - Amount of characters read from standard input.
 fn read (int ptr --- int)
-	asm int ptr -> int (
+	{
 		mov rax, SYS_READ
 		mov rdi, STDIN
 		pop rsi
 		pop rdx
 		syscall
 		push rax
-	)
+	} ASM
 ret

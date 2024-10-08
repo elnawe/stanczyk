@@ -21,6 +21,10 @@ type Object struct {
 }
 
 type Frontend struct {
+	// array of tokens passed into the next macro used. It can
+	// only be populated once, so if the user tries to generate a new
+	// body before flushing this stack, it should get an error.
+	bodyStack  []Token
 	globals    []Object
 	current	   *Function
 	error      bool
@@ -484,68 +488,6 @@ func expandWord(token Token) {
 	ExitWithError(CodeCodegenError)
 }
 
-func addAssembly(token Token) {
-	var value Assembly
-
-	code := Code{op: OP_ASSEMBLY, loc: token.loc}
-
-	for !check(TOKEN_RIGHT_ARROW) && !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
-		advance()
-		parseArityInAssembly(parser.previous, &value.arguments)
-	}
-
-	if match(TOKEN_RIGHT_ARROW) {
-		for !check(TOKEN_PAREN_OPEN) && !check(TOKEN_EOF) {
-			advance()
-			parseArityInAssembly(parser.previous, &value.returns)
-		}
-	}
-
-	consume(TOKEN_PAREN_OPEN, MsgParseAssemblyMissingOpenStmt)
-
-	var line []string
-
-	for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
-		advance()
-		t := parser.previous
-		nt := parser.current
-
-		var val string
-
-		switch t.typ {
-		case TOKEN_WORD:
-			val = t.value.(string)
-
-			g, found := getGlobal(t)
-
-			if found {
-				val = strconv.Itoa(g.value.(int))
-			}
-
-		case TOKEN_CONSTANT_INT: val = strconv.Itoa(t.value.(int))
-		}
-
-		line = append(line, val)
-
-		// If current parsed token (parser.previous) is not on the same line than
-		// the next token, consider it an ASM line and push it over the Assembly.value OP,
-		// then reset the line variable, so we can safely construct the next ASM line.
-		if t.loc.l != nt.loc.l {
-			// TODO: Should validate line construction here, with a function in extern.go
-			// The validation should check for the following:
-			//   1. Validate line[0] is a valid instruction
-			//   2. Validate the next elements in the array (1, 2, ...) matches the
-			//      rules for the instruction in line[0]
-			value.body = append(value.body, strings.Join(line, " "))
-			line = make([]string, 0, 0)
-		}
-	}
-
-	consume(TOKEN_PAREN_CLOSE, MsgParseAssemblyMissingCloseStmt)
-	code.value = value
-	emit(code)
-}
-
 func parseToken(token Token) {
 	var code Code
 	code.loc = token.loc
@@ -606,9 +548,29 @@ func parseToken(token Token) {
 		code.value = DATA_PTR
 		emit(code)
 
-	// Definition
+	// DEFINITION
 	case TOKEN_CONST:
 		registerConstant(token)
+	case TOKEN_CURLY_BRACKET_OPEN:
+		var tokens []Token
+
+		if len(frontend.bodyStack) > 0 {
+			errorAt(&token, "TODO: Cannot parse another body")
+			ExitWithError(CodeParseError)
+		}
+
+		for !check(TOKEN_CURLY_BRACKET_CLOSE) && !check(TOKEN_EOF) {
+			advance()
+			tokens = append(tokens, parser.previous)
+		}
+
+		if len(tokens) == 0 {
+			errorAt(&token, "TODO: error body cannot be empty")
+			ExitWithError(CodeParseError)
+		}
+
+		consume(TOKEN_CURLY_BRACKET_CLOSE, "TODO: Missing curly bracket")
+		frontend.bodyStack = tokens
 	case TOKEN_VAR:
 		newVar, newOffset := newVariable(token, frontend.current.localMemorySize)
 		frontend.current.variables = append(frontend.current.variables, newVar)
@@ -622,7 +584,56 @@ func parseToken(token Token) {
 		code.op = OP_ARGV
 		emit(code)
 	case TOKEN_ASM:
-		addAssembly(token)
+		// NOTE: This is a special instrinsic macro that uses the @body and
+		// calculates the stack modifications necessary to make sure the
+		// function signature is respected.
+		var popCount int
+		var pushCount int
+		var line []string
+		var value ASMValue
+		body := frontend.bodyStack
+		frontend.bodyStack = make([]Token, 0, 0)
+
+		for i, t := range body {
+			switch t.typ {
+			case TOKEN_BRACKET_CLOSE:
+				line = append(line, "]")
+			case TOKEN_BRACKET_OPEN:
+				line = append(line, "[")
+			case TOKEN_CONSTANT_INT:
+				line = append(line, strconv.Itoa(t.value.(int)))
+			case TOKEN_WORD:
+				word := t.value.(string)
+
+				g, found := getGlobal(t)
+
+				if found {
+ 					line = append(line, strconv.Itoa(g.value.(int)))
+				} else {
+					if word == "pop" {
+						popCount++
+					} else if word == "push" {
+						pushCount++
+					}
+
+					line = append(line, word)
+				}
+			default:
+				errorAt(&t, "TODO: Token not allowed")
+				ExitWithError(CodeParseError)
+			}
+
+			if i == len(body) - 1 ||
+				t.loc.l != body[i+1].loc.l {
+				value.body = append(value.body, strings.Join(line, " "))
+				line = make([]string, 0, 0)
+			}
+		}
+		value.argumentCount = popCount
+		value.returnCount = pushCount
+		code.op = OP_ASSEMBLY
+		code.value = value
+		emit(code)
 	case TOKEN_BANG_EQUAL:
 		code.op = OP_NOT_EQUAL
 		emit(code)

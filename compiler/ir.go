@@ -138,6 +138,12 @@ type Function struct {
 	internal        bool
 }
 
+type ASMValue struct {
+	argumentCount int
+	returnCount   int
+	body          []string
+}
+
 type Assembly struct {
 	arguments Arity
 	returns   Arity

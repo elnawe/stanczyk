@@ -114,7 +114,7 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_STARSTR,        word: "*str"   },
 
 	// MACROS
-	reserved{typ: TOKEN_ASM,            word: "asm"    },
+	reserved{typ: TOKEN_ASM,            word: "ASM"    },
 	reserved{typ: TOKEN_AT_BODY,        word: "@body"  },
 
 	reserved{typ: TOKEN_DASH_DASH_DASH, word: "---"    },

@@ -276,7 +276,7 @@ func generateLinuxX64() {
 				out.WriteText("    add rax, 8")
                 out.WriteText("    push rax")
 			case OP_ASSEMBLY:
-				val := value.(Assembly)
+				val := value.(ASMValue)
 				for _, s := range val.body {
 					out.WriteText("    %s", s)
 				}

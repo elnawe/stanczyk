@@ -288,18 +288,15 @@ func ValidateRun() {
 			case OP_ASSEMBLY:
 				var have []DataType
 				var want []DataType
-				val := value.(Assembly)
+				val := value.(ASMValue)
 
-				for _, d := range val.arguments.types {
-					t := tc.pop()
-					have = append([]DataType{t}, have...)
-					want = append(want, d.typ)
+				for i := val.argumentCount; i > 0; i-- {
+					a := tc.pop()
+					have = append([]DataType{a}, have...)
+					want = append(want, DATA_ANY)
 				}
-
-				assertArgumentType(have, want, code, loc)
-
-				for _, dt := range val.returns.types {
-					tc.push(dt.typ)
+				for i := 0; i < val.returnCount; i++ {
+					tc.push(DATA_INT)
 				}
 			case OP_ADD, OP_SUBSTRACT:
 				// TODO: Current supporting any as first argument, this might have to
