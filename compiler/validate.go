@@ -307,6 +307,8 @@ func ValidateRun() {
 				assertArgumentType(dtArray(a, b), dtArray(DATA_ANY, DATA_INT), code, loc)
 				if a == DATA_INT && b == DATA_INT {
 					tc.push(DATA_INT)
+				} else if a == DATA_CHAR || b == DATA_CHAR {
+					tc.push(DATA_CHAR)
 				} else {
 					tc.push(DATA_PTR)
 				}

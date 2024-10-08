@@ -70,17 +70,17 @@ fn itoa (int ptr)
   const BUFFER_CAP 20
   var buffer ptr &buffer !
   var number int &number !
-  "00000000000000000000" buffer !
+  "--------------------" buffer !
   buffer @ ptr &buffer !
   48 buffer !
 
   number 0 != if
   	0 BUFFER_CAP <= until
-  	  0 buffer I + c!
+      0 buffer I + c!
   	I -- loop
 
     0 number len 1 - <= until
-      '0' number 10 % + char buffer I + c!
+      '0' number 10 % + buffer I + c!
       number 10 / &number !
     I -- loop
   fi

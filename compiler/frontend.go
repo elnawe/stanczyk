@@ -593,10 +593,6 @@ func parseToken(token Token) {
 			code.value = v.value
 			emit(code)
 		}
-	case TOKEN_VAR:
-		newVar, newOffset := newVariable(token, frontend.current.localMemorySize)
-		frontend.current.variables = append(frontend.current.variables, newVar)
-		frontend.current.localMemorySize = newOffset
 
 	// TYPE CASTING
 	case TOKEN_DTYPE_BOOL:
@@ -619,6 +615,10 @@ func parseToken(token Token) {
 	// Definition
 	case TOKEN_CONST:
 		registerConstant(token)
+	case TOKEN_VAR:
+		newVar, newOffset := newVariable(token, frontend.current.localMemorySize)
+		frontend.current.variables = append(frontend.current.variables, newVar)
+		frontend.current.localMemorySize = newOffset
 
 	// Intrinsics
 	case TOKEN_ARGC:
