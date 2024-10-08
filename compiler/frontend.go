@@ -347,16 +347,16 @@ func newVariable(token Token, offset int) (Variable, int) {
 	vt := parser.previous
 
 	switch vt.typ {
-	case TOKEN_DTYPE_BOOL:
+	case TOKEN_BOOL:
 		newVar.dtype = DATA_BOOL
 		newOffset += SIZE_64b
-	case TOKEN_DTYPE_INT:
+	case TOKEN_INT:
 		newVar.dtype = DATA_INT
 		newOffset += SIZE_64b
-	case TOKEN_DTYPE_PTR:
+	case TOKEN_PTR:
 		newVar.dtype = DATA_PTR
 		newOffset += SIZE_64b
-	case TOKEN_DTYPE_CHAR:
+	case TOKEN_CHAR:
 		newVar.dtype = DATA_CHAR
 		newOffset += SIZE_8b
 	default:
@@ -595,19 +595,19 @@ func parseToken(token Token) {
 		}
 
 	// TYPE CASTING
-	case TOKEN_DTYPE_BOOL:
+	case TOKEN_BOOL:
 		code.op = OP_CAST
 		code.value = DATA_BOOL
 		emit(code)
-	case TOKEN_DTYPE_CHAR:
+	case TOKEN_CHAR:
 		code.op = OP_CAST
 		code.value = DATA_CHAR
 		emit(code)
-	case TOKEN_DTYPE_INT:
+	case TOKEN_INT:
 		code.op = OP_CAST
 		code.value = DATA_INT
 		emit(code)
-	case TOKEN_DTYPE_PTR:
+	case TOKEN_PTR:
 		code.op = OP_CAST
 		code.value = DATA_PTR
 		emit(code)
@@ -813,13 +813,13 @@ func parseArityInAssembly(token Token, args *Arity) {
 	var newArg Argument
 
 	switch token.typ {
-	case TOKEN_DTYPE_BOOL:
+	case TOKEN_BOOL:
 		newArg.typ = DATA_BOOL
-	case TOKEN_DTYPE_CHAR:
+	case TOKEN_CHAR:
 		newArg.typ = DATA_CHAR
-	case TOKEN_DTYPE_INT:
+	case TOKEN_INT:
 		newArg.typ = DATA_INT
-	case TOKEN_DTYPE_PTR:
+	case TOKEN_PTR:
 		newArg.typ = DATA_PTR
 	default:
 		msg := fmt.Sprintf(MsgParseTypeUnknown, token.value.(string))
@@ -834,22 +834,22 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 	var newArg Argument
 
 	switch token.typ {
-	case TOKEN_DTYPE_ANY:
+	case TOKEN_ANY:
 		if !parser.internal {
 			errorAt(&token, MsgParseArityArgumentAnyOnlyInternal)
 			ExitWithError(CodeParseError)
 		}
 
 		newArg.typ = DATA_ANY
-	case TOKEN_DTYPE_BOOL:
+	case TOKEN_BOOL:
 		newArg.typ = DATA_BOOL
-	case TOKEN_DTYPE_CHAR:
+	case TOKEN_CHAR:
 		newArg.typ = DATA_CHAR
-	case TOKEN_DTYPE_INT:
+	case TOKEN_INT:
 		newArg.typ = DATA_INT
-	case TOKEN_DTYPE_PTR:
+	case TOKEN_PTR:
 		newArg.typ = DATA_PTR
-	case TOKEN_DTYPE_PARAPOLY:
+	case TOKEN_PARAPOLY:
 		if !parsingArguments {
 			errorAt(&token, MsgParseArityReturnParapolyNotAllowed)
 			ExitWithError(CodeParseError)

@@ -17,12 +17,12 @@ const (
 	TOKEN_CONSTANT_TRUE
 
 	// Types
-	TOKEN_DTYPE_ANY
-	TOKEN_DTYPE_BOOL
-	TOKEN_DTYPE_CHAR
-	TOKEN_DTYPE_INT
-	TOKEN_DTYPE_PARAPOLY
-	TOKEN_DTYPE_PTR
+	TOKEN_ANY
+	TOKEN_BOOL
+	TOKEN_CHAR
+	TOKEN_INT
+	TOKEN_PARAPOLY
+	TOKEN_PTR
 
 	// Flow Control
 	TOKEN_CASE
@@ -88,17 +88,18 @@ type reserved struct {
 }
 
 var reservedWords = []reserved{
+	// DATA TYPES
+	reserved{typ: TOKEN_ANY,            word: "any"    },
+	reserved{typ: TOKEN_BOOL,           word: "bool"   },
+	reserved{typ: TOKEN_CHAR,           word: "char"   },
+	reserved{typ: TOKEN_INT,            word: "int"    },
+	reserved{typ: TOKEN_PTR,            word: "ptr"    },
+
 	reserved{typ: TOKEN_DASH_DASH_DASH, word: "---"    },
 	reserved{typ: TOKEN_LET,            word: "let"    },
 	reserved{typ: TOKEN_LETSTAR,        word: "let*"   },
 	reserved{typ: TOKEN_IN,             word: "in"     },
 	reserved{typ: TOKEN_DONE,           word: "done"   },
-
-	reserved{typ: TOKEN_DTYPE_ANY,      word: "any"    },
-	reserved{typ: TOKEN_DTYPE_BOOL,     word: "bool"   },
-	reserved{typ: TOKEN_DTYPE_CHAR,     word: "char"   },
-	reserved{typ: TOKEN_DTYPE_INT,      word: "int"    },
-	reserved{typ: TOKEN_DTYPE_PTR,      word: "ptr"    },
 
 	reserved{typ: TOKEN_BANG,           word: "!"      },
 	reserved{typ: TOKEN_AT,             word: "@"      },
@@ -295,7 +296,7 @@ func makeParapolyToken(c byte, line string, index *int) {
 		word += string(c)
 	}
 
-	makeToken(TOKEN_DTYPE_PARAPOLY, word)
+	makeToken(TOKEN_PARAPOLY, word)
 }
 
 func TokenizeFile(f string, s string) []Token {
