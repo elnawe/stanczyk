@@ -29,6 +29,12 @@ const (
 	TOKEN_STR
 	TOKEN_STARSTR
 
+	// Macros
+	TOKEN_ASM
+	TOKEN_AT_BODY
+	TOKEN_CURLY_BRACKET_CLOSE
+	TOKEN_CURLY_BRACKET_OPEN
+
 	// Flow Control
 	TOKEN_CASE
 	TOKEN_ELSE
@@ -60,7 +66,6 @@ const (
 	// Reserved Words
 	TOKEN_ARGC
 	TOKEN_ARGV
-	TOKEN_ASM
 	TOKEN_BANG_EQUAL
 	TOKEN_CONST
 	TOKEN_EQUAL
@@ -108,6 +113,10 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_STR,            word: "str"    },
 	reserved{typ: TOKEN_STARSTR,        word: "*str"   },
 
+	// MACROS
+	reserved{typ: TOKEN_ASM,            word: "asm"    },
+	reserved{typ: TOKEN_AT_BODY,        word: "@body"  },
+
 	reserved{typ: TOKEN_DASH_DASH_DASH, word: "---"    },
 	reserved{typ: TOKEN_LET,            word: "let"    },
 	reserved{typ: TOKEN_IN,             word: "in"     },
@@ -115,8 +124,8 @@ var reservedWords = []reserved{
 
 	reserved{typ: TOKEN_BANG,           word: "!"      },
 	reserved{typ: TOKEN_AT,             word: "@"      },
-	reserved{typ: TOKEN_C_BANG,         word: "c!"     },
-	reserved{typ: TOKEN_C_AT,           word: "c@"     },
+	reserved{typ: TOKEN_C_BANG,         word: "!c"     },
+	reserved{typ: TOKEN_C_AT,           word: "@c"     },
 
 	reserved{typ: TOKEN_ELSE,           word: "else"   },
 	reserved{typ: TOKEN_FI,             word: "fi"     },
@@ -127,7 +136,6 @@ var reservedWords = []reserved{
 
 	reserved{typ: TOKEN_ARGC,           word: "argc"   },
 	reserved{typ: TOKEN_ARGV,           word: "argv"   },
-	reserved{typ: TOKEN_ASM,            word: "asm"    },
 	reserved{typ: TOKEN_BANG_EQUAL,     word: "!="     },
 	reserved{typ: TOKEN_CONST,          word: "const"  },
 	reserved{typ: TOKEN_EQUAL,          word: "="      },
@@ -330,6 +338,8 @@ func TokenizeFile(f string, s string) []Token {
 			}
 
 			switch {
+			case c == '{': makeToken(TOKEN_CURLY_BRACKET_OPEN)
+			case c == '}': makeToken(TOKEN_CURLY_BRACKET_CLOSE)
 			case c == '[': makeToken(TOKEN_BRACKET_OPEN)
 			case c == ']': makeToken(TOKEN_BRACKET_CLOSE)
 			case c == '(': makeToken(TOKEN_PAREN_OPEN)
