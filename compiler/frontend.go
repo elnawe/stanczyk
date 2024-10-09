@@ -25,8 +25,6 @@ type Frontend struct {
 	// only be populated once, so if the user tries to generate a new
 	// body before flushing this stack, it should get an error.
 	bodyStack  []Token
-	constants  []Constant
-	globals    []Object
 	current	   *Function
 	error      bool
 }
@@ -187,30 +185,25 @@ func emitReturn() {
  *  |  _/   / _||  _/   / (_) | (__| _|\__ \__ \ (_) |   /
  *  |_| |_|_\___|_| |_|_\\___/ \___|___|___/___/\___/|_|_\
  */
-func addGlobal(obj Object) {
-	frontend.globals = append(frontend.globals, obj)
-}
-
-func registerConstant(token Token) {
-	var constant Object
+func newConstant(token Token) Constant {
+	var constant Constant
 	var tokens []Token
 
 	if !match(TOKEN_WORD) {
 		errorAt(&parser.previous, MsgParseConstMissingWord)
-		return
+		ExitWithError(CodeParseError)
 	}
 
 	wordToken := parser.previous
 	constant.word = wordToken.value.(string)
-	constant.typ = OBJ_CONSTANT
 
 	// TODO: Support rebiding constants in same scope if build configuration allows for it.
-	_, found := getGlobal(wordToken)
+	_, found := getConstant(wordToken)
 
 	if found {
 		msg := fmt.Sprintf(MsgParseConstOverrideNotAllowed, constant.word)
 		errorAt(&token, msg)
-		return
+		ExitWithError(CodeParseError)
 	}
 
 	if match(TOKEN_PAREN_CLOSE) {
@@ -227,7 +220,7 @@ func registerConstant(token Token) {
 		if len(tokens) > 3 || len(tokens) == 2 {
 			msg := fmt.Sprintf(MsgParseConstInvalidContent, constant.word)
 			errorAt(&token, msg)
-			return
+			ExitWithError(CodeParseError)
 		} else if len(tokens) == 3 {
 			left := tokens[0].value.(int)
 			right := tokens[1].value.(int)
@@ -246,7 +239,7 @@ func registerConstant(token Token) {
 		constant.value = parser.previous.value.(int)
 	}
 
-	addGlobal(constant)
+	return constant
 }
 
 func registerFunction(token Token) {
@@ -395,15 +388,27 @@ func getBind(token Token) (Code, bool) {
 	return Code{}, false
 }
 
-func getGlobal(token Token) (Code, bool) {
+func getConstant(token Token) (Code, bool) {
 	word := token.value.(string)
 
-	for _, g := range frontend.globals {
-		if g.word == word {
+	if frontend.current != nil {
+		for _, c := range frontend.current.constants {
+			if c.word == word {
+				return Code{
+					op: OP_PUSH_INT,
+					loc: token.loc,
+					value: c.value,
+				}, true
+			}
+		}
+	}
+
+	for _, c := range TheProgram.constants {
+		if c.word == word {
 			return Code{
 				op: OP_PUSH_INT,
 				loc: token.loc,
-				value: g.value,
+				value: c.value,
 			}, true
 		}
 	}
@@ -414,13 +419,15 @@ func getGlobal(token Token) (Code, bool) {
 func getVariable(token Token) (Code, bool) {
 	word := token.value.(string)
 
-	for _, v := range frontend.current.variables {
-		if v.word == word {
-			return Code{
-				op: OP_PUSH_VAR_LOCAL,
-				loc: token.loc,
-				value: v.offset,
-			}, true
+	if frontend.current != nil {
+		for _, v := range frontend.current.variables {
+			if v.word == word {
+				return Code{
+					op: OP_PUSH_VAR_LOCAL,
+					loc: token.loc,
+					value: v.offset,
+				}, true
+			}
 		}
 	}
 
@@ -468,10 +475,10 @@ func expandWord(token Token) {
 		return
 	}
 
-	g, gfound := getGlobal(token)
+	c, cfound := getConstant(token)
 
-	if gfound {
-		emit(g)
+	if cfound {
+		emit(c)
 		return
 	}
 
@@ -551,7 +558,8 @@ func parseToken(token Token) {
 
 	// DEFINITION
 	case TOKEN_CONST:
-		registerConstant(token)
+		newConst := newConstant(token)
+		frontend.current.constants = append(frontend.current.constants, newConst)
 	case TOKEN_CURLY_BRACKET_OPEN:
 		var tokens []Token
 
@@ -606,10 +614,10 @@ func parseToken(token Token) {
 			case TOKEN_WORD:
 				word := t.value.(string)
 
-				g, found := getGlobal(t)
+				c, found := getConstant(t)
 
 				if found {
- 					line = append(line, strconv.Itoa(g.value.(int)))
+ 					line = append(line, strconv.Itoa(c.value.(int)))
 				} else {
 					if word == "pop" {
 						popCount++
@@ -997,7 +1005,9 @@ func compilationSecondPass(index int) {
 
 		switch token.typ {
 		// The second pass will care about the following tokens:
-		case TOKEN_CONST: registerConstant(token)
+		case TOKEN_CONST:
+			newConst := newConstant(token)
+			TheProgram.constants = append(TheProgram.constants, newConst)
 		case TOKEN_VAR:
 			newVar, newOffset := newVariable(token, TheProgram.staticMemorySize)
 			TheProgram.variables = append(TheProgram.variables, newVar)

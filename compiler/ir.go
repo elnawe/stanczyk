@@ -73,6 +73,7 @@ const (
 
 type Program struct {
 	chunks           []Function
+	constants        []Constant
 	variables        []Variable
 	staticMemorySize int
 }

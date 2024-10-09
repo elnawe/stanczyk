@@ -7,8 +7,31 @@ import (
 
 const STACK_SIZE = 1024
 
-type TypeInfo struct {
+type TypeInfoKind string
 
+const (
+	ANY TypeInfoKind = "any"
+	BOOLEAN          = "bool"
+	BYTE             = "byte"
+	INT64            = "int"
+	POINTER          = "ptr"
+	STRING           = "str"
+	UINT64           = "uint"
+)
+
+type TypeInfo struct {
+	align int
+	kind TypeInfoKind
+	size int
+}
+
+type TypeInfoPointer struct {
+	kind TypeInfoKind
+}
+
+type Value struct {
+	typeInfo TypeInfo
+	value any
 }
 
 type Typecheck struct {
