@@ -1,5 +1,4 @@
 using io
-using strings
 
 var global int
 
