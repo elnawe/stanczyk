@@ -116,12 +116,7 @@ func generateLinuxX64() {
 				offset := value.(int)
 				out.WriteText("    mov rax, program_static_mem")
 				out.WriteText("    add rax, %d", offset)
-				out.WriteText("    push rax")
-			// case OP_PUSH_VAR_GLOBAL:
-				// offset := value.(int)
-				// out.WriteText("    mov rax, program_static_mem")
-				// out.WriteText("    add rax, %d", offset)
-				// out.WriteText("    push QWORD [rax]")
+				out.WriteText("    push QWORD [rax]")
 			case OP_PUSH_VAR_GLOBAL_ADDR:
 				offset := value.(int)
 				out.WriteText("    mov rax, program_static_mem")

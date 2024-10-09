@@ -13,7 +13,7 @@ const (
 	OP_PUSH_VAR_GLOBAL		=  "OP_PUSH_VAR_GLOBAL"
 	OP_PUSH_VAR_GLOBAL_ADDR	=  "OP_PUSH_VAR_GLOBAL_ADDR"
 	OP_PUSH_VAR_LOCAL		=  "OP_PUSH_VAR_LOCAL"
-	OP_PUSH_VAR_LOCAL_ADDR	= "OP_PUSH_VAR_LOCAL_ADDR"
+	OP_PUSH_VAR_LOCAL_ADDR	=  "OP_PUSH_VAR_LOCAL_ADDR"
 
 	// FLOW CONTROL
 	OP_IF_START				=  "OP_IF_START"
@@ -87,6 +87,11 @@ type Arity struct {
 	types        []Argument
 }
 
+type Constant struct {
+	word  string
+	value int
+}
+
 type Bind struct {
 	id       int
 	name     string
@@ -130,6 +135,7 @@ type Function struct {
 	bindings        Binding
 	code            []Code
 	scope           []Scope
+	constants       []Constant
 	variables       []Variable
 
 	localMemorySize int

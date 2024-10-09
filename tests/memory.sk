@@ -1,0 +1,20 @@
+using io
+using strings
+
+var global int
+
+fn main ()
+  var local int
+
+  "Save values to local and global memory and print them" println
+  "Also, using them in arithmetics" println
+  "Global is 13, local is 17" println
+  13 &global !
+  17 &local !
+
+  "Global: " print global println
+  "Local: " print local println
+
+  "Result should be 30" println
+  "Result: " print global local + println
+ret

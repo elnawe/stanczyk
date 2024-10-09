@@ -25,6 +25,7 @@ type Frontend struct {
 	// only be populated once, so if the user tries to generate a new
 	// body before flushing this stack, it should get an error.
 	bodyStack  []Token
+	constants  []Constant
 	globals    []Object
 	current	   *Function
 	error      bool

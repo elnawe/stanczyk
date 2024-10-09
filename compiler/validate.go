@@ -7,6 +7,10 @@ import (
 
 const STACK_SIZE = 1024
 
+type TypeInfo struct {
+
+}
+
 type Typecheck struct {
 	stack       [STACK_SIZE]DataType
 	stackCount  int
@@ -221,12 +225,11 @@ func ValidateRun() {
 			case OP_PUSH_STR:
 				tc.push(DATA_STR)
 			case OP_PUSH_VAR_GLOBAL:
-				tc.push(DATA_PTR)
-				// for _, v := range TheProgram.variables {
-				// 	if v.offset == value.(int) {
-				// 		tc.push(v.dtype)
-				// 	}
-				// }
+				for _, v := range TheProgram.variables {
+					if v.offset == value.(int) {
+						tc.push(v.dtype)
+					}
+				}
 			case OP_PUSH_VAR_GLOBAL_ADDR:
 				tc.push(DATA_PTR)
 			case OP_PUSH_VAR_LOCAL:
