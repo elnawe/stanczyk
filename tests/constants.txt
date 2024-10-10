@@ -1,2 +1,7 @@
 30  30
 20  20
+Stanczyk  Stanczyk
+compiler  compiler
+true  true
+false  false
+48  48

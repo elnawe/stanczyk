@@ -329,7 +329,7 @@ func createConstant() Constant {
 		newConst.value.variant = valueT.value
 	case TOKEN_CONSTANT_FALSE:
 		newConst.value.kind = BOOLEAN
-		newConst.value.variant = false
+		newConst.value.variant = 0
 	case TOKEN_CONSTANT_INT:
 		newConst.value.kind = INT64
 		newConst.value.variant = valueT.value
@@ -338,7 +338,7 @@ func createConstant() Constant {
 		newConst.value.variant = valueT.value
 	case TOKEN_CONSTANT_TRUE:
 		newConst.value.kind = BOOLEAN
-		newConst.value.variant = true
+		newConst.value.variant = 1
 	default:
 		if isParsingFunction() {
 			parser.currentFn.error = true

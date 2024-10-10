@@ -5,10 +5,20 @@ using io
 ;    making sure consts are evaluated correctly
 
 const thirty 30
+const name "Stanczyk"
+const isTrue true
+const isFalse false
+const oneByte '0'
 
 fn main ()
 	const twenty 20
+  const type "compiler"
 
   "30  " print thirty println
 	"20  " print twenty println
+  "Stanczyk  " print name println
+  "compiler  " print type println
+  "true  " print isTrue println
+  "false  " print isFalse println
+  "48  " print oneByte println
 ret
