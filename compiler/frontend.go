@@ -141,7 +141,7 @@ func getBind(token Token) (Code, bool) {
 	return Code{}, false
 }
 
-func getConstant(token Token) (Code, bool) {
+func getConstantS(token Token) (Code, bool) {
 	word := token.value.(string)
 
 	if parser.currentFn != nil {
@@ -169,7 +169,7 @@ func getConstant(token Token) (Code, bool) {
 	return Code{}, false
 }
 
-func getVariable(token Token) (Code, bool) {
+func getVariableS(token Token) (Code, bool) {
 	word := token.value.(string)
 
 	if parser.currentFn != nil {
@@ -222,16 +222,29 @@ func expandWord(token Token) {
 		return
 	}
 
-	v, vfound := getVariable(token)
+	v, vfound := getVariableS(token)
 	if vfound {
 		emit(v)
 		return
 	}
 
-	c, cfound := getConstant(token)
+	c, cfound := getConstant(token.value.(string))
 
 	if cfound {
-		emit(c)
+		code := Code{loc: token.loc, value: c.value.variant}
+
+		switch c.value.kind {
+		case BOOLEAN:
+			code.op = OP_PUSH_BOOL
+		case BYTE:
+			code.op = OP_PUSH_CHAR
+		case INT64:
+			code.op = OP_PUSH_INT
+		case STRING:
+			code.op = OP_PUSH_STR
+		}
+
+		emit(code)
 		return
 	}
 
@@ -281,7 +294,7 @@ func parseToken(token Token) {
 			emit(code)
 			return
 		}
-		v, vfound := getVariable(token)
+		v, vfound := getVariableS(token)
 		if vfound {
 			switch v.op {
 			case OP_PUSH_VAR_LOCAL: code.op = OP_PUSH_VAR_LOCAL_ADDR
@@ -311,8 +324,7 @@ func parseToken(token Token) {
 
 	// DEFINITION
 	case TOKEN_CONST:
-		newConst := createConstant()
-		parser.currentFn.constants = append(parser.currentFn.constants, newConst)
+		createConstant()
 	case TOKEN_CURLY_BRACKET_OPEN:
 		var tokens []Token
 
@@ -334,9 +346,7 @@ func parseToken(token Token) {
 		consume(TOKEN_CURLY_BRACKET_CLOSE, "TODO: Missing curly bracket")
 		parser.bodyStack = tokens
 	case TOKEN_VAR:
-		newVar, newOffset := createVariable(parser.currentFn.localMemorySize)
-		parser.currentFn.variables = append(parser.currentFn.variables, newVar)
-		parser.currentFn.localMemorySize = newOffset
+		createVariable()
 
 	// Intrinsics
 	case TOKEN_ARGC:
@@ -367,7 +377,7 @@ func parseToken(token Token) {
 			case TOKEN_WORD:
 				word := t.value.(string)
 
-				c, found := getConstant(t)
+				c, found := getConstantS(t)
 
 				if found {
  					line = append(line, strconv.Itoa(c.value.(int)))
@@ -470,7 +480,7 @@ func parseToken(token Token) {
 		emit(code)
 
 	// Special
-	case TOKEN_WORD: expandWordMeaning()
+	case TOKEN_WORD: expandWord(token)
 
 	// FLOW CONTROL
 	case TOKEN_UNTIL:
@@ -759,12 +769,9 @@ func compilationSecondPass(index int) {
 		switch token.typ {
 		// The second pass will care about the following tokens:
 		case TOKEN_CONST:
-			newConst := createConstant()
-			TheProgram.constants = append(TheProgram.constants, newConst)
+			createConstant()
 		case TOKEN_VAR:
-			newVar, newOffset := createVariable(TheProgram.staticMemorySize)
-			TheProgram.variables = append(TheProgram.variables, newVar)
-			TheProgram.staticMemorySize = newOffset
+			createVariable()
 
 		case TOKEN_FN: registerFunction(token)
 

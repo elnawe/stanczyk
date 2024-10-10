@@ -1,5 +1,13 @@
 package skc
 
+type Address string
+
+const (
+	BINDING Address = "BINDING"
+	GLOBAL_VARIABLE = "GLOBAL"
+	LOCAL_VARIABLE  = "LOCAL"
+)
+
 type OpCode string
 
 const (
@@ -14,6 +22,9 @@ const (
 	OP_PUSH_VAR_GLOBAL_ADDR	=  "OP_PUSH_VAR_GLOBAL_ADDR"
 	OP_PUSH_VAR_LOCAL		=  "OP_PUSH_VAR_LOCAL"
 	OP_PUSH_VAR_LOCAL_ADDR	=  "OP_PUSH_VAR_LOCAL_ADDR"
+
+	OP_PUSH_GLOBAL_VARIABLE =  "OP_PUSH_GLOBAL_VARIABLE"
+	OP_PUSH_LOCAL_VARIABLE  =  "OP_PUSH_LOCAL_VARIABLE"
 	OP_PUSH_VALUE           =  "OP_PUSH_VALUE"
 
 	// FLOW CONTROL
@@ -83,7 +94,9 @@ type ValueByte    int
 type ValueInt64   int
 
 type ValuePointer struct {
-	kind ValueKind
+	address Address
+	kind    ValueKind
+	offset  int
 }
 
 type ValueString  string
@@ -152,9 +165,11 @@ type Scope struct {
 }
 
 type Variable struct {
-	kind   DataType
-	offset int
-	word   string
+	address Address
+	kind    ValueKind
+	typ     DataType
+	offset  int
+	word    string
 }
 
 type Function struct {

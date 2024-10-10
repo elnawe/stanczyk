@@ -35,8 +35,10 @@ const (
 	SCOPE_ELSE
 )
 
-func (this *Stack) push(value Value) {
-	this.values = append(this.values, value)
+func (this *Stack) castTo(newKind ValueKind) {
+	x := this.pop()
+	x.kind = newKind
+	this.push(x)
 }
 
 func (this *Stack) pop() Value {
@@ -44,6 +46,10 @@ func (this *Stack) pop() Value {
 	result := this.values[lastIndex]
 	this.values = slices.Clone(this.values[:lastIndex])
 	return result
+}
+
+func (this *Stack) push(value Value) {
+	this.values = append(this.values, value)
 }
 
 func (this *Stack) popSnapshot() {
@@ -221,35 +227,14 @@ func emit(code Code) {
 }
 
 func emitConstant() bool {
-	var found bool
-	var result Constant
 	t := parser.previousToken
 	word := t.value.(string)
-
-	if isParsingFunction() {
-		for _, c := range parser.currentFn.constants {
-			if c.word == word {
-				found = true
-				result = c
-				break
-			}
-		}
-	}
-
-	if !found {
-		for _, c := range TheProgram.constants {
-			if c.word == word {
-				found = true
-				result = c
-				break
-			}
-		}
-	}
+	c, found := getConstant(word)
 
 	if found {
-		code := Code{loc: t.loc, value: result.value.variant}
+		code := Code{loc: t.loc, value: c.value.variant}
 
-		switch result.value.kind {
+		switch c.value.kind {
 		case BOOLEAN:
 			code.op = OP_PUSH_BOOL
 		case BYTE:
@@ -260,8 +245,7 @@ func emitConstant() bool {
 			code.op = OP_PUSH_STR
 		}
 
-		emitValue(result.value)
-		emit(code)
+		emitValue(c.value)
 	}
 
 	return found
@@ -275,13 +259,67 @@ func emitReturn() {
 }
 
 func emitValue(v Value) {
-	// TODO: Reenable this once things are moved to this file
-	// stack.push(v)
-	// emit(Code{
-	// 	op: OP_PUSH_VALUE,
-	// 	loc: v.token.loc,
-	// 	value: v,
-	// })
+	stack.push(v)
+	emit(Code{
+		op: OP_PUSH_VALUE,
+		loc: v.token.loc,
+		value: v,
+	})
+}
+
+func emitVariable() bool {
+	t := parser.previousToken
+	word := t.value.(string)
+	v, found := getVariable(word)
+
+	if found {
+		switch v.address {
+		case GLOBAL_VARIABLE:
+			emit(Code{op: OP_PUSH_GLOBAL_VARIABLE, loc: t.loc, value: v.offset})
+		case LOCAL_VARIABLE:
+			emit(Code{op: OP_PUSH_LOCAL_VARIABLE, loc: t.loc, value: v.offset})
+		}
+
+		stack.push(Value{kind: v.kind, token: t})
+	}
+
+	return found
+}
+
+func getConstant(word string) (Constant, bool) {
+	if isParsingFunction() {
+		for _, c := range parser.currentFn.constants {
+			if c.word == word {
+				return c, true
+			}
+		}
+	}
+
+	for _, c := range TheProgram.constants {
+		if c.word == word {
+			return c, true
+		}
+	}
+
+	return Constant{}, false
+}
+
+func getVariable(word string) (Variable, bool) {
+	if isParsingFunction() {
+		for _, v := range parser.currentFn.variables {
+			if v.word == word {
+				return v, true
+			}
+		}
+	}
+
+	for _, v := range TheProgram.variables {
+		if v.word == word {
+			return v, true
+		}
+	}
+
+	return Variable{}, false
 }
 
 func isWordInUse(t Token) bool {
@@ -302,14 +340,13 @@ func isWordInUse(t Token) bool {
 	return false
 }
 
-func createConstant() Constant {
+func createConstant() {
 	var newConst Constant
 
 	if !match(TOKEN_WORD) {
 		t := parser.previousToken
 
 		if isParsingFunction() {
-			parser.currentFn.error = true
 			addError(CompilerError{
 				code: FunctionParseError,
 				message: DeclarationWordMissing,
@@ -326,7 +363,6 @@ func createConstant() Constant {
 
 	if isWordInUse(wordT) {
 		if isParsingFunction() {
-			parser.currentFn.error = true
 			addError(CompilerError{
 				code: FunctionParseError,
 				message: DeclarationWordAlreadyUsed,
@@ -364,7 +400,6 @@ func createConstant() Constant {
 		newConst.value.variant = 1
 	default:
 		if isParsingFunction() {
-			parser.currentFn.error = true
 			addError(CompilerError{
 				code: FunctionParseError,
 				message: ConstantValueKindNotAllowed,
@@ -376,22 +411,29 @@ func createConstant() Constant {
 		}
 	}
 
-	if !isParsingFunction() {
+	if isParsingFunction() {
+		parser.currentFn.constants = append(parser.currentFn.constants, newConst)
+	} else {
 		parser.globalWords = append(parser.globalWords, newConst.word)
+		TheProgram.constants = append(TheProgram.constants, newConst)
 	}
-
-	return newConst
 }
 
-func createVariable(currentOffset int) (Variable, int) {
+func createVariable() {
 	var newVar Variable
+	var currentOffset int
 	var newOffset int
 	const SIZE_64b = 8
+
+	if isParsingFunction() {
+		currentOffset = parser.currentFn.localMemorySize
+	} else {
+		currentOffset = TheProgram.staticMemorySize
+	}
 
 	if !match(TOKEN_WORD) {
 		t := parser.previousToken
 		if isParsingFunction() {
-			parser.currentFn.error = true
 			addError(CompilerError{
 				code: FunctionParseError,
 				message: DeclarationWordMissing,
@@ -413,7 +455,6 @@ func createVariable(currentOffset int) (Variable, int) {
 
 	if isWordInUse(wordT) {
 		if isParsingFunction() {
-			parser.currentFn.error = true
 			addError(CompilerError{
 				code: FunctionParseError,
 				message: DeclarationWordAlreadyUsed,
@@ -433,14 +474,23 @@ func createVariable(currentOffset int) (Variable, int) {
 	valueT := parser.previousToken
 
 	switch valueT.kind {
-	case TOKEN_BOOL: newVar.kind = DATA_BOOL
-	case TOKEN_CHAR: newVar.kind = DATA_CHAR
-	case TOKEN_INT:  newVar.kind = DATA_INT
-	case TOKEN_PTR:  newVar.kind = DATA_PTR
-	case TOKEN_STR:  newVar.kind = DATA_STR
+	case TOKEN_BOOL:
+		newVar.kind = BOOLEAN
+		newVar.typ = DATA_BOOL
+	case TOKEN_CHAR:
+		newVar.kind = BYTE
+		newVar.typ = DATA_CHAR
+	case TOKEN_INT:
+		newVar.kind = INT64
+		newVar.typ = DATA_INT
+	case TOKEN_PTR:
+		newVar.kind = POINTER
+		newVar.typ = DATA_PTR
+	case TOKEN_STR:
+		newVar.kind = STRING
+		newVar.typ = DATA_STR
 	default:
 		if isParsingFunction() {
-			parser.currentFn.error = true
 			addError(CompilerError{
 				code: FunctionParseError,
 				message: VariableValueKindNotAllowed,
@@ -452,11 +502,14 @@ func createVariable(currentOffset int) (Variable, int) {
 		}
 	}
 
-	if !isParsingFunction() {
+	if isParsingFunction() {
+		parser.currentFn.variables = append(parser.currentFn.variables, newVar)
+		parser.currentFn.localMemorySize = newOffset
+	} else {
 		parser.globalWords = append(parser.globalWords, newVar.word)
+		TheProgram.variables = append(TheProgram.variables, newVar)
+		TheProgram.staticMemorySize = newOffset
 	}
-
-	return newVar, newOffset
 }
 
 func expandWordMeaning() {
@@ -469,23 +522,23 @@ func expandWordMeaning() {
 		return
 	}
 
-	v, vfound := getVariable(t)
-	if vfound {
-		emit(v)
-		return
-	}
-
 	code_f, ok_f := getFunction(t)
 	if ok_f {
 		emit(code_f)
 		return
 	}
 
-	if !emitConstant() {
-		// If nothing has been found, emit the error.
-		msg := fmt.Sprintf(MsgParseWordNotFound, t.value.(string))
-		ReportErrorAtLocation(msg, t.loc)
-		ExitWithError(CodeCodegenError)
+	if !emitConstant() || !emitVariable() {
+		if isParsingFunction() {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: UnknownWord,
+				token: t,
+			}, t.value.(string))
+		} else {
+			ReportErrorAtLocation(UnknownWord, t.loc, t.value.(string))
+			ExitWithError(GlobalParseError)
+		}
 	}
 }
 
@@ -547,8 +600,84 @@ func parseTokens() {
 	t := parser.previousToken
 
 	switch t.kind {
+	// CONSTANTS
 	case TOKEN_CONSTANT_CHAR:
+		emitValue(Value{kind: BYTE, token: t, variant: t.value.(int)})
+	case TOKEN_CONSTANT_FALSE:
+		emitValue(Value{kind: BOOLEAN, token: t, variant: 0})
+	case TOKEN_CONSTANT_INT:
+		emitValue(Value{kind: INT64, token: t, variant: t.value.(int)})
+	case TOKEN_CONSTANT_STR:
+		emitValue(Value{kind: STRING, token: t, variant: t.value.(string)})
+	case TOKEN_CONSTANT_TRUE:
+		emitValue(Value{kind: BOOLEAN, token: t, variant: 1})
+	case TOKEN_AMPERSAND:
+		var pointerData ValuePointer
+		word := t.value.(string)
+		// TODO: b, bfound := getBind(word)
+		v, vfound := getVariable(word)
 
+		if vfound {
+			pointerData.address = v.address
+			pointerData.kind = v.kind
+			pointerData.offset = v.offset
+		} else {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: UnknownWord,
+				token: t,
+			}, t.value.(string))
+		}
+
+		emitValue(Value{kind: POINTER, token: t, variant: pointerData})
+
+	// TYPE CASTING
+	case TOKEN_BOOL: stack.castTo(BOOLEAN)
+	case TOKEN_CHAR: stack.castTo(BYTE)
+	case TOKEN_INT:  stack.castTo(INT64)
+	case TOKEN_PTR:  stack.castTo(POINTER)
+	case TOKEN_STR:  stack.castTo(STRING)
+
+	// DEFINITION
+	case TOKEN_CONST: createConstant()
+	case TOKEN_CURLY_BRACKET_OPEN:
+		var tokens []Token
+
+		if len(stack.bodyStack) > 0 {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: BodyStackIsAlreadyTaken,
+				token: t,
+			})
+			for !match(TOKEN_CURLY_BRACKET_CLOSE) { advance() }
+		}
+
+		for !check(TOKEN_CURLY_BRACKET_CLOSE) && !check(TOKEN_EOF) {
+			advance()
+			tokens = append(tokens, parser.previousToken)
+		}
+
+		if len(tokens) == 0 {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: BodyDefinitionEmpty,
+				token: t,
+			})
+		}
+
+		consume(TOKEN_CURLY_BRACKET_CLOSE, UnexpectedSymbol, "}")
+		stack.bodyStack = tokens
+	case TOKEN_LET:
+		var newWords []string
+
+		for match(TOKEN_WORD) {
+			word := parser.previousToken.value.(string)
+			newWords = append(newWords, word)
+		}
+
+		consume(TOKEN_BANG, UnexpectedSymbol, "!")
+		emit(Code{op: OP_LET_BIND, loc: t.loc, value: bind(newWords)})
+	case TOKEN_VAR:   createVariable()
 	}
 }
 
@@ -571,8 +700,7 @@ func Compile() {
 
 			switch t.kind {
 			case TOKEN_CONST:
-				newConst := createConstant()
-				TheProgram.constants = append(TheProgram.constants, newConst)
+				createConstant()
 			case TOKEN_FN:
 				var function Function
 
@@ -702,9 +830,7 @@ func Compile() {
 				}
 				file.Open(wordT.value.(string))
 			case TOKEN_VAR:
-				newVar, newOffset := createVariable(TheProgram.staticMemorySize)
-				TheProgram.variables = append(TheProgram.variables, newVar)
-				TheProgram.staticMemorySize = newOffset
+				createVariable()
 			default:
 				// Handle errors for non-global allowed tokens.
 				// These kind of errors are usually non-recoverable, this is
@@ -734,7 +860,7 @@ func Compile() {
 
 				for !check(TOKEN_RET) && !check(TOKEN_EOF) {
 					advance()
-					parseTokens()
+					if !parser.currentFn.error { parseTokens() }
 				}
 
 				consume(TOKEN_RET, UnexpectedSymbol, "ret")

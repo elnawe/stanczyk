@@ -22,6 +22,10 @@ const (
 )
 
 const (
+	BodyDefinitionEmpty =
+		"body definition cannot be empty"
+	BodyStackIsAlreadyTaken =
+		"body stack is already in use, flush it by calling a macro first"
 	ConstantValueKindNotAllowed =
 		"syntax error: unknown value in constant declaration"
 	DeclarationWordAlreadyUsed =
@@ -54,6 +58,8 @@ const (
 		"stack values (size or type) can't change inside scope blocks"
 	UnexpectedSymbol =
 		"syntax error: unexpected symbol, expected '%s'"
+	UnknownWord =
+		"syntax error: unknown word '%s'"
 	VariableValueKindNotAllowed =
 		"syntax error: unknown value type in variable declaration"
 	WordMissingAfterUsing =
