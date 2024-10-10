@@ -14,7 +14,7 @@ const (
 )
 
 type Object struct {
-	dtype DataType
+	dtype ValueKind
 	value any
 	typ   ObjectType
 	word  string
@@ -346,11 +346,11 @@ func newVariable(token Token, offset int) (Variable, int) {
 	vt := parser.previous
 
 	switch vt.typ {
-	case TOKEN_BOOL:	newVar.dtype = DATA_BOOL
-	case TOKEN_CHAR:	newVar.dtype = DATA_CHAR
-	case TOKEN_INT:		newVar.dtype = DATA_INT
-	case TOKEN_PTR:		newVar.dtype = DATA_PTR
-	case TOKEN_STR:		newVar.dtype = DATA_STR
+	case TOKEN_BOOL:	newVar.dtype = BOOL
+	case TOKEN_BYTE:	newVar.dtype = BYTE
+	case TOKEN_INT:		newVar.dtype = INT
+	case TOKEN_PTR:		newVar.dtype = PTR
+	case TOKEN_STR:		newVar.dtype = STR
 	default:
 		errorAt(&parser.previous, MsgParseVarMissingValue)
 		ExitWithError(CodeParseError)
@@ -503,8 +503,8 @@ func parseToken(token Token) {
 
 	switch token.typ {
 	// Constants
-	case TOKEN_CONSTANT_CHAR:
-		code.op = OP_PUSH_CHAR
+	case TOKEN_CONSTANT_BYTE:
+		code.op = OP_PUSH_BYTE
 		emit(code)
 	case TOKEN_CONSTANT_FALSE:
 		code.op = OP_PUSH_BOOL
@@ -541,19 +541,19 @@ func parseToken(token Token) {
 	// TYPE CASTING
 	case TOKEN_BOOL:
 		code.op = OP_CAST
-		code.value = DATA_BOOL
+		code.value = BOOL
 		emit(code)
-	case TOKEN_CHAR:
+	case TOKEN_BYTE:
 		code.op = OP_CAST
-		code.value = DATA_CHAR
+		code.value = BYTE
 		emit(code)
 	case TOKEN_INT:
 		code.op = OP_CAST
-		code.value = DATA_INT
+		code.value = INT
 		emit(code)
 	case TOKEN_PTR:
 		code.op = OP_CAST
-		code.value = DATA_PTR
+		code.value = PTR
 		emit(code)
 
 	// DEFINITION
@@ -703,17 +703,18 @@ func parseToken(token Token) {
 		code.value = fmt.Sprintf("%s:%d:%d", loc.f, loc.l, loc.c)
 		emit(code)
 
+	// POINTER INTRINSICS
 	case TOKEN_AT:
 		code.op = OP_LOAD
 		emit(code)
-	case TOKEN_C_AT:
-		code.op = OP_LOAD_CHAR
+	case TOKEN_AT_BYTE:
+		code.op = OP_LOAD_BYTE
 		emit(code)
 	case TOKEN_BANG:
 		code.op = OP_STORE
 		emit(code)
-	case TOKEN_C_BANG:
-		code.op = OP_STORE_CHAR
+	case TOKEN_BANG_BYTE:
+		code.op = OP_STORE_BYTE
 		emit(code)
 
 	// Special
@@ -828,15 +829,15 @@ func parseArityInAssembly(token Token, args *Arity) {
 
 	switch token.typ {
 	case TOKEN_BOOL:
-		newArg.typ = DATA_BOOL
-	case TOKEN_CHAR:
-		newArg.typ = DATA_CHAR
+		newArg.typ = BOOL
+	case TOKEN_BYTE:
+		newArg.typ = BYTE
 	case TOKEN_INT:
-		newArg.typ = DATA_INT
+		newArg.typ = INT
 	case TOKEN_PTR:
-		newArg.typ = DATA_PTR
+		newArg.typ = PTR
 	case TOKEN_STR:
-		newArg.typ = DATA_STR
+		newArg.typ = STR
 	default:
 		msg := fmt.Sprintf(MsgParseTypeUnknown, token.value.(string))
 		errorAt(&token, msg)
@@ -856,24 +857,24 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 			ExitWithError(CodeParseError)
 		}
 
-		newArg.typ = DATA_ANY
+		newArg.typ = ANY
 	case TOKEN_BOOL:
-		newArg.typ = DATA_BOOL
-	case TOKEN_CHAR:
-		newArg.typ = DATA_CHAR
+		newArg.typ = BOOL
+	case TOKEN_BYTE:
+		newArg.typ = BYTE
 	case TOKEN_INT:
-		newArg.typ = DATA_INT
+		newArg.typ = INT
 	case TOKEN_PTR:
-		newArg.typ = DATA_PTR
+		newArg.typ = PTR
 	case TOKEN_STR:
-		newArg.typ = DATA_STR
+		newArg.typ = STR
 	case TOKEN_PARAPOLY:
 		if !parsingArguments {
 			errorAt(&token, MsgParseArityReturnParapolyNotAllowed)
 			ExitWithError(CodeParseError)
 		}
 
-		newArg.typ = DATA_INFER
+		newArg.typ = INFER
 		newArg.name = token.value.(string)
 		function.arguments.parapoly = true
 	case TOKEN_WORD:
@@ -886,10 +887,10 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 		}
 
 		funcArgs := function.arguments
-		argTest := Argument{name: w, typ: DATA_INFER}
+		argTest := Argument{name: w, typ: INFER}
 
 		if funcArgs.parapoly && Contains(funcArgs.types, argTest) {
-			newArg.typ = DATA_INFER
+			newArg.typ = INFER
 			newArg.name = w
 			function.returns.parapoly = true
 		} else {

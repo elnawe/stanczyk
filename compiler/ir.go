@@ -5,9 +5,9 @@ type OpCode string
 const (
 	// Constants
 	OP_PUSH_BOOL OpCode		=  "OP_PUSH_BOOL"
+	OP_PUSH_BYTE            = "push byte"
 	OP_PUSH_BIND			=  "OP_PUSH_BIND"
 	OP_PUSH_BIND_ADDR		=  "OP_PUSH_BIND_ADDR"
-	OP_PUSH_CHAR			=  "OP_PUSH_CHAR"
 	OP_PUSH_INT				=  "OP_PUSH_INT"
 	OP_PUSH_STR				=  "OP_PUSH_STR"
 	OP_PUSH_VAR_GLOBAL		=  "OP_PUSH_VAR_GLOBAL"
@@ -27,10 +27,11 @@ const (
 	OP_LET_UNBIND			=  "OP_LET_UNBIND"
 	OP_REBIND				=  "OP_REBIND"
 
-	OP_LOAD					=  "OP_LOAD"
-	OP_STORE				=  "OP_STORE"
-	OP_LOAD_CHAR			=  "OP_LOAD_CHAR"
-	OP_STORE_CHAR			=  "OP_STORE_CHAR"
+	// POINTER INTRINSICS
+	OP_LOAD       = "@"
+	OP_LOAD_BYTE  = "@b"
+	OP_STORE      = "!"
+	OP_STORE_BYTE = "!b"
 
 	// ARITHMETICS
 	OP_ADD					=  "OP_ADD"
@@ -57,18 +58,17 @@ const (
 	OP_EOC					=  "OP_EOC"
 )
 
-type DataType int
+type ValueKind int
 
 const (
-	DATA_NONE DataType	= iota
-	DATA_ANY
-	DATA_BOOL
-	DATA_CHAR
-	DATA_INFER
-	DATA_INT
-	DATA_INT_PTR
-	DATA_PTR
-	DATA_STR
+	NONE ValueKind = iota
+	ANY
+	BOOL
+	BYTE
+	INFER
+	INT
+	PTR
+	STR
 )
 
 type Program struct {
@@ -80,7 +80,7 @@ type Program struct {
 
 type Argument struct {
 	name  string
-	typ   DataType
+	typ   ValueKind
 }
 
 type Arity struct {
@@ -121,7 +121,7 @@ type Scope struct {
 }
 
 type Variable struct {
-	dtype  DataType
+	dtype  ValueKind
 	offset int
 	word   string
 }

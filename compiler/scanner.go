@@ -10,7 +10,7 @@ type TokenType int
 
 const (
 	// CONSTANTS
-	TOKEN_CONSTANT_CHAR TokenType = iota
+	TOKEN_CONSTANT_BYTE TokenType = iota
 	TOKEN_CONSTANT_FALSE
 	TOKEN_CONSTANT_INT
 	TOKEN_CONSTANT_STR
@@ -20,8 +20,8 @@ const (
 	TOKEN_ANY
 	TOKEN_BOOL
 	TOKEN_STARBOOL
-	TOKEN_CHAR
-	TOKEN_STARCHAR
+	TOKEN_BYTE
+	TOKEN_STARBYTE
 	TOKEN_INT
 	TOKEN_STARINT
 	TOKEN_PARAPOLY
@@ -45,9 +45,9 @@ const (
 	TOKEN_WHILE
 
 	TOKEN_BANG
-	TOKEN_C_BANG
+	TOKEN_BANG_BYTE
 	TOKEN_AT
-	TOKEN_C_AT
+	TOKEN_AT_BYTE
 
 	TOKEN_AMPERSAND
 
@@ -105,8 +105,8 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_ANY,            word: "any"    },
 	reserved{typ: TOKEN_BOOL,           word: "bool"   },
 	reserved{typ: TOKEN_STARBOOL,       word: "*bool"  },
-	reserved{typ: TOKEN_CHAR,           word: "char"   },
-	reserved{typ: TOKEN_STARCHAR,       word: "*char"  },
+	reserved{typ: TOKEN_BYTE,           word: "byte"   },
+	reserved{typ: TOKEN_STARBYTE,       word: "*byte"  },
 	reserved{typ: TOKEN_INT,            word: "int"    },
 	reserved{typ: TOKEN_STARINT,        word: "*int"   },
 	reserved{typ: TOKEN_PTR,            word: "ptr"    },
@@ -124,8 +124,8 @@ var reservedWords = []reserved{
 
 	reserved{typ: TOKEN_BANG,           word: "!"      },
 	reserved{typ: TOKEN_AT,             word: "@"      },
-	reserved{typ: TOKEN_C_BANG,         word: "!c"     },
-	reserved{typ: TOKEN_C_AT,           word: "@c"     },
+	reserved{typ: TOKEN_BANG_BYTE,      word: "!b"     },
+	reserved{typ: TOKEN_AT_BYTE,        word: "@b"     },
 
 	reserved{typ: TOKEN_ELSE,           word: "else"   },
 	reserved{typ: TOKEN_FI,             word: "fi"     },
@@ -282,7 +282,7 @@ func makeChar(c byte, line string, index *int) {
 		ExitWithError(CodeParseError)
 	}
 
-	makeToken(TOKEN_CONSTANT_CHAR, result)
+	makeToken(TOKEN_CONSTANT_BYTE, result)
 }
 
 func makeWord(c byte, line string, index *int) {

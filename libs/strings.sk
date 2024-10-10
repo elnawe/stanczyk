@@ -41,7 +41,7 @@ fn len (int --- int) 0 dup rot < until ++ I 10 / loop ret
 ;   - <string> len
 ; Returns:
 ;   - The number of characters in teh string. "Stanczyk" returns 8
-fn len (str --- int) let s in 0 0 dup s ptr @c != until ++ dup s ptr @c loop done ret
+fn len (str --- int) let s in 0 0 dup s ptr @b != until ++ dup s ptr @b loop done ret
 
 ; Compares two strings and returns the results of the comparison
 ; Calling:
@@ -53,7 +53,7 @@ fn strequal (str str --- bool)
   let s1 l1 s2 l2 in
     l1 l2 = dup if
       0 l1 <= until
-        I s1 ptr @c I s2 ptr @c != if false nip leave fi
+        I s1 ptr @b I s2 ptr @b != if false nip leave fi
       I -- loop
     fi
   done
@@ -76,11 +76,11 @@ fn itoa (int ptr)
 
   number 0 != if
   	0 BUFFER_CAP <= until
-      0 buffer I + !c
+      0 buffer I + !b
   	I -- loop
 
     0 number len 1 - <= until
-      '0' number 10 % + buffer I + !c
+      '0' number 10 % + buffer I + !b
       number 10 / &number !
     I -- loop
   fi

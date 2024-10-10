@@ -102,7 +102,7 @@ func generateLinuxX64() {
 				out.WriteText("    mov rax, [return_stack_rsp]")
 				out.WriteText("    add rax, %d", val * 8)
 				out.WriteText("    push rax")
-			case OP_PUSH_CHAR:
+			case OP_PUSH_BYTE:
 				out.WriteText("    mov rax, %d", value)
 				out.WriteText("    push rax")
 			case OP_PUSH_INT:
@@ -139,7 +139,7 @@ func generateLinuxX64() {
 				out.WriteText("    pop rax")
 				out.WriteText("    pop rbx")
 				out.WriteText("    mov [rax], rbx")
-			case OP_STORE_CHAR:
+			case OP_STORE_BYTE:
 				out.WriteText("    pop rax")
 				out.WriteText("    pop rbx")
 				out.WriteText("    mov [rax], bl")
@@ -156,7 +156,7 @@ func generateLinuxX64() {
                 out.WriteText("    xor rbx, rbx")
                 out.WriteText("    mov rbx, [rax]")
                 out.WriteText("    push rbx")
-			case OP_LOAD_CHAR:
+			case OP_LOAD_BYTE:
 				out.WriteText("    pop rbx")
 				out.WriteText("    pop rax")
 				out.WriteText("    add rbx, rax")

@@ -136,8 +136,8 @@ ret
 
 ; Helper function to print a character on the standard output.
 ; Calling:
-;   - <char> print
-fn print (char)
+;   - <byte> print
+fn print (byte)
   var buffer str
   take int &buffer itoa
   buffer print
@@ -164,8 +164,8 @@ fn println (str) print "\n" print ret
 
 ; Helper function internally calling "print", but adds a newline after printing.
 ; Calling:
-;   - <char> println
-fn println (char) print "\n" print ret
+;   - <byte> println
+fn println (byte) print "\n" print ret
 
 ; Helper function internally calling "print", but adds a newline after printing.
 ; Calling:
