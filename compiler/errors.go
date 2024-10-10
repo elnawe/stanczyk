@@ -24,16 +24,38 @@ const (
 const (
 	ConstantValueKindNotAllowed =
 		"syntax error: unknown value in constant declaration"
-	DeclarationWordMissing =
-		"syntax error: invalid expression in declaration"
 	DeclarationWordAlreadyUsed =
 		"'%s' redeclared in this program"
-	StackChangedInCodeBlock =
-		"stack values (size or type) can't change inside scope blocks"
+	DeclarationWordMissing =
+		"syntax error: invalid expression in declaration, expecting a name"
+	FunctionDeclarationNotFound =
+		"compilation error: function declaration not found or already parsed"
+	FunctionSignatureAlreadyExists =
+		"function with name '%s' already exists at %s:%d:%d with the same signature"
+	FunctionSignatureDifferentReturns =
+		"polymorphic function with name '%s' has a different return in definition at %s:%d:%d"
 	IncorrectBlockOfCodeClosingStatement =
 		"syntax error: block of code not closing properly"
+	MainFunctionInvalidSignature =
+		"main function can not have arguments or returns"
+	MainFunctionRedefined =
+		"redefinition of main function found"
 	NonDeclarationInGlobalScope =
 		"syntax error: non-declaration statement outside of function body"
+	ParameterAnyOnNonInternalFunction =
+		"'any' is not a valid parameter outside of Stańczyk internal functions"
+	ParameterTypeUnknown =
+		"syntax error: cannot parse this parameter type"
+	ParameterVariadicOnlyInArguments =
+		"variadic parameter '%s' should only be used in arguments, maybe you want to use '%s' instead"
+	ParameterVariadicNotFound =
+		"variadic parameter '%s' definition not found in arguments"
+	StackChangedInCodeBlock =
+		"stack values (size or type) can't change inside scope blocks"
+	UnexpectedSymbol =
+		"syntax error: unexpected symbol, expected '%s'"
+	VariableValueKindNotAllowed =
+		"syntax error: unknown value type in variable declaration"
 	WordMissingAfterUsing =
 		"syntax error: need a valid word after keyword 'using'"
 )

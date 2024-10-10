@@ -67,6 +67,7 @@ const (
 	INT64         = "int"
 	POINTER       = "ptr"
 	STRING        = "str"
+	VARIADIC      = "$T"
 )
 
 type Value struct {
@@ -75,9 +76,17 @@ type Value struct {
 	variant any
 }
 
+type ValueBoolean int
+
+type ValueByte    int
+
+type ValueInt64   int
+
 type ValuePointer struct {
 	kind ValueKind
 }
+
+type ValueString  string
 
 type DataType int
 
@@ -111,10 +120,11 @@ type Program struct {
 type Argument struct {
 	name  string
 	typ   DataType
+	kind  ValueKind
 }
 
 type Arity struct {
-	parapoly     bool
+	variadic     bool
 	types        []Argument
 }
 
@@ -142,7 +152,7 @@ type Scope struct {
 }
 
 type Variable struct {
-	dtype  DataType
+	kind   DataType
 	offset int
 	word   string
 }
@@ -151,6 +161,7 @@ type Function struct {
 	ip   int
 	loc  Location
 	name string
+	word string
 
 	arguments       Arity
 	returns         Arity
@@ -166,7 +177,6 @@ type Function struct {
 	error    bool
 	internal bool
 	parsed   bool
-	valid    bool
 }
 
 type ASMValue struct {

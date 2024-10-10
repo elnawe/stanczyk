@@ -2,10 +2,12 @@ package skc
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 )
 
 type Parser struct {
+	globalWords   []string
 	bodyStack     []Token
 	currentFn     *Function
 
@@ -114,17 +116,14 @@ func check(kind TokenType) bool {
 	return kind == parser.currentToken.kind
 }
 
-func consume(kind TokenType, err string) {
+func consume(kind TokenType, err string, args ...any) {
 	if kind == parser.currentToken.kind {
 		advance()
 		return
 	}
 
-	addError(CompilerError{
-		code: CodeParseError,
-		message: err,
-		token: parser.currentToken,
-	})
+	ReportErrorAtLocation(err, parser.previousToken.loc, args...)
+	ExitWithError(GlobalParseError)
 }
 
 func isParsingFunction() bool {
@@ -261,6 +260,7 @@ func emitConstant() bool {
 			code.op = OP_PUSH_STR
 		}
 
+		emitValue(result.value)
 		emit(code)
 	}
 
@@ -274,8 +274,31 @@ func emitReturn() {
 	})
 }
 
-func isWordInUse(token Token) bool {
-	// TODO: Not implemented
+func emitValue(v Value) {
+	// TODO: Reenable this once things are moved to this file
+	// stack.push(v)
+	// emit(Code{
+	// 	op: OP_PUSH_VALUE,
+	// 	loc: v.token.loc,
+	// 	value: v,
+	// })
+}
+
+func isWordInUse(t Token) bool {
+	test := t.value.(string)
+
+	if isParsingFunction() {
+		// TODO: Implement the checks here, these are different from
+		// the global ones because it needs to check for the word being
+		// used in local scope and disregard globals, except for Functions
+	} else {
+		for _, word := range parser.globalWords {
+			if word == test {
+				return true
+			}
+		}
+	}
+
 	return false
 }
 
@@ -353,7 +376,87 @@ func createConstant() Constant {
 		}
 	}
 
+	if !isParsingFunction() {
+		parser.globalWords = append(parser.globalWords, newConst.word)
+	}
+
 	return newConst
+}
+
+func createVariable(currentOffset int) (Variable, int) {
+	var newVar Variable
+	var newOffset int
+	const SIZE_64b = 8
+
+	if !match(TOKEN_WORD) {
+		t := parser.previousToken
+		if isParsingFunction() {
+			parser.currentFn.error = true
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: DeclarationWordMissing,
+				token: t,
+			})
+		} else {
+			ReportErrorAtLocation(DeclarationWordMissing, t.loc)
+			ExitWithError(GlobalParseError)
+		}
+	}
+
+	wordT := parser.previousToken
+	newVar.word = wordT.value.(string)
+	newVar.offset = currentOffset
+	// TODO: This should be calculated, not hardcoded. It should take the size
+	// of the type (next token) and align it to 8 bytes
+	// formula: size + 7 / 8 * 8
+	newOffset = currentOffset + SIZE_64b
+
+	if isWordInUse(wordT) {
+		if isParsingFunction() {
+			parser.currentFn.error = true
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: DeclarationWordAlreadyUsed,
+				token: wordT,
+			}, newVar.word)
+		} else {
+			ReportErrorAtLocation(
+				DeclarationWordAlreadyUsed,
+				wordT.loc,
+				newVar.word,
+			)
+			ExitWithError(GlobalParseError)
+		}
+	}
+
+	advance()
+	valueT := parser.previousToken
+
+	switch valueT.kind {
+	case TOKEN_BOOL: newVar.kind = DATA_BOOL
+	case TOKEN_CHAR: newVar.kind = DATA_CHAR
+	case TOKEN_INT:  newVar.kind = DATA_INT
+	case TOKEN_PTR:  newVar.kind = DATA_PTR
+	case TOKEN_STR:  newVar.kind = DATA_STR
+	default:
+		if isParsingFunction() {
+			parser.currentFn.error = true
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: VariableValueKindNotAllowed,
+				token: valueT,
+			})
+		} else {
+			ReportErrorAtLocation(VariableValueKindNotAllowed, valueT.loc)
+			ExitWithError(GlobalParseError)
+		}
+	}
+
+	if !isParsingFunction() {
+		parser.globalWords = append(parser.globalWords, newVar.word)
+	}
+
+	return newVar, newOffset
 }
 
 func expandWordMeaning() {
@@ -386,6 +489,69 @@ func expandWordMeaning() {
 	}
 }
 
+func setCurrentFunctionToParse(t Token) {
+	test := t.value.(string)
+
+	for i, fn := range TheProgram.chunks {
+		if fn.word == test && !fn.parsed {
+			parser.currentFn = &TheProgram.chunks[i]
+			return
+		}
+	}
+
+	ReportErrorAtLocation(FunctionDeclarationNotFound, t.loc, test)
+	ExitWithError(GlobalParseError)
+}
+
+func validateFunction(test Function) {
+	var other []Function
+
+	for _, fn := range TheProgram.chunks {
+		if fn.word == test.word {
+			other = append(other, fn)
+		}
+	}
+
+	if test.word == "main" {
+		if len(other) > 0 {
+			ReportErrorAtLocation(MainFunctionRedefined, test.loc)
+			ExitWithError(GlobalParseError)
+		}
+
+		if len(test.arguments.types) > 0 || len(test.returns.types) > 0 {
+			ReportErrorAtLocation(MainFunctionInvalidSignature, test.loc)
+			ExitWithError(GlobalParseError)
+		}
+	}
+
+	for _, fn := range other {
+		if reflect.DeepEqual(fn.arguments, test.arguments) {
+			ReportErrorAtLocation(
+				FunctionSignatureAlreadyExists, test.loc,
+				test.word, fn.loc.f, fn.loc.l, fn.loc.c,
+			)
+			ExitWithError(GlobalParseError)
+		}
+
+		if !reflect.DeepEqual(fn.returns, test.returns) {
+			ReportErrorAtLocation(
+				FunctionSignatureDifferentReturns, test.loc,
+				test.word, fn.loc.f, fn.loc.l, fn.loc.c,
+			)
+			ExitWithError(GlobalParseError)
+		}
+	}
+}
+
+func parseTokens() {
+	t := parser.previousToken
+
+	switch t.kind {
+	case TOKEN_CONSTANT_CHAR:
+
+	}
+}
+
 func Compile() {
 	// Required Runtime Library
 	file.Open("runtime")
@@ -394,34 +560,7 @@ func Compile() {
 	file.Open(Stanczyk.workspace.entry)
 
 	// Compilation:
-	//   Step 1: Add to the compilation process all other files.
-	for i := 0; i < len(file.files); i++ {
-		f := file.files[i]
-		startParser(f)
-
-		for !check(TOKEN_EOF) {
-			advance()
-			t := parser.previousToken
-
-			if t.kind == TOKEN_USING {
-				advance()
-				nt := parser.previousToken
-
-				if nt.kind != TOKEN_WORD {
-					addError(CompilerError{
-						code: UsingError,
-						message: WordMissingAfterUsing,
-						token: t,
-					})
-					continue
-				}
-
-				file.Open(nt.value.(string))
-			}
-		}
-	}
-
-	//   Step 2: Register globals (const, var, fn)
+	//   Step 1: Register globals (const, var, fn)
 	for i := 0; i < len(file.files); i++ {
 		f := file.files[i]
 		startParser(f)
@@ -435,16 +574,137 @@ func Compile() {
 				newConst := createConstant()
 				TheProgram.constants = append(TheProgram.constants, newConst)
 			case TOKEN_FN:
-				// TODO Register fun
-			case TOKEN_USING:
-				// NOTE: Using is skipped because it's already managed on the
-				// first compilation step. No need to do anything here. So
-				// we move the pointer one over and then continue.
-				advance()
-				continue
-			case TOKEN_VAR:
-				// TODO Register var
+				var function Function
 
+				function.internal = parser.internal
+				function.ip = len(TheProgram.chunks)
+				function.loc = t.loc
+				function.parsed = false
+
+				if !match(TOKEN_WORD) {
+					// If a word is not found after the function keyword we
+					// cannot recover. We will need to exit
+					ReportErrorAtLocation(DeclarationWordMissing, t.loc)
+					ExitWithError(GlobalParseError)
+				}
+
+				word := parser.previousToken.value.(string)
+				function.name = word
+				function.word = word
+				consume(TOKEN_PAREN_OPEN, UnexpectedSymbol, "(")
+
+				parsingArguments := true
+
+				if !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
+					var param Argument
+					advance()
+					t := parser.previousToken
+
+					switch t.kind {
+					case TOKEN_DASH_DASH_DASH:
+						parsingArguments = false
+					case TOKEN_ANY:
+						if !parser.internal {
+							ReportErrorAtLocation(
+								ParameterAnyOnNonInternalFunction, t.loc,
+							)
+							ExitWithError(GlobalParseError)
+						}
+
+						param.typ = DATA_ANY
+						param.kind = ANY
+					case TOKEN_BOOL:
+						param.typ = DATA_BOOL
+						param.kind = BOOLEAN
+					case TOKEN_CHAR:
+						param.typ = DATA_CHAR
+						param.kind = BYTE
+					case TOKEN_INT:
+						param.typ = DATA_INT
+						param.kind = INT64
+					case TOKEN_PTR:
+						param.typ = DATA_PTR
+						param.kind = POINTER
+					case TOKEN_STR:
+						param.typ = DATA_STR
+						param.kind = STRING
+					case TOKEN_PARAPOLY:
+						paramWord := t.value.(string)
+
+						if !parsingArguments {
+							ReportErrorAtLocation(
+								ParameterVariadicOnlyInArguments, t.loc,
+								paramWord, paramWord[1:],
+							)
+							ExitWithError(GlobalParseError)
+						}
+
+						function.arguments.variadic = true
+						param.kind = VARIADIC
+						param.name = paramWord
+						param.typ = DATA_INFER
+					case TOKEN_WORD:
+						word := t.value.(string)
+
+						if parsingArguments {
+							ReportErrorAtLocation(
+								// TODO: I should allow this once custom types are implemented.
+								"TODO: not implemented",
+								t.loc,
+							)
+							ExitWithError(GlobalParseError)
+						}
+
+						funcArgs := function.arguments
+						argTest := Argument{kind: VARIADIC, name: word, typ: DATA_INFER}
+
+						if funcArgs.variadic && Contains(funcArgs.types, argTest) {
+							param.kind = VARIADIC
+							param.name = word
+							function.returns.variadic = true
+						} else {
+							ReportErrorAtLocation(ParameterVariadicNotFound, t.loc, word)
+							ExitWithError(GlobalParseError)
+						}
+					default:
+						ReportErrorAtLocation(ParameterTypeUnknown, t.loc)
+						ExitWithError(GlobalParseError)
+					}
+
+					if parsingArguments {
+						function.arguments.types = append(function.arguments.types, param)
+					} else {
+						function.returns.types = append(function.returns.types, param)
+					}
+				}
+
+				consume(TOKEN_PAREN_CLOSE, UnexpectedSymbol, ")")
+				validateFunction(function)
+				for !check(TOKEN_RET) && !check(TOKEN_EOF) { advance() }
+				consume(TOKEN_RET, UnexpectedSymbol, "ret")
+
+				if !isParsingFunction() {
+					parser.globalWords = append(parser.globalWords, function.word)
+				}
+
+				TheProgram.chunks = append(TheProgram.chunks, function)
+			case TOKEN_USING:
+				advance()
+				wordT := parser.previousToken
+
+				if wordT.kind != TOKEN_WORD {
+					addError(CompilerError{
+						code: UsingError,
+						message: WordMissingAfterUsing,
+						token: t,
+					})
+					continue
+				}
+				file.Open(wordT.value.(string))
+			case TOKEN_VAR:
+				newVar, newOffset := createVariable(TheProgram.staticMemorySize)
+				TheProgram.variables = append(TheProgram.variables, newVar)
+				TheProgram.staticMemorySize = newOffset
 			default:
 				// Handle errors for non-global allowed tokens.
 				// These kind of errors are usually non-recoverable, this is
@@ -455,11 +715,36 @@ func Compile() {
 		}
 	}
 
-	//   Step 3: Compile function contents
-	for i := 0; i < len(TheProgram.chunks); i++ {
-		fn := &TheProgram.chunks[i]
-		parser.currentFn = fn
-		// TODO
+	//   Step 2: Compile function contents
+	for i := 0; i < len(file.files); i++ {
+		f := file.files[i]
+		startParser(f)
+
+		for !check(TOKEN_EOF) {
+			advance()
+			t := parser.previousToken
+
+			switch t.kind {
+			case TOKEN_FN:
+				advance()
+				wordT := parser.previousToken
+				setCurrentFunctionToParse(wordT)
+
+				for !match(TOKEN_PAREN_CLOSE) { advance() }
+
+				for !check(TOKEN_RET) && !check(TOKEN_EOF) {
+					advance()
+					parseTokens()
+				}
+
+				consume(TOKEN_RET, UnexpectedSymbol, "ret")
+				parser.currentFn.parsed = true
+				emitReturn()
+			default:
+				ReportErrorAtLocation(NonDeclarationInGlobalScope, t.loc)
+				ExitWithError(CriticalError)
+			}
+		}
 	}
 
 	if len(TheProgram.errors) > 0 {

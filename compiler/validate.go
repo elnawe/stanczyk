@@ -223,7 +223,7 @@ func ValidateRun() {
 			case OP_PUSH_VAR_GLOBAL:
 				for _, v := range TheProgram.variables {
 					if v.offset == value.(int) {
-						tc.push(v.dtype)
+						tc.push(v.kind)
 					}
 				}
 			case OP_PUSH_VAR_GLOBAL_ADDR:
@@ -231,7 +231,7 @@ func ValidateRun() {
 			case OP_PUSH_VAR_LOCAL:
 				for _, v := range function.variables {
 					if v.offset == value.(int) {
-						tc.push(v.dtype)
+						tc.push(v.kind)
 					}
 				}
 			case OP_PUSH_VAR_LOCAL_ADDR:
@@ -299,7 +299,7 @@ func ValidateRun() {
 				}
 			case OP_ADD, OP_SUBSTRACT:
 				// TODO: Current supporting any as first argument, this might have to
-				// change for type safety. But it allows to use parapoly.
+				// change for type safety. But it allows to use variadic.
 				b := tc.pop()
 				a := tc.pop()
 				assertArgumentType(dtArray(a, b), dtArray(DATA_ANY, DATA_INT), code, loc)
@@ -379,7 +379,7 @@ func ValidateRun() {
 				TheProgram.chunks[ifunction].code[icode].value =
 					FunctionCall{name: funcRef.name, ip: funcRef.ip}
 
-				// Doing parapoly initial checks. We go over the parameters, if parapoly
+				// Doing variadic initial checks. We go over the parameters, if variadic
 				// is enabled in this function, and then map each type of parameter that
 				// expects inferred data. Once the correct types are mapped, we allow the
 				// user to return a different order of definition from the original call,
@@ -387,7 +387,7 @@ func ValidateRun() {
 				var inferredTypes map[string]DataType
 				inferredTypes = make(map[string]DataType)
 
-				if funcRef.arguments.parapoly {
+				if funcRef.arguments.variadic {
 					reverseStackOrder := tc.stackCount - len(funcRef.arguments.types)
 					stackReversed := tc.stack[reverseStackOrder:]
 

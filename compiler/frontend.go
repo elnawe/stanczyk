@@ -112,43 +112,6 @@ func registerFunction(token Token) {
 	TheProgram.chunks = append(TheProgram.chunks, function)
 }
 
-// Gets the initial token and the current offset. Returns the
-// new Variable object and the new offset.
-func newVariable(token Token, offset int) (Variable, int) {
-	var newVar Variable
-	var newOffset int
-	const SIZE_64b = 8
-	const SIZE_8b  = 1
-
-	if !match(TOKEN_WORD) {
-		errorAt(&token, MsgParseVarMissingWord)
-		ExitWithError(CodeParseError)
-	}
-
-	newVar.word = parser.previousToken.value.(string)
-	newVar.offset = offset
-	// TODO: This should technically support bigger sizes for arrays
-	newOffset = offset + SIZE_64b
-
-	// TODO: Check for duplicated name
-
-	advance()
-	vt := parser.previousToken
-
-	switch vt.typ {
-	case TOKEN_BOOL:	newVar.dtype = DATA_BOOL
-	case TOKEN_CHAR:	newVar.dtype = DATA_CHAR
-	case TOKEN_INT:		newVar.dtype = DATA_INT
-	case TOKEN_PTR:		newVar.dtype = DATA_PTR
-	case TOKEN_STR:		newVar.dtype = DATA_STR
-	default:
-		errorAt(&parser.previousToken, MsgParseVarMissingValue)
-		ExitWithError(CodeParseError)
-	}
-
-	return newVar, newOffset
-}
-
 /*    ___ ___  __  __ ___ ___ _      _ _____ ___ ___  _  _
  *   / __/ _ \|  \/  | _ \_ _| |    /_\_   _|_ _/ _ \| \| |
  *  | (_| (_) | |\/| |  _/| || |__ / _ \| |  | | (_) | .` |
@@ -371,7 +334,7 @@ func parseToken(token Token) {
 		consume(TOKEN_CURLY_BRACKET_CLOSE, "TODO: Missing curly bracket")
 		parser.bodyStack = tokens
 	case TOKEN_VAR:
-		newVar, newOffset := newVariable(token, parser.currentFn.localMemorySize)
+		newVar, newOffset := createVariable(parser.currentFn.localMemorySize)
 		parser.currentFn.variables = append(parser.currentFn.variables, newVar)
 		parser.currentFn.localMemorySize = newOffset
 
@@ -665,7 +628,7 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 
 		newArg.typ = DATA_INFER
 		newArg.name = token.value.(string)
-		function.arguments.parapoly = true
+		function.arguments.variadic = true
 	case TOKEN_WORD:
 		w := token.value.(string)
 
@@ -678,10 +641,10 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 		funcArgs := function.arguments
 		argTest := Argument{name: w, typ: DATA_INFER}
 
-		if funcArgs.parapoly && Contains(funcArgs.types, argTest) {
+		if funcArgs.variadic && Contains(funcArgs.types, argTest) {
 			newArg.typ = DATA_INFER
 			newArg.name = w
-			function.returns.parapoly = true
+			function.returns.variadic = true
 		} else {
 			msg := fmt.Sprintf(MsgParseArityReturnParapolyNotFound, w)
 			errorAt(&token, msg)
@@ -799,7 +762,7 @@ func compilationSecondPass(index int) {
 			newConst := createConstant()
 			TheProgram.constants = append(TheProgram.constants, newConst)
 		case TOKEN_VAR:
-			newVar, newOffset := newVariable(token, TheProgram.staticMemorySize)
+			newVar, newOffset := createVariable(TheProgram.staticMemorySize)
 			TheProgram.variables = append(TheProgram.variables, newVar)
 			TheProgram.staticMemorySize = newOffset
 
