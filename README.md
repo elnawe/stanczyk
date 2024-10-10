@@ -45,5 +45,5 @@ After you get the Stańczyk Compiler executable, you can run `./test.sh`.
 
 ## TODO
 
-[ ] (compile.go) Add support to multi constant/variable definition with const/var (...) tuples
-[ ] (scanner.go) (ir.go) Rename all _CHAR references to _BYTE (including types)
+- [ ] (compile.go) Add support to multi constant/variable definition with const/var (...) tuples
+- [ ] (scanner.go) (ir.go) Rename all _CHAR references to _BYTE (including types)
