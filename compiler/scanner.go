@@ -10,6 +10,7 @@ type TokenType int
 
 const (
 	// CONSTANTS
+	// TODO: Rename char to byte
 	TOKEN_CONSTANT_CHAR TokenType = iota
 	TOKEN_CONSTANT_FALSE
 	TOKEN_CONSTANT_INT
@@ -165,6 +166,7 @@ type Location struct {
 
 type Token struct {
 	typ   TokenType
+	kind  TokenType
 	loc   Location
 	value any
 }
@@ -182,6 +184,7 @@ var scanner Scanner
 func makeToken(t TokenType, value ...any) {
 	var token Token
 	token.typ = t
+	token.kind = t
 	token.loc = Location{
 		f: GetRelativePath(scanner.filename),
 		c: scanner.column,

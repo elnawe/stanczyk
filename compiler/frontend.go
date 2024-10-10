@@ -7,95 +7,14 @@ import (
 	"strings"
 )
 
-type ObjectType int
-
-const (
-	OBJ_CONSTANT ObjectType = iota
-)
-
-type Object struct {
-	dtype DataType
-	value any
-	typ   ObjectType
-	word  string
-}
-
-type Frontend struct {
-	// array of tokens passed into the next macro used. It can
-	// only be populated once, so if the user tries to generate a new
-	// body before flushing this stack, it should get an error.
-	bodyStack  []Token
-	current	   *Function
-	error      bool
-}
-
-type Parser struct {
-	previous Token
-	current  Token
-	tokens   []Token
-	internal bool
-	index    int
-}
-
-var file FileManager
-var frontend Frontend
-var parser Parser
-
 /*   ___ ___ ___  ___  ___  ___
  *  | __| _ \ _ \/ _ \| _ \/ __|
  *  | _||   /   / (_) |   /\__ \
  *  |___|_|_\_|_\\___/|_|_\|___/
  */
 func errorAt(token *Token, format string, values ...any) {
-	frontend.error = true
-
 	msg := fmt.Sprintf(format, values...)
 	ReportErrorAtLocation(msg, token.loc)
-}
-
-/*   ___  _   ___  ___ ___ ___
- *  | _ \/_\ | _ \/ __| __| _ \
- *  |  _/ _ \|   /\__ \ _||   /
- *  |_|/_/ \_\_|_\|___/___|_|_\
- */
-func startParser(f File) {
-	parser.index = 0
-	parser.tokens = TokenizeFile(f.filename, f.source)
-	parser.current = parser.tokens[parser.index]
-	parser.internal = f.internal
-}
-
-func advance() {
-	parser.index++
-	parser.previous = parser.current
-	parser.current = parser.tokens[parser.index]
-}
-
-func jumpTo(index int) {
-	parser.index = index
-	parser.current = parser.tokens[index]
-	advance()
-}
-
-func consume(tt TokenType, err string) {
-	if tt == parser.current.typ {
-		advance()
-		return
-	}
-
-	errorAt(&parser.current, err)
-}
-
-func check(tt TokenType) bool {
-	return tt == parser.current.typ
-}
-
-func match(tt TokenType) bool {
-    if !check(tt) {
-		return false;
-	}
-    advance();
-    return true;
 }
 
 /*   ___ ___
@@ -106,142 +25,13 @@ func match(tt TokenType) bool {
 // We need to add the bindings at the start of the array, because the memory
 // space is moved backwards and now, the top of top of the static memory is taken
 // by these values, and the previous existing values are offset by `count` QWORD.
-func bind(nw []string) int {
-	bindings := &frontend.current.bindings
-	count := len(nw)
-	bindings.count = append([]int{count}, bindings.count...)
-	bindings.words = append(nw, bindings.words...)
-	return count
-}
 
-func unbind() int {
-	bindings := &frontend.current.bindings
-	unbindAmount := frontend.current.bindings.count[0]
-	bindings.count = bindings.count[1:]
-	bindings.words = bindings.words[unbindAmount:]
-	return unbindAmount
-}
-
-func openScope(s ScopeType, t Token) *Scope {
-	newScope := Scope{
-		ipStart: len(frontend.current.code),
-		tokenStart: t,
-		typ: s,
-	}
-	frontend.current.scope = append(frontend.current.scope, newScope)
-	lastScopeIndex := len(frontend.current.scope)-1
-	return &frontend.current.scope[lastScopeIndex]
-}
-
-func getCurrentScope() *Scope {
-	lastScopeIndex := len(frontend.current.scope)-1
-	return &frontend.current.scope[lastScopeIndex]
-}
-
-func getCountForScopeType(s ScopeType) int {
-	var count int
-	for _, ss := range frontend.current.scope {
-		if ss.typ == s {
-			count++
-		}
-	}
-	return count
-}
-
-func closeScopeAfterCheck(s ScopeType) {
-	lastScopeIndex := len(frontend.current.scope)-1
-	lastOpenedScope := frontend.current.scope[lastScopeIndex]
-
-	if lastOpenedScope.typ == s {
-		frontend.current.scope = frontend.current.scope[:lastScopeIndex]
-	} else {
-		errorAt(&parser.previous, "TODO: Error closing scope")
-	}
-}
-
-func getLimitIndexBindWord() (string, string) {
-	loopIndexByte := 72
-	loopScopeDepth := getCountForScopeType(SCOPE_LOOP)
-	loopIndexByte += loopScopeDepth
-	loopIndexWord := string(byte(loopIndexByte))
-	limitWord := loopIndexWord + "limit"
-	return limitWord, loopIndexWord
-}
-
-func emit(code Code) {
-	frontend.current.WriteCode(code)
-}
-
-func emitReturn() {
-	emit(Code{
-		op: OP_RET,
-		loc: parser.previous.loc,
-		value: 0,
-	})
-}
 
 /*   ___ ___ ___ ___ ___  ___   ___ ___ ___ ___  ___  ___
  *  | _ \ _ \ __| _ \ _ \/ _ \ / __| __/ __/ __|/ _ \| _ \
  *  |  _/   / _||  _/   / (_) | (__| _|\__ \__ \ (_) |   /
  *  |_| |_|_\___|_| |_|_\\___/ \___|___|___/___/\___/|_|_\
  */
-func newConstant(token Token) Constant {
-	var constant Constant
-	var tokens []Token
-
-	if !match(TOKEN_WORD) {
-		errorAt(&parser.previous, MsgParseConstMissingWord)
-		ExitWithError(CodeParseError)
-	}
-
-	wordToken := parser.previous
-	constant.word = wordToken.value.(string)
-
-	// TODO: Support rebiding constants in same scope if build configuration allows for it.
-	_, found := getConstant(wordToken)
-
-	if found {
-		msg := fmt.Sprintf(MsgParseConstOverrideNotAllowed, constant.word)
-		errorAt(&token, msg)
-		ExitWithError(CodeParseError)
-	}
-
-	if match(TOKEN_PAREN_CLOSE) {
-		msg := fmt.Sprintf(MsgParseConstInvalidContent, constant.word)
-		errorAt(&token, msg)
-	}
-
-	if match(TOKEN_PAREN_OPEN) {
-		for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
-			advance()
-			tokens = append(tokens, parser.previous)
-		}
-
-		if len(tokens) > 3 || len(tokens) == 2 {
-			msg := fmt.Sprintf(MsgParseConstInvalidContent, constant.word)
-			errorAt(&token, msg)
-			ExitWithError(CodeParseError)
-		} else if len(tokens) == 3 {
-			left := tokens[0].value.(int)
-			right := tokens[1].value.(int)
-
-			switch tokens[2].typ {
-			case TOKEN_PLUS: constant.value = left + right
-			case TOKEN_STAR: constant.value = left * right
-			}
-		} else if len(tokens) == 1 {
-			constant.value = tokens[0].value.(int)
-		}
-
-		consume(TOKEN_PAREN_CLOSE, MsgParseConstMissingCloseStmt)
-	} else {
-		advance()
-		constant.value = parser.previous.value.(int)
-	}
-
-	return constant
-}
-
 func registerFunction(token Token) {
 	var function Function
 
@@ -255,7 +45,7 @@ func registerFunction(token Token) {
 		ExitWithError(CodeParseError)
 	}
 
-	tokenWord := parser.previous
+	tokenWord := parser.previousToken
 	function.name = tokenWord.value.(string)
 
 	if function.name == "main" {
@@ -275,7 +65,7 @@ func registerFunction(token Token) {
 
 	for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
 		advance()
-		t := parser.previous
+		t := parser.previousToken
 
 		if t.typ == TOKEN_DASH_DASH_DASH {
 			parsingArguments = false
@@ -335,7 +125,7 @@ func newVariable(token Token, offset int) (Variable, int) {
 		ExitWithError(CodeParseError)
 	}
 
-	newVar.word = parser.previous.value.(string)
+	newVar.word = parser.previousToken.value.(string)
 	newVar.offset = offset
 	// TODO: This should technically support bigger sizes for arrays
 	newOffset = offset + SIZE_64b
@@ -343,7 +133,7 @@ func newVariable(token Token, offset int) (Variable, int) {
 	// TODO: Check for duplicated name
 
 	advance()
-	vt := parser.previous
+	vt := parser.previousToken
 
 	switch vt.typ {
 	case TOKEN_BOOL:	newVar.dtype = DATA_BOOL
@@ -352,7 +142,7 @@ func newVariable(token Token, offset int) (Variable, int) {
 	case TOKEN_PTR:		newVar.dtype = DATA_PTR
 	case TOKEN_STR:		newVar.dtype = DATA_STR
 	default:
-		errorAt(&parser.previous, MsgParseVarMissingValue)
+		errorAt(&parser.previousToken, MsgParseVarMissingValue)
 		ExitWithError(CodeParseError)
 	}
 
@@ -366,20 +156,20 @@ func newVariable(token Token, offset int) (Variable, int) {
  */
 func takeFromFunctionCode(quant int) []Code {
 	var result []Code
-	codeLength := len(frontend.current.code)
+	codeLength := len(parser.currentFn.code)
 
 	for index := codeLength-quant; index < codeLength; index++ {
-		result = append(result, frontend.current.code[index])
+		result = append(result, parser.currentFn.code[index])
 	}
 
-	frontend.current.code = frontend.current.code[:codeLength-quant]
+	parser.currentFn.code = parser.currentFn.code[:codeLength-quant]
 	return result
 }
 
 func getBind(token Token) (Code, bool) {
 	word := token.value.(string)
 
-	for bindex, bind := range frontend.current.bindings.words {
+	for bindex, bind := range parser.currentFn.bindings.words {
 		if bind == word {
 			return Code{op: OP_PUSH_BIND, loc: token.loc, value: bindex}, true
 		}
@@ -391,13 +181,13 @@ func getBind(token Token) (Code, bool) {
 func getConstant(token Token) (Code, bool) {
 	word := token.value.(string)
 
-	if frontend.current != nil {
-		for _, c := range frontend.current.constants {
+	if parser.currentFn != nil {
+		for _, c := range parser.currentFn.constants {
 			if c.word == word {
 				return Code{
 					op: OP_PUSH_INT,
 					loc: token.loc,
-					value: c.value,
+					value: c.value.variant,
 				}, true
 			}
 		}
@@ -408,7 +198,7 @@ func getConstant(token Token) (Code, bool) {
 			return Code{
 				op: OP_PUSH_INT,
 				loc: token.loc,
-				value: c.value,
+				value: c.value.variant,
 			}, true
 		}
 	}
@@ -419,8 +209,8 @@ func getConstant(token Token) (Code, bool) {
 func getVariable(token Token) (Code, bool) {
 	word := token.value.(string)
 
-	if frontend.current != nil {
-		for _, v := range frontend.current.variables {
+	if parser.currentFn != nil {
+		for _, v := range parser.currentFn.variables {
 			if v.word == word {
 				return Code{
 					op: OP_PUSH_VAR_LOCAL,
@@ -558,19 +348,19 @@ func parseToken(token Token) {
 
 	// DEFINITION
 	case TOKEN_CONST:
-		newConst := newConstant(token)
-		frontend.current.constants = append(frontend.current.constants, newConst)
+		newConst := createConstant()
+		parser.currentFn.constants = append(parser.currentFn.constants, newConst)
 	case TOKEN_CURLY_BRACKET_OPEN:
 		var tokens []Token
 
-		if len(frontend.bodyStack) > 0 {
+		if len(parser.bodyStack) > 0 {
 			errorAt(&token, "TODO: Cannot parse another body")
 			ExitWithError(CodeParseError)
 		}
 
 		for !check(TOKEN_CURLY_BRACKET_CLOSE) && !check(TOKEN_EOF) {
 			advance()
-			tokens = append(tokens, parser.previous)
+			tokens = append(tokens, parser.previousToken)
 		}
 
 		if len(tokens) == 0 {
@@ -579,11 +369,11 @@ func parseToken(token Token) {
 		}
 
 		consume(TOKEN_CURLY_BRACKET_CLOSE, "TODO: Missing curly bracket")
-		frontend.bodyStack = tokens
+		parser.bodyStack = tokens
 	case TOKEN_VAR:
-		newVar, newOffset := newVariable(token, frontend.current.localMemorySize)
-		frontend.current.variables = append(frontend.current.variables, newVar)
-		frontend.current.localMemorySize = newOffset
+		newVar, newOffset := newVariable(token, parser.currentFn.localMemorySize)
+		parser.currentFn.variables = append(parser.currentFn.variables, newVar)
+		parser.currentFn.localMemorySize = newOffset
 
 	// Intrinsics
 	case TOKEN_ARGC:
@@ -600,8 +390,8 @@ func parseToken(token Token) {
 		var pushCount int
 		var line []string
 		var value ASMValue
-		body := frontend.bodyStack
-		frontend.bodyStack = make([]Token, 0, 0)
+		body := parser.bodyStack
+		parser.bodyStack = make([]Token, 0, 0)
 
 		for i, t := range body {
 			switch t.typ {
@@ -667,7 +457,7 @@ func parseToken(token Token) {
 		var newWords []string
 
 		for match(TOKEN_WORD) {
-			word := parser.previous.value.(string)
+			word := parser.previousToken.value.(string)
 			newWords = append(newWords, word)
 		}
 
@@ -717,7 +507,7 @@ func parseToken(token Token) {
 		emit(code)
 
 	// Special
-	case TOKEN_WORD: expandWord(token)
+	case TOKEN_WORD: expandWordMeaning()
 
 	// FLOW CONTROL
 	case TOKEN_UNTIL:
@@ -755,14 +545,14 @@ func parseToken(token Token) {
 	case TOKEN_LOOP:
 		c := getCurrentScope()
 
-		if c.typ != SCOPE_LOOP {
+		if c.kind != SCOPE_LOOP {
 			// TODO: Improve error message, showing the starting and closing statements
 			errorAt(&c.tokenStart, "TODO: ERROR MESSAGE")
 			errorAt(&token, "TODO: ERROR MESSAGE")
 			ExitWithError(CodeParseError)
 		}
 
-		switch c.tokenStart.typ {
+		switch c.tokenStart.kind {
 		case TOKEN_UNTIL:
 			_, indexN := getLimitIndexBindWord()
 			bc, _ := getBind(Token{loc: token.loc, value: indexN})
@@ -787,7 +577,7 @@ func parseToken(token Token) {
 	case TOKEN_FI:
 		c := getCurrentScope()
 
-		switch c.typ {
+		switch c.kind {
 		case SCOPE_IF:
 			code.op = OP_IF_ELSE
 			code.value = c.ipStart
@@ -810,13 +600,13 @@ func parseToken(token Token) {
 	case TOKEN_ELSE:
 		c := getCurrentScope()
 
-		if c.typ != SCOPE_IF {
+		if c.kind != SCOPE_IF {
 			errorAt(&c.tokenStart, "TODO: ERROR MESSAGE")
 			errorAt(&token, "TODO: ERROR MESSAGE")
 			ExitWithError(CodeParseError)
 		}
 
-		c.typ = SCOPE_ELSE
+		c.kind = SCOPE_ELSE
 		code.op = OP_IF_ELSE
 		code.value = c.ipStart
 		emit(code)
@@ -916,14 +706,14 @@ func parseFunction(token Token) {
 	var testFunc Function
 
 	advance()
-	testFunc.name = parser.previous.value.(string)
+	testFunc.name = parser.previousToken.value.(string)
 	advance()
 
 	parsingArguments := true
 
 	for !match(TOKEN_PAREN_CLOSE) {
 		advance()
-		t := parser.previous
+		t := parser.previousToken
 
 		if t.typ == TOKEN_DASH_DASH_DASH {
 			parsingArguments = false
@@ -936,29 +726,29 @@ func parseFunction(token Token) {
 	for index, f := range TheProgram.chunks {
 		if !f.parsed && f.name == testFunc.name &&
 			reflect.DeepEqual(f.arguments, testFunc.arguments) {
-			frontend.current = &TheProgram.chunks[index]
+			parser.currentFn = &TheProgram.chunks[index]
 			break
 		}
 	}
 
-	if frontend.current != nil {
+	if parser.currentFn != nil {
 		for !match(TOKEN_RET) {
 			advance()
-			parseToken(parser.previous)
+			parseToken(parser.previousToken)
 		}
 
 		emitReturn()
 
 		// Marking the function as "parsed", then clearing out the bindings, and
 		// removing the pointer to this function, so we can safely check for the next one.
-		frontend.current.parsed = true
-		frontend.current = nil
+		parser.currentFn.parsed = true
+		parser.currentFn = nil
 	} else {
 		// This would be a catastrophic issue. Since we already registered functions,
 		// there's no way we don't find a function with the same name that has not been
 		// parsed yet. Since we can't recover from this error, we must exit.
 		msg := fmt.Sprintf(MsgParseFunctionSignatureNotFound, testFunc.name)
-		errorAt(&parser.previous, msg)
+		errorAt(&parser.previousToken, msg)
 		ExitWithError(CodeParseError)
 	}
 }
@@ -975,17 +765,17 @@ func compilationFirstPass(index int) {
 
 	for !check(TOKEN_EOF) {
 		advance()
-		token := parser.previous
+		token := parser.previousToken
 
 		if token.typ == TOKEN_USING {
 			advance()
 
-			if parser.previous.typ != TOKEN_WORD {
-				errorAt(&parser.previous, "TODO: ERROR USING")
+			if parser.previousToken.typ != TOKEN_WORD {
+				errorAt(&parser.previousToken, "TODO: ERROR USING")
 				ExitWithError(CodeParseError)
 			}
 
-			file.Open(parser.previous.value.(string))
+			file.Open(parser.previousToken.value.(string))
 		}
 	}
 }
@@ -1001,12 +791,12 @@ func compilationSecondPass(index int) {
 
 	for !check(TOKEN_EOF) {
 		advance()
-		token := parser.previous
+		token := parser.previousToken
 
 		switch token.typ {
 		// The second pass will care about the following tokens:
 		case TOKEN_CONST:
-			newConst := newConstant(token)
+			newConst := createConstant()
 			TheProgram.constants = append(TheProgram.constants, newConst)
 		case TOKEN_VAR:
 			newVar, newOffset := newVariable(token, TheProgram.staticMemorySize)
@@ -1041,7 +831,7 @@ func compilationThirdPass(index int) {
 
 	for !check(TOKEN_EOF) {
 		advance()
-		token := parser.previous
+		token := parser.previousToken
 
 		if token.typ == TOKEN_FN {
 			parseFunction(token)
@@ -1071,7 +861,10 @@ func FrontendRun() {
 		compilationThirdPass(index)
 	}
 
-	if frontend.error {
+	if len(TheProgram.errors) > 0 {
+		for _, e := range TheProgram.errors {
+			ReportErrorAtLocation(e.message, e.token.loc)
+		}
 		ExitWithError(CodeParseError)
 	}
 }

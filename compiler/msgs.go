@@ -1,6 +1,9 @@
 package skc
 
 const (
+
+	//////////////////////////////////////////////////////////////
+	/////////////// OLD ERRORS START HERE
 	TodoRemoveCliCannotGetDirectory = "Unable to find compiler directory, this is required to make the compiler work, and if not provided we cannot continue. [COMPILER BUG]\n\nFile Reporting: %s\nOS Reported error: %s"
 
 	MsgCliPrefix = "[Stanczyk] "

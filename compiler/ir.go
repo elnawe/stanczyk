@@ -14,6 +14,7 @@ const (
 	OP_PUSH_VAR_GLOBAL_ADDR	=  "OP_PUSH_VAR_GLOBAL_ADDR"
 	OP_PUSH_VAR_LOCAL		=  "OP_PUSH_VAR_LOCAL"
 	OP_PUSH_VAR_LOCAL_ADDR	=  "OP_PUSH_VAR_LOCAL_ADDR"
+	OP_PUSH_VALUE           =  "OP_PUSH_VALUE"
 
 	// FLOW CONTROL
 	OP_IF_START				=  "OP_IF_START"
@@ -57,6 +58,27 @@ const (
 	OP_EOC					=  "OP_EOC"
 )
 
+type ValueKind string
+
+const (
+	ANY ValueKind = "any"
+	BOOLEAN       = "bool"
+	BYTE          = "byte"
+	INT64         = "int"
+	POINTER       = "ptr"
+	STRING        = "str"
+)
+
+type Value struct {
+	kind ValueKind
+	token Token
+	variant any
+}
+
+type ValuePointer struct {
+	kind ValueKind
+}
+
 type DataType int
 
 const (
@@ -71,7 +93,15 @@ const (
 	DATA_STR
 )
 
+type CompilerError struct {
+	code    ErrorCode
+	message string
+	token   Token
+}
+
 type Program struct {
+	errors           []CompilerError
+
 	chunks           []Function
 	constants        []Constant
 	variables        []Variable
@@ -89,8 +119,8 @@ type Arity struct {
 }
 
 type Constant struct {
+	value Value
 	word  string
-	value int
 }
 
 type Bind struct {
@@ -104,20 +134,11 @@ type Binding struct {
 	words []string
 }
 
-type ScopeType int
-
-const (
-	SCOPE_BIND ScopeType = iota
-	SCOPE_LOOP
-	SCOPE_IF
-	SCOPE_ELSE
-)
-
 type Scope struct {
 	ipStart    int
 	ipThen     int
 	tokenStart Token
-	typ        ScopeType
+	kind       ScopeKind
 }
 
 type Variable struct {
@@ -127,9 +148,9 @@ type Variable struct {
 }
 
 type Function struct {
-	ip              int
-	name            string
-	loc             Location
+	ip   int
+	loc  Location
+	name string
 
 	arguments       Arity
 	returns         Arity
@@ -138,11 +159,14 @@ type Function struct {
 	scope           []Scope
 	constants       []Constant
 	variables       []Variable
-
 	localMemorySize int
-	parsed          bool
-	called          bool
-	internal        bool
+
+	body     []Token
+	called   bool
+	error    bool
+	internal bool
+	parsed   bool
+	valid    bool
 }
 
 type ASMValue struct {
