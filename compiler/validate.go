@@ -25,7 +25,7 @@ func getStackValues() string {
 	r := ""
 
 	for index := 0; index < tc.stackCount; index++ {
-		r += getValueKindName(tc.stack[index])
+		r += valueKindString(tc.stack[index])
 
 		if (index != tc.stackCount - 1) {
 			r += " "
@@ -35,26 +35,26 @@ func getStackValues() string {
 	return r
 }
 
-func getValueKindName(v ValueKind) string {
+func valueKindString(v ValueKind) string {
 	r := ""
 	switch v {
-	case NONE:  r = ""
-	case BOOL:  r = "bool"
-	case BYTE:  r = "char"
-	case INFER: r = "$type"
-	case INT:	 r = "int"
-	case PTR:   r = "ptr"
-	case STR:   r = "str"
-	case ANY:   r = "any"
+	case NONE:       r = ""
+	case ANY:        r = "any"
+	case BOOL:       r = "bool"
+	case BYTE:       r = "byte"
+	case INT:        r = "int"
+	case RAWPOINTER: r = "ptr"
+	case STRING:     r = "str"
+	case VARIADIC:   r = "$T"
 	}
 	return r
 }
 
-func getValueKindNames(dt []ValueKind) string {
+func valueKindStrings(dt []ValueKind) string {
 	r := ""
 
 	for i, v := range dt {
-		r += getValueKindName(v)
+		r += valueKindString(v)
 		if i != len(dt) -1 && v != NONE {
 			r += " "
 		}
@@ -90,7 +90,7 @@ func assertArgumentTypes(test []ValueKind, want [][]ValueKind, code Code, loc Lo
 		wantsText := ""
 
 		for i, w := range want {
-			wantsText += "(" + getValueKindNames(w) + ")"
+			wantsText += "(" + valueKindStrings(w) + ")"
 
 			if i != len(want) - 1 {
 				wantsText += " or "
@@ -98,7 +98,7 @@ func assertArgumentTypes(test []ValueKind, want [][]ValueKind, code Code, loc Lo
 		}
 
 		msg := fmt.Sprintf(MsgTypecheckArgumentsTypesMismatch,
-			code.op, getValueKindNames(test), wantsText)
+			code.op, valueKindStrings(test), wantsText)
 		ReportErrorAtLocation(msg, loc)
 		ExitWithError(CodeTypecheckError)
 	}
@@ -108,7 +108,7 @@ func assertArgumentType(test []ValueKind, want []ValueKind, code Code, loc Locat
 	errFound := false
 
 	for i, t := range test {
-		if want[i] == ANY || want[i] == INFER {
+		if want[i] == ANY || want[i] == VARIADIC {
 			if t == NONE {
 				errFound = true
 				break
@@ -124,7 +124,7 @@ func assertArgumentType(test []ValueKind, want []ValueKind, code Code, loc Locat
 	if errFound {
 		fmt.Println(code)
 		msg := fmt.Sprintf(MsgTypecheckArgumentsTypeMismatch,
-			code.op, getValueKindNames(test), getValueKindNames(want))
+			code.op, valueKindStrings(test), valueKindStrings(want))
 		ReportErrorAtLocation(msg, loc)
 		ExitWithError(CodeTypecheckError)
 	}
@@ -213,13 +213,13 @@ func ValidateRun() {
 				value := code.value.(int)
 				tc.push(bindings[value])
 			case OP_PUSH_BIND_ADDR:
-				tc.push(PTR)
+				tc.push(RAWPOINTER)
 			case OP_PUSH_BYTE:
 				tc.push(BYTE)
 			case OP_PUSH_INT:
 				tc.push(INT)
 			case OP_PUSH_STR:
-				tc.push(STR)
+				tc.push(STRING)
 			case OP_PUSH_VAR_GLOBAL:
 				for _, v := range TheProgram.variables {
 					if v.offset == value.(int) {
@@ -227,7 +227,7 @@ func ValidateRun() {
 					}
 				}
 			case OP_PUSH_VAR_GLOBAL_ADDR:
-				tc.push(PTR)
+				tc.push(RAWPOINTER)
 			case OP_PUSH_VAR_LOCAL:
 				for _, v := range function.variables {
 					if v.offset == value.(int) {
@@ -235,7 +235,7 @@ func ValidateRun() {
 					}
 				}
 			case OP_PUSH_VAR_LOCAL_ADDR:
-				tc.push(PTR)
+				tc.push(RAWPOINTER)
 
 			// MATH ARITHMETICS
 			case OP_MULTIPLY:
@@ -247,22 +247,22 @@ func ValidateRun() {
 			case OP_STORE:
 				b := tc.pop()
 				a := tc.pop()
-				assertArgumentType(dtArray(a, b), dtArray(ANY, PTR), code, loc)
+				assertArgumentType(dtArray(a, b), dtArray(ANY, RAWPOINTER), code, loc)
 			case OP_STORE_BYTE:
 				b := tc.pop()
 				a := tc.pop()
 				assertArgumentType(
-					dtArray(ANY, PTR),
+					dtArray(ANY, RAWPOINTER),
 					dtArray(a, b), code, loc,
 				)
 			case OP_LOAD:
 				a := tc.pop()
-				assertArgumentType(dtArray(a), dtArray(PTR), code, loc)
+				assertArgumentType(dtArray(a), dtArray(RAWPOINTER), code, loc)
 				tc.push(INT)
 			case OP_LOAD_BYTE:
 				b := tc.pop()
 				a := tc.pop()
-				assertArgumentType(dtArray(a, b), dtArray(INT, PTR), code, loc)
+				assertArgumentType(dtArray(a, b), dtArray(INT, RAWPOINTER), code, loc)
 				tc.push(BYTE)
 
 			case OP_LET_BIND:
@@ -308,12 +308,12 @@ func ValidateRun() {
 				} else if a == BYTE || b == BYTE {
 					tc.push(BYTE)
 				} else {
-					tc.push(PTR)
+					tc.push(RAWPOINTER)
 				}
 			case OP_ARGC:
 				tc.push(INT)
 			case OP_ARGV:
-				tc.push(PTR)
+				tc.push(RAWPOINTER)
 			case OP_CAST:
 				a := tc.pop()
 				assertArgumentType(dtArray(a), dtArray(ANY), code, loc)
@@ -392,7 +392,7 @@ func ValidateRun() {
 					stackReversed := tc.stack[reverseStackOrder:]
 
 					for i, d := range funcRef.arguments.types {
-						if d.typ == INFER {
+						if d.typ == VARIADIC {
 							if inferredTypes[d.name] == NONE {
 								inferredTypes[d.name] = stackReversed[i]
 							}
@@ -409,7 +409,7 @@ func ValidateRun() {
 				assertArgumentType(have, want, code, loc)
 
 				for _, d := range funcRef.returns.types {
-					if d.typ == INFER {
+					if d.typ == VARIADIC {
 						tc.push(inferredTypes[d.name])
 					} else {
 						tc.push(d.typ)

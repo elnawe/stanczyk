@@ -349,8 +349,8 @@ func newVariable(token Token, offset int) (Variable, int) {
 	case TOKEN_BOOL:	newVar.dtype = BOOL
 	case TOKEN_BYTE:	newVar.dtype = BYTE
 	case TOKEN_INT:		newVar.dtype = INT
-	case TOKEN_PTR:		newVar.dtype = PTR
-	case TOKEN_STR:		newVar.dtype = STR
+	case TOKEN_PTR:		newVar.dtype = RAWPOINTER
+	case TOKEN_STR:		newVar.dtype = STRING
 	default:
 		errorAt(&parser.previous, MsgParseVarMissingValue)
 		ExitWithError(CodeParseError)
@@ -553,7 +553,7 @@ func parseToken(token Token) {
 		emit(code)
 	case TOKEN_PTR:
 		code.op = OP_CAST
-		code.value = PTR
+		code.value = RAWPOINTER
 		emit(code)
 
 	// DEFINITION
@@ -835,9 +835,9 @@ func parseArityInAssembly(token Token, args *Arity) {
 	case TOKEN_INT:
 		newArg.typ = INT
 	case TOKEN_PTR:
-		newArg.typ = PTR
+		newArg.typ = RAWPOINTER
 	case TOKEN_STR:
-		newArg.typ = STR
+		newArg.typ = STRING
 	default:
 		msg := fmt.Sprintf(MsgParseTypeUnknown, token.value.(string))
 		errorAt(&token, msg)
@@ -865,16 +865,16 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 	case TOKEN_INT:
 		newArg.typ = INT
 	case TOKEN_PTR:
-		newArg.typ = PTR
+		newArg.typ = RAWPOINTER
 	case TOKEN_STR:
-		newArg.typ = STR
+		newArg.typ = STRING
 	case TOKEN_PARAPOLY:
 		if !parsingArguments {
 			errorAt(&token, MsgParseArityReturnParapolyNotAllowed)
 			ExitWithError(CodeParseError)
 		}
 
-		newArg.typ = INFER
+		newArg.typ = VARIADIC
 		newArg.name = token.value.(string)
 		function.arguments.parapoly = true
 	case TOKEN_WORD:
@@ -887,10 +887,10 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 		}
 
 		funcArgs := function.arguments
-		argTest := Argument{name: w, typ: INFER}
+		argTest := Argument{name: w, typ: VARIADIC}
 
 		if funcArgs.parapoly && Contains(funcArgs.types, argTest) {
-			newArg.typ = INFER
+			newArg.typ = VARIADIC
 			newArg.name = w
 			function.returns.parapoly = true
 		} else {
