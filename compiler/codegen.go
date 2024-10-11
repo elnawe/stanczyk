@@ -135,6 +135,12 @@ func generateLinuxX64() {
 				out.WriteText("    add rax, %d", offset)
 				out.WriteText("    push rax")
 
+			case OP_PUSH_LET:
+				offset := value.(int)
+				out.WriteText("    mov rax, [return_stack_rsp]")
+				out.WriteText("    add rax, %d", offset * 8)
+				out.WriteText("    push QWORD [rax]")
+
 			case OP_STORE:
 				out.WriteText("    pop rax")
 				out.WriteText("    pop rbx")
@@ -276,10 +282,10 @@ func generateLinuxX64() {
 					out.WriteText("    %s", s)
 				}
 			case OP_FUNCTION_CALL:
-				fnCall := value.(FunctionCall)
+				fnCallIP := value.(int)
 				out.WriteText("    mov rax, rsp")
 				out.WriteText("    mov rsp, [return_stack_rsp]")
-				out.WriteText("    call fn%d", fnCall.ip)
+				out.WriteText("    call fn%d", fnCallIP)
 				out.WriteText("    mov [return_stack_rsp], rsp")
 				out.WriteText("    mov rsp, rax")
 			case OP_REBIND:

@@ -23,6 +23,10 @@ const (
 	OP_PUSH_VAR_LOCAL		=  "OP_PUSH_VAR_LOCAL"
 	OP_PUSH_VAR_LOCAL_ADDR	=  "OP_PUSH_VAR_LOCAL_ADDR"
 
+	OP_LOAD_BYTE	= "OP_LOAD_BYTE"
+	OP_STORE_BYTE	= "OP_STORE_BYTE"
+	OP_PUSH_LET		= "OP_PUSH_LET"
+
 	OP_PUSH_GLOBAL_VARIABLE =  "OP_PUSH_GLOBAL_VARIABLE"
 	OP_PUSH_LOCAL_VARIABLE  =  "OP_PUSH_LOCAL_VARIABLE"
 	OP_PUSH_VALUE           =  "OP_PUSH_VALUE"
@@ -72,13 +76,14 @@ const (
 type ValueKind string
 
 const (
-	ANY ValueKind = "any"
-	BOOLEAN       = "bool"
-	BYTE          = "byte"
-	INT64         = "int"
-	POINTER       = "ptr"
-	STRING        = "str"
-	VARIADIC      = "$T"
+	UNKNOWN ValueKind = "unknown"
+	ANY               = "any"
+	BOOLEAN           = "bool"
+	BYTE              = "byte"
+	INT64             = "int"
+	RAWPOINTER        = "ptr"
+	STRING            = "str"
+	VARIADIC          = "$T"
 )
 
 type Value struct {
@@ -89,7 +94,7 @@ type Value struct {
 
 type ValueBoolean int
 
-type ValueByte    int
+type ValueByte    uint8
 
 type ValueInt64   int
 
@@ -187,7 +192,6 @@ type Function struct {
 	variables       []Variable
 	localMemorySize int
 
-	body     []Token
 	called   bool
 	error    bool
 	internal bool

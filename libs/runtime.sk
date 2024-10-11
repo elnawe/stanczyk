@@ -79,75 +79,75 @@ fn -- ($X --- X) 1 - ret
 ; Removes one value from the stack
 ; Calling
 ;   - <any value> drop
-fn drop (any) let x in done ret
+fn drop (any) let x ! ret
 
 ; Removes two values from the stack
 ; Calling
 ;   - <any> <any> 2drop
-fn 2drop (any any) let x y in done ret
+fn 2drop (any any) let x y ! ret
 
 ; Removes the second to last value from the stack
 ; Calling:
 ;		- <arg1> <arg2> nip
 ; Returns
 ;		- The second given argument (<arg2>)
-fn nip ($X $Y --- Y) let x y in y done ret
+fn nip ($X $Y --- Y) let x y ! y ret
 
 ; Duplicate the last value on the stack
 ; Calling:
 ;   - <any> dup
 ; Returns:
 ;   - The given argument, twice
-fn dup ($X --- X X) let x in x x done ret
+fn dup ($X --- X X) let x ! x x ret
 
 ; Duplicate the last 2 values on the stack
 ; Calling:
 ;   - <arg1> <arg2> 2dup
 ; Returns:
 ;   - The 2 given arguments, twice
-fn 2dup ($X $Y --- X Y X Y) let x y in x y x y done ret
+fn 2dup ($X $Y --- X Y X Y) let x y ! x y x y ret
 
 ; Duplicates the second to last value on the stack and add it at the end
 ; Calling:
 ;   - <arg1> <arg2> over
 ; Returns:
 ;   - The given arguments, plus <arg1> duplicated at the end (<arg1> <arg2> <arg1>)
-fn over ($X $Y --- X Y X) let x y in x y x done ret
+fn over ($X $Y --- X Y X) let x y ! x y x ret
 
-; Takes the last three values of the stack and rotates, moving the third one to the top.
+; Takes the last three values of the stack and rotates, movinpg the third one to the top.
 ; Calling:
 ;   - <arg1> <arg2> <arg3> rot
 ; Returns:
 ;   - The following order: <arg2> <arg3> <arg1>
-fn rot ($X $Y $Z --- Y Z X) let x y z in y z x done ret
+fn rot ($X $Y $Z --- Y Z X) let x y z ! y z x ret
 
 ; Takes the last three values of the stack and rotates, moving the first one to the bottom.
 ; Calling:
 ;   - <arg1> <arg2> <arg3> rot
 ; Returns:
 ;   - The following order: <arg3> <arg1> <arg2>
-fn -rot ($X $Y $Z --- Z X Y) let x y z in z x y done ret
+fn -rot ($X $Y $Z --- Z X Y) let x y z ! z x y ret
 
 ; Takes the last two values in the stack and swap them in order
 ; Calling:
 ;   - <arg1> <arg2> swap
 ; Returns:
 ;   - The given argument in opposite order (<arg2> <arg1>)
-fn swap ($X $Y --- Y X) let x y in y x done ret
+fn swap ($X $Y --- Y X) let x y ! y x ret
 
 ; Takes the last value from the stack and push it back so it can be used in special cases
 ; Calling:
 ;   - <arg> take
 ; Returns:
 ;   - Same <arg>
-fn take ($X --- X) let x in x done ret
+fn take ($X --- X) let x ! x ret
 
 ; Duplicates the last value on the data stack and swap the other values
 ; Calling:
 ;   - <arg1> <arg2> swap
 ; Returns:
 ;   - Last stack data dupped and swap the previous two (<arg2> <arg1> <arg2>)
-fn tuck ($X $Y --- Y X Y) let x y in y x y done ret
+fn tuck ($X $Y --- Y X Y) let x y ! y x y ret
 
 ; Helper function for Logical And operator (&&).
 ; Calling:

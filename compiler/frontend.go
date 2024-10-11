@@ -117,19 +117,8 @@ func registerFunction(token Token) {
  *  | (_| (_) | |\/| |  _/| || |__ / _ \| |  | | (_) | .` |
  *   \___\___/|_|  |_|_| |___|____/_/ \_\_| |___\___/|_|\_|
  */
-func takeFromFunctionCode(quant int) []Code {
-	var result []Code
-	codeLength := len(parser.currentFn.code)
 
-	for index := codeLength-quant; index < codeLength; index++ {
-		result = append(result, parser.currentFn.code[index])
-	}
-
-	parser.currentFn.code = parser.currentFn.code[:codeLength-quant]
-	return result
-}
-
-func getBind(token Token) (Code, bool) {
+func getBindS(token Token) (Code, bool) {
 	word := token.value.(string)
 
 	for bindex, bind := range parser.currentFn.bindings.words {
@@ -215,7 +204,7 @@ func getFunction(token Token) (Code, bool) {
 }
 
 func expandWord(token Token) {
-	b, bfound := getBind(token)
+	b, bfound := getBindS(token)
 
 	if bfound {
 		emit(b)
@@ -287,7 +276,7 @@ func parseToken(token Token) {
 		code.value = 1
 		emit(code)
 	case TOKEN_AMPERSAND:
-		b, bfound := getBind(token)
+		b, bfound := getBindS(token)
 		if bfound {
 			code.op = OP_PUSH_BIND_ADDR
 			code.value = b.value
@@ -435,13 +424,13 @@ func parseToken(token Token) {
 		}
 
 		consume(TOKEN_IN, MsgParseLetMissingIn)
-		openScope(SCOPE_BIND, token)
+		//openScope(SCOPE_BIND, token)
 
 		code.op = OP_LET_BIND
 		code.value = bind(newWords)
 		emit(code)
 	case TOKEN_DONE:
-		closeScopeAfterCheck(SCOPE_BIND)
+		//		closeScopeAfterCheck(SCOPE_BIND)
 		code.op = OP_LET_UNBIND
 		code.value = unbind()
 		emit(code)
@@ -469,13 +458,13 @@ func parseToken(token Token) {
 	case TOKEN_AT:
 		code.op = OP_LOAD
 		emit(code)
-	case TOKEN_C_AT:
+	case TOKEN_AT_C:
 		code.op = OP_LOAD_CHAR
 		emit(code)
 	case TOKEN_BANG:
 		code.op = OP_STORE
 		emit(code)
-	case TOKEN_C_BANG:
+	case TOKEN_BANG_C:
 		code.op = OP_STORE_CHAR
 		emit(code)
 
@@ -496,23 +485,23 @@ func parseToken(token Token) {
 		c := openScope(SCOPE_LOOP, token)
 
 		// We bind the limit and the index values for future use.
-		limitN, indexN := getLimitIndexBindWord()
+		limitN, indexN := getLimitIndexBindWords()
 		emit(copyOfLoopStartCodeOps[0])
 		emit(copyOfLoopStartCodeOps[1])
 		emit(Code{op: OP_LET_BIND, loc: code.loc, value: bind([]string{limitN, indexN})})
 		emit(Code{op: OP_LOOP_SETUP, loc: code.loc, value: c.ipStart})
-		bc, _ := getBind(Token{loc: token.loc, value: limitN})
+		bc, _ := getBindS(Token{loc: token.loc, value: limitN})
 		emit(bc)
-		bc, _ = getBind(Token{loc: token.loc, value: indexN})
+		bc, _ = getBindS(Token{loc: token.loc, value: indexN})
 		emit(bc)
 		emit(copyOfLoopStartCodeOps[2])
 		emit(Code{op: OP_LOOP_START, loc: code.loc, value: c.ipStart})
 	case TOKEN_WHILE:
 		c := openScope(SCOPE_LOOP, token)
-		_, indexN := getLimitIndexBindWord()
+		_, indexN := getLimitIndexBindWords()
 		emit(Code{op: OP_LET_BIND, loc: code.loc, value: bind([]string{indexN})})
 		emit(Code{op: OP_LOOP_SETUP, loc: code.loc, value: c.ipStart})
-		bc, _ := getBind(Token{loc: token.loc, value: indexN})
+		bc, _ := getBindS(Token{loc: token.loc, value: indexN})
 		emit(bc)
 		emit(Code{op: OP_LOOP_START, loc: code.loc, value: c.ipStart})
 	case TOKEN_LOOP:
@@ -527,14 +516,14 @@ func parseToken(token Token) {
 
 		switch c.tokenStart.kind {
 		case TOKEN_UNTIL:
-			_, indexN := getLimitIndexBindWord()
-			bc, _ := getBind(Token{loc: token.loc, value: indexN})
+			_, indexN := getLimitIndexBindWords()
+			bc, _ := getBindS(Token{loc: token.loc, value: indexN})
 			emit(Code{op: OP_REBIND, loc: code.loc, value: bc.value})
 			emit(Code{op: OP_LOOP_END, loc: code.loc, value: c.ipStart})
 			emit(Code{op: OP_LET_UNBIND, loc: code.loc, value: unbind()})
 		case TOKEN_WHILE:
-			_, indexN := getLimitIndexBindWord()
-			bc, _ := getBind(Token{loc: token.loc, value: indexN})
+			_, indexN := getLimitIndexBindWords()
+			bc, _ := getBindS(Token{loc: token.loc, value: indexN})
 			emit(Code{op: OP_REBIND, loc: code.loc, value: bc.value})
 			emit(Code{op: OP_LOOP_END, loc: code.loc, value: c.ipStart})
 			emit(Code{op: OP_LET_UNBIND, loc: code.loc, value: unbind()})

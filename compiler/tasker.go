@@ -8,8 +8,7 @@ import (
 type CompilationStep int
 
 const (
-	stepFrontend CompilationStep = iota
-	stepValidate
+	stepCompile CompilationStep = iota
 	stepCodegen
 	stepOutput
 	stepBackend
@@ -26,8 +25,7 @@ var TheProgram Program
 
 func getStepName(step CompilationStep) string {
 	switch step {
-	case stepFrontend:	return "Front-end compilation"
-	case stepValidate:  return "Validation"
+	case stepCompile:	return "Compilation"
 	case stepCodegen:	return "Code generation"
 	case stepOutput:	return "Output to ASM"
 	case stepBackend:	return "Back-end compilation"
@@ -64,11 +62,11 @@ func timedFunction(step CompilationStep) {
 func RunTasks() {
 	var out OutputCode
 
-	timedFunction(stepFrontend)
-	FrontendRun()
+	timedFunction(stepCompile)
+	Compile()
 
-	timedFunction(stepValidate)
-	ValidateRun()
+	// timedFunction(stepValidate)
+	// ValidateRun()
 
 	timedFunction(stepCodegen)
 	CodegenRun(&out)

@@ -16,6 +16,7 @@ const (
 	CodeCodegenError
 	GlobalParseError
 	FunctionParseError
+	MacroParseError
 	UsingError
 	CompilationError
 	CriticalError
@@ -40,6 +41,10 @@ const (
 		"polymorphic function with name '%s' has a different return in definition at %s:%d:%d"
 	IncorrectBlockOfCodeClosingStatement =
 		"syntax error: block of code not closing properly"
+	IncorrectValuesAtReturn =
+		"function '%s' has incorrect amount of values at return (got %d, expected %d)"
+	IncorrectValueTypeAtReturn =
+		"function '%s' is returning incorrect value types (got %s, expected %s)"
 	MainFunctionInvalidSignature =
 		"main function can not have arguments or returns"
 	MainFunctionRedefined =
@@ -56,14 +61,22 @@ const (
 		"variadic parameter '%s' definition not found in arguments"
 	StackChangedInCodeBlock =
 		"stack values (size or type) can't change inside scope blocks"
+	StackUnderflow =
+		"missing stack values this operation"
+	UnexpectedCodeBlockSyntax =
+		"syntax error: '%s' can only be used after using %s"
 	UnexpectedSymbol =
 		"syntax error: unexpected symbol, expected '%s'"
+	UnexpectedValueMacroBody =
+		"syntax error: unexpected value in macro body"
 	UnknownWord =
 		"syntax error: unknown word '%s'"
 	VariableValueKindNotAllowed =
 		"syntax error: unknown value type in variable declaration"
 	WordMissingAfterUsing =
 		"syntax error: need a valid word after keyword 'using'"
+
+	TooManyErrors = "too many errors to continue"
 )
 
 func ReportErrorAtEOF(msg string) {
@@ -77,5 +90,11 @@ func ReportErrorAtLocation(orig string, loc Location, args ...any) {
 }
 
 func ExitWithError(error ErrorCode) {
+	if len(TheProgram.errors) > 0 {
+		for _, e := range TheProgram.errors {
+			ReportErrorAtLocation(e.message, e.token.loc)
+		}
+		ExitWithError(CompilationError)
+	}
 	os.Exit(int(error))
 }

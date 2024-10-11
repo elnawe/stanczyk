@@ -46,9 +46,9 @@ const (
 	TOKEN_WHILE
 
 	TOKEN_BANG
-	TOKEN_C_BANG
+	TOKEN_BANG_C
 	TOKEN_AT
-	TOKEN_C_AT
+	TOKEN_AT_C
 
 	TOKEN_AMPERSAND
 
@@ -123,10 +123,10 @@ var reservedWords = []reserved{
 	reserved{typ: TOKEN_IN,             word: "in"     },
 	reserved{typ: TOKEN_DONE,           word: "done"   },
 
-	reserved{typ: TOKEN_BANG,           word: "!"      },
 	reserved{typ: TOKEN_AT,             word: "@"      },
-	reserved{typ: TOKEN_C_BANG,         word: "!c"     },
-	reserved{typ: TOKEN_C_AT,           word: "@c"     },
+	reserved{typ: TOKEN_AT_C,           word: "@c"     },
+	reserved{typ: TOKEN_BANG,           word: "!"      },
+	reserved{typ: TOKEN_BANG_C,         word: "!c"     },
 
 	reserved{typ: TOKEN_ELSE,           word: "else"   },
 	reserved{typ: TOKEN_FI,             word: "fi"     },
