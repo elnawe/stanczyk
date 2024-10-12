@@ -1,5 +1,9 @@
 package skc
 
+import (
+	"fmt"
+)
+
 type OpCode string
 
 const (
@@ -74,6 +78,7 @@ const (
 type Program struct {
 	chunks           []Function
 	constants        []Constant
+	errors           []ProgramError
 	variables        []Variable
 	staticMemorySize int
 }
@@ -170,6 +175,16 @@ type Chunk struct {
 type FunctionCall struct {
 	name string
 	ip   int
+}
+
+type ProgramError struct {
+	err string
+	step CompilationStep
+}
+
+func (this *Program) error(step CompilationStep, msg ErrorMessage, args ...any) {
+	pErr := ProgramError{err: fmt.Sprintf(string(msg), args...), step: step}
+	this.errors = append(this.errors, pErr)
 }
 
 func (this *Function) WriteCode(code Code) {

@@ -3,9 +3,85 @@ package skc
 import (
 	"fmt"
 	"reflect"
+	"slices"
 )
 
 const STACK_SIZE = 1024
+
+type ValidateState struct {
+	bindsTable    []ValueKind
+	calledIPs     []int
+	currentFn     *Function
+	currentOp     *Code
+	mainHandled   bool
+	stack         []ValueKind
+	scopeSnapshot [][]ValueKind
+}
+
+func (this *ValidateState) pop() ValueKind {
+	if len(this.stack) == 0 {
+		ReportErrorAtFunction(
+			this.currentFn,
+			StackUnderflow, this.currentOp.op, this.currentOp.loc.l,
+		)
+		ExitWithError(CriticalError)
+	}
+
+	lastIndex := len(this.stack)-1
+	result := this.stack[lastIndex]
+	this.stack = slices.Clone(this.stack[:lastIndex])
+	return result
+}
+
+func (this *ValidateState) push(v ValueKind) {
+	this.stack = append(this.stack, v)
+}
+
+func (this *ValidateState) popIP() int {
+	if len(this.calledIPs) == 0 {
+		ReportErrorAtEOF(CompilerBug)
+		ExitWithError(CriticalError)
+	}
+
+	lastIndex := len(this.calledIPs)-1
+	result := this.calledIPs[lastIndex]
+	this.calledIPs = slices.Clone(this.calledIPs[:lastIndex])
+	return result
+}
+
+func (this *ValidateState) pushIP(ip int) {
+	this.calledIPs = append(this.calledIPs, ip)
+}
+
+func (this *ValidateState) reset() {
+	this.bindsTable    = make([]ValueKind, 0, 0)
+	this.currentFn     = nil
+	this.currentOp     = nil
+	this.stack         = make([]ValueKind, 0, 0)
+	this.scopeSnapshot = make([][]ValueKind, 0, 0)
+}
+
+func (this *ValidateState) setup(fn *Function) {
+	this.currentFn = fn
+
+	arguments := fn.arguments.types
+	results := fn.returns.types
+
+	if fn.name == "main" {
+		this.mainHandled = true
+		this.pushIP(fn.ip)
+
+		if len(arguments) > 0 || len(results) > 0 {
+			TheProgram.error(stepValidate,
+				MainFunctionInvalidSignature, len(arguments), len(results),
+			)
+		}
+	}
+
+	for _, p := range arguments {
+		this.push(p.typ)
+	}
+}
 
 type Typecheck struct {
 	stack       [STACK_SIZE]ValueKind
@@ -13,13 +89,9 @@ type Typecheck struct {
 	scope       int
 }
 
-type DeadCodeElim struct {
-	funcsCalled []int
-}
-
 var tc Typecheck
 var snapshots [10]Typecheck
-var dce DeadCodeElim
+var validate ValidateState
 
 func getStackValues() string {
 	r := ""
@@ -63,7 +135,7 @@ func valueKindStrings(dt []ValueKind) string {
 	return r
 }
 
-func assertArgumentTypes(test []ValueKind, want [][]ValueKind, code Code, loc Location) {
+func assertArgumentTypes(test []ValueKind, want [][]ValueKind, code *Code, loc Location) {
 	var errFound []bool
 
 	for _, w := range want {
@@ -104,7 +176,7 @@ func assertArgumentTypes(test []ValueKind, want [][]ValueKind, code Code, loc Lo
 	}
 }
 
-func assertArgumentType(test []ValueKind, want []ValueKind, code Code, loc Location) {
+func assertArgumentType(test []ValueKind, want []ValueKind, code *Code, loc Location) {
 	errFound := false
 
 	for i, t := range test {
@@ -142,17 +214,6 @@ func findFunctionByIP(ip int) Function {
 	return TheProgram.chunks[ip]
 }
 
-func (this *DeadCodeElim) push(i int) {
-	this.funcsCalled = append(this.funcsCalled, i)
-}
-
-func (this *DeadCodeElim) pop() int {
-	var x int
-	x = this.funcsCalled[len(this.funcsCalled) - 1]
-	this.funcsCalled = this.funcsCalled[:len(this.funcsCalled) - 1]
-	return x
-}
-
 func (this *Typecheck) reset() {
 	this.stack = [STACK_SIZE]ValueKind{}
 	this.stackCount = 0
@@ -174,16 +235,17 @@ func (this *Typecheck) pop() ValueKind {
 }
 
 func ValidateRun() {
-	mainHandled := false
-
-	for ifunction, function := range TheProgram.chunks {
+	for indexFn, _ := range TheProgram.chunks {
 		var bindings []ValueKind
+		function := &TheProgram.chunks[indexFn]
+
+		validate.setup(function)
+
 		argumentTypes := function.arguments.types
 		returnTypes := function.returns.types
 
 		if function.name == "main" {
-			mainHandled = true
-			dce.push(function.ip)
+			validate.pushIP(function.ip)
 
 			if len(argumentTypes) > 0 || len(returnTypes) > 0 {
 				ReportErrorAtLocation(
@@ -200,7 +262,9 @@ func ValidateRun() {
 			tc.push(t.typ)
 		}
 
-		for icode, code := range function.code {
+		for indexCode, _ := range function.code {
+			code := &function.code[indexCode]
+			validate.currentOp = code
 			instruction := code.op
 			loc := code.loc
 			value := code.value
@@ -376,8 +440,7 @@ func ValidateRun() {
 				// We do this while typechecking, so we can allow for polymorphism in
 				// the parameters of the functions. Once we get here, we have found the
 				// exact function according to the stack values provided.
-				TheProgram.chunks[ifunction].code[icode].value =
-					FunctionCall{name: funcRef.name, ip: funcRef.ip}
+				code.value = FunctionCall{name: funcRef.name, ip: funcRef.ip}
 
 				// Doing parapoly initial checks. We go over the parameters, if parapoly
 				// is enabled in this function, and then map each type of parameter that
@@ -449,13 +512,13 @@ func ValidateRun() {
 		tc.reset()
 	}
 
-	if !mainHandled {
-		ReportErrorAtEOF(MsgTypecheckMissingEntryPoint)
-		ExitWithError(CodeTypecheckError)
+	if !validate.mainHandled {
+		ReportErrorAtEOF(string(MainFunctionUndefined))
+		ExitWithError(CriticalError)
 	}
 
-	for len(dce.funcsCalled) > 0 {
-		ip := dce.pop()
+	for len(validate.calledIPs) > 0 {
+		ip := validate.popIP()
 
 		for i, _ := range TheProgram.chunks {
 			function := &TheProgram.chunks[i]
@@ -469,7 +532,7 @@ func ValidateRun() {
 						f := findFunctionByIP(newCall.ip)
 
 						if !f.called {
-							dce.push(newCall.ip)
+							validate.pushIP(newCall.ip)
 						}
 					}
 				}

@@ -11,12 +11,32 @@ const (
 	CodeOK ErrorCode = iota
 	CodeCliError
 	CodeParseError
+	ValidationError
 	CodeTypecheckError
 	CodeCodegenError
+	CriticalError
+)
+
+type ErrorMessage string
+
+const (
+	CompilerBug = "compiler bug found!"
+
+	MainFunctionInvalidSignature = "main function can not have arguments or returns (got %d arguments and %d results)"
+	MainFunctionUndefined = "critical error: 'main' function not defined"
+	StackUnderflow = "stack underflow when trying to %s at line %d"
+
+	Unknown ErrorMessage = "unknown error, most likely a compiler bug"
 )
 
 func ReportErrorAtEOF(msg string) {
 	fmt.Fprintf(os.Stderr, "Error at end of file: %s\n", msg);
+}
+
+func ReportErrorAtFunction(fn *Function, err ErrorMessage, args ...any) {
+	pos := fmt.Sprintf("%s:%d:%d (%s)", fn.loc.f, fn.loc.l, fn.loc.c, fn.name)
+	msg := fmt.Sprintf(string(err), args...)
+	fmt.Fprintf(os.Stderr, "%s %s\n", pos, msg)
 }
 
 func ReportErrorAtLocation(msg string, loc Location) {
