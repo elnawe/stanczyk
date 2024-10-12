@@ -72,6 +72,7 @@ func (this *Stack) pushSnapshot() {
 
 func (this *Stack) reset() {
 	this.currentScope = 0
+	this.bodyStack = make([]Token, 0, 0)
 	this.binds  = make([]ValueKind, 0, 0)
 	this.values = make([]ValueKind, 0, 0)
 	this.variadicMap = make(map[string]ValueKind, 0)
@@ -94,17 +95,22 @@ func (this *Stack) validate() {
 		}, parser.currentFn.word, len(this.values), expectedReturnCount)
 	}
 
-	for i, t := range parser.currentFn.returns.types {
-		skv := this.values[i]
+	// for i, t := range parser.currentFn.returns.types {
+	// 	skv := this.values[i]
+	// 	expectedKind := t.kind
 
-		if skv != t.kind {
-			addError(CompilerError{
-				code: FunctionParseError,
-				message: IncorrectValueTypeAtReturn,
-				token: Token{loc: parser.currentFn.loc},
-			}, parser.currentFn.word, skv, t.kind)
-		}
-	}
+	// 	if t.kind == VARIADIC {
+	// 		expectedKind = this.variadicMap[t.name]
+	// 	}
+
+	// 	if skv != expectedKind {
+	// 		addError(CompilerError{
+	// 			code: FunctionParseError,
+	// 			message: IncorrectValueTypeAtReturn,
+	// 			token: Token{loc: parser.currentFn.loc},
+	// 		}, parser.currentFn.word, skv, t.kind)
+	// 	}
+	// }
 
 	this.reset()
 }
@@ -146,6 +152,20 @@ func addError(error CompilerError, args ...any) {
 
 	error.message = fmt.Sprintf(error.message, args...)
 	TheProgram.errors = append(TheProgram.errors, error)
+}
+
+func human(kinds ...ValueKind) string {
+	result := ""
+
+	for i, k := range kinds {
+		if i > 0 {
+			result += ", "
+		}
+
+		result += string(k)
+	}
+
+	return result
 }
 
 func startParser(f File) {
@@ -272,19 +292,59 @@ func emit(code Code) {
 	parser.currentFn.WriteCode(code)
 }
 
-func emitPushLet(word string) bool {
+func emitBinary(op OpCode) {
 	t := parser.previousToken
-	b, found := getBind(word)
 
-	if found {
-		stack.push(stack.binds[b])
-		emit(Code{op: OP_PUSH_LET, loc: t.loc, value: b})
+	switch op {
+	case OP_ADD, OP_SUBSTRACT:
+		b := stack.pop()
+		a := stack.pop()
+		if a == INT64 && b == INT64 {
+			stack.push(INT64)
+		} else if a == BYTE || b == BYTE {
+			stack.push(BYTE)
+		} else {
+			stack.push(RAWPOINTER)
+		}
+	case OP_DIVIDE, OP_MODULO, OP_MULTIPLY:
+		b := stack.pop()
+		a := stack.pop()
+		if a != INT64 || b != INT64 {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: TypeError,
+				token: t,
+			}, human(a, b), human(INT64, INT64))
+		}
+	case OP_EQUAL, OP_NOT_EQUAL,
+		OP_GREATER, OP_GREATER_EQUAL,
+		OP_LESS, OP_LESS_EQUAL:
+		stack.pop()
+		stack.pop()
+		stack.push(BOOLEAN)
+	case OP_LOAD_BYTE:
+		b := stack.pop()
+		a := stack.pop()
+		if a != INT64 || b != RAWPOINTER {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: TypeError,
+				token: t,
+			}, human(a, b), human(INT64, RAWPOINTER))
+		}
+	case OP_STORE, OP_STORE_BYTE:
+		b := stack.pop()
+		a := stack.pop()
+		if b != RAWPOINTER {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: TypeError,
+				token: t,
+			}, human(a, b), human(ANY, RAWPOINTER))
+		}
 	}
 
-	// Should add value to the stack
-	stack.push(RAWPOINTER)
-
-	return found
+	emit(Code{op: op, loc: t.loc})
 }
 
 func emitConstant(word string) bool {
@@ -309,6 +369,7 @@ func emitFunctionCall(word string) bool {
 			var paramsFromFn []ValueKind
 			f := TheProgram.chunks[ip]
 			firstIndex := len(stack.values) - len(f.arguments.types)
+			fmt.Println(f, stack.values)
 			reversedStack := stack.values[firstIndex:]
 			stackValuesReduced := reversedStack[:len(f.arguments.types)]
 
@@ -362,7 +423,8 @@ func emitFunctionCall(word string) bool {
 
 func emitLetBind(words ...string) {
 	for range words {
-		stack.binds = append([]ValueKind{stack.pop()}, stack.binds...)
+		k := stack.pop()
+		stack.binds = append([]ValueKind{k}, stack.binds...)
 	}
 
 	emit(Code{op: OP_LET_BIND, loc: parser.previousToken.loc, value: bind(words)})
@@ -374,6 +436,21 @@ func emitLetUnbind() {
 	emit(Code{op: OP_LET_UNBIND, loc: parser.previousToken.loc, value: amount})
 }
 
+func emitPushLet(word string) bool {
+	t := parser.previousToken
+	b, found := getBind(word)
+
+	if found {
+		stack.push(stack.binds[b])
+		emit(Code{op: OP_PUSH_LET, loc: t.loc, value: b})
+	}
+
+	// Should add value to the stack
+	stack.push(RAWPOINTER)
+
+	return found
+}
+
 func emitReturn() {
 	emit(Code{
 		op: OP_RET,
@@ -381,16 +458,36 @@ func emitReturn() {
 	})
 }
 
+func emitUnary(op OpCode) {
+	t := parser.previousToken
+
+	switch op {
+	case OP_LOAD:
+		a := stack.pop()
+		if a != RAWPOINTER {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: TypeError,
+				token: t,
+			}, human(a), human(RAWPOINTER))
+		}
+		stack.push(INT64)
+	}
+
+	emit(Code{op: op, loc: t.loc})
+}
+
 func emitValue(v Value) {
 	loc := v.token.loc
 
-	stack.push(v.kind)
 	switch v.kind {
 	case BOOLEAN: emit(Code{op: OP_PUSH_BOOL, loc: loc, value: v.variant})
 	case BYTE: emit(Code{op: OP_PUSH_CHAR, loc: loc, value: v.variant})
 	case INT64: emit(Code{op: OP_PUSH_INT, loc: loc, value: v.variant})
 	case STRING: emit(Code{op: OP_PUSH_STR, loc: loc, value: v.variant})
 	}
+
+	stack.push(v.kind)
 }
 
 func emitVariable(word string) bool {
@@ -772,10 +869,8 @@ func expandWordMeaning() {
 	t := parser.previousToken
 	word := t.value.(string)
 
-	if !(emitFunctionCall(word) ||
-		emitPushLet(word) ||
-		emitConstant(word) ||
-		emitVariable(word)) {
+	if !(emitFunctionCall(word) || emitPushLet(word) ||
+		emitConstant(word) || emitVariable(word)) {
 		if isParsingFunction() {
 			addError(CompilerError{
 				code: FunctionParseError,
@@ -813,6 +908,7 @@ func validateFunction(test Function) {
 	}
 
 	if test.word == "main" {
+
 		if len(other) > 0 {
 			ReportErrorAtLocation(MainFunctionRedefined, test.loc)
 			ExitWithError(GlobalParseError)
@@ -937,8 +1033,10 @@ func parseTokens() {
 
 	// INTRINSICS
 	case TOKEN_ARGC:
+		stack.push(INT64)
 		emit(Code{op: OP_ARGC, loc: t.loc})
 	case TOKEN_ARGV:
+		stack.push(RAWPOINTER)
 		emit(Code{op: OP_ARGV, loc: t.loc})
 	case TOKEN_ASM:
 		// Note: This is a special instrinsic macro that uses the @body and
@@ -989,37 +1087,38 @@ func parseTokens() {
 				line = make([]string, 0, 0)
 			}
 		}
-		value.argumentCount = popCount
-		value.returnCount = pushCount
+
+		for i := popCount; i > 0; i-- { stack.pop() }
+		for i := 0; i < pushCount; i++ { stack.push(INT64) }
 		emit(Code{op: OP_ASSEMBLY, loc: t.loc, value: value})
 	case TOKEN_AT:
-		emit(Code{op: OP_LOAD, loc: t.loc})
+		emitUnary(OP_LOAD)
 	case TOKEN_AT_C:
-		emit(Code{op: OP_LOAD_BYTE, loc: t.loc})
+		emitBinary(OP_LOAD_BYTE)
 	case TOKEN_BANG:
-		emit(Code{op: OP_STORE, loc: t.loc})
+		emitBinary(OP_STORE)
 	case TOKEN_BANG_C:
-		emit(Code{op: OP_STORE_BYTE, loc: t.loc})
+		emitBinary(OP_STORE_BYTE)
 	case TOKEN_BANG_EQUAL:
-		emit(Code{op: OP_NOT_EQUAL, loc: t.loc})
+		emitBinary(OP_NOT_EQUAL)
 	case TOKEN_EQUAL:
-		emit(Code{op: OP_EQUAL, loc: t.loc})
+		emitBinary(OP_EQUAL)
 	case TOKEN_GREATER:
-		emit(Code{op: OP_GREATER, loc: t.loc})
+		emitBinary(OP_GREATER)
 	case TOKEN_GREATER_EQUAL:
-		emit(Code{op: OP_GREATER_EQUAL, loc: t.loc})
+		emitBinary(OP_GREATER_EQUAL)
 	case TOKEN_LESS_EQUAL:
-		emit(Code{op: OP_LESS_EQUAL, loc: t.loc})
+		emitBinary(OP_LESS_EQUAL)
 	case TOKEN_MINUS:
-		emit(Code{op: OP_SUBSTRACT, loc: t.loc})
+		emitBinary(OP_SUBSTRACT)
 	case TOKEN_PERCENT:
-		emit(Code{op: OP_MODULO, loc: t.loc})
+		emitBinary(OP_MODULO)
 	case TOKEN_PLUS:
-		emit(Code{op: OP_ADD, loc: t.loc})
+		emitBinary(OP_ADD)
 	case TOKEN_SLASH:
-		emit(Code{op: OP_DIVIDE, loc: t.loc})
+		emitBinary(OP_DIVIDE)
 	case TOKEN_STAR:
-		emit(Code{op: OP_MULTIPLY, loc: t.loc})
+		emitBinary(OP_MULTIPLY)
 
 	// FLOW CONTROL
 	case TOKEN_FI:
@@ -1079,17 +1178,36 @@ func parseTokens() {
 		// and use them to create the necessary boolean arithmetics to loop
 		// through it. At the end of the loop, the user should provide the
 		// next index value.
+		a := stack.pop()
+
+		if a != BOOLEAN {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: TypeError,
+				token: t,
+			}, human(a), human(BOOLEAN))
+		}
+
 		copyOfLoopStartCodeOps := takeFromFunctionCode(3)
 		c := openScope(SCOPE_LOOP, t)
 		limitName, indexName := getLimitIndexBindWords()
-		emit(copyOfLoopStartCodeOps[0])
-		emit(copyOfLoopStartCodeOps[1])
+		emitValue(copyOfLoopStartCodeOps[0].value.(Value))
+		emitValue(copyOfLoopStartCodeOps[1].value.(Value))
 		emitLetBind(limitName, indexName)
 		emit(Code{op: OP_LOOP_SETUP, loc: t.loc, value: c.ipStart})
 		emitPushLet(limitName)
 		emitPushLet(indexName)
-		emit(copyOfLoopStartCodeOps[2])
+		emitBinary(copyOfLoopStartCodeOps[2].op)
 		emit(Code{op: OP_LOOP_START, loc: t.loc, value: c.ipStart})
+
+		b := stack.pop()
+		if b != BOOLEAN {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: TypeError,
+				token: t,
+			}, human(b), human(BOOLEAN))
+		}
 	case TOKEN_WHILE:
 		// Note: WHILE loops are pretty simple. Before you close the block,
 		// you provide the value for the next starting loop.

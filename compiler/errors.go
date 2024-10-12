@@ -63,6 +63,14 @@ const (
 		"stack values (size or type) can't change inside scope blocks"
 	StackUnderflow =
 		"missing stack values this operation"
+	TypeError =
+		"incorrect arguments for %s\n"+
+			"\thave (%s)\n\twant (%s)"
+	TypeError2 =
+		"incorrect arguments for %s\n"+
+			"\thave (%s)\n\twant (%s) or (%s)"
+
+
 	UnexpectedCodeBlockSyntax =
 		"syntax error: '%s' can only be used after using %s"
 	UnexpectedSymbol =
