@@ -137,6 +137,7 @@ type Chunk struct {
 }
 
 type ProgramError struct {
+	code  ErrorCode
 	err   string
 	token Token
 }

@@ -6,20 +6,6 @@ import (
 	"slices"
 )
 
-const STACK_SIZE = 1024
-
-type Stack []ValueKind
-
-type Simulation struct {
-	calledIPs   []int
-	currentFn   *Function
-	currentCode *Code
-	mainHandled bool
-	stack       Stack
-	scope       int
-	snapshots   [10]Stack
-}
-
 func (this *Simulation) pop() ValueKind {
 	if len(this.stack) == 0 {
 		ReportErrorAtFunction(
@@ -73,7 +59,8 @@ func (this *Simulation) setup(fn *Function) {
 		this.pushIP(fn.ip)
 
 		if len(arguments) > 0 || len(results) > 0 {
-			TheProgram.error(fn.token, MainFunctionInvalidSignature, len(arguments), len(results))
+			TheProgram.saveErrorAtToken(fn.token,
+				MainFunctionInvalidSignature, len(arguments), len(results))
 		}
 	}
 

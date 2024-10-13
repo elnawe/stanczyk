@@ -66,12 +66,26 @@ type Program struct {
 	variables        []Variable
 }
 
-func (this *Program) error(t Token, msg ErrorMessage, args ...any) {
-	if isParsingFunction() {
-		this.parser.currentFn.error = true
-	}
+type Stack []ValueKind
 
-	pErr := ProgramError{err: fmt.Sprintf(string(msg), args...), token: t}
+type Simulation struct {
+	calledIPs   []int
+	currentCode *Code
+	currentFn   *Function
+	mainHandled bool
+	scope       int
+	snapshots   [10]Stack
+	stack       Stack
+}
+
+func (this *Program) saveErrorAtToken(t Token, msg ErrorMessage, args ...any) {
+	this.parser.currentFn.error = true
+
+	pErr := ProgramError{
+		code: ParseError,
+		err: fmt.Sprintf(string(msg), args...),
+		token: t,
+	}
 	this.errors = append(this.errors, pErr)
 }
 
@@ -293,7 +307,7 @@ func createConstant() {
 		t := parser.previousToken
 
 		if isParsingFunction() {
-			TheProgram.error(t, DeclarationWordMissing)
+			TheProgram.saveErrorAtToken(t, DeclarationWordMissing)
 		} else {
 			ReportErrorAtLocation(DeclarationWordMissing, t.loc)
 			ExitWithError(ParseError)
@@ -305,7 +319,7 @@ func createConstant() {
 
 	if isWordInUse(wordT) {
 		if isParsingFunction() {
-			TheProgram.error(wordT, DeclarationWordAlreadyUsed, newConst.word)
+			TheProgram.saveErrorAtToken(wordT, DeclarationWordAlreadyUsed, newConst.word)
 		} else {
 			ReportErrorAtLocation(
 				DeclarationWordAlreadyUsed,
@@ -338,7 +352,7 @@ func createConstant() {
 		newConst.value = 1
 	default:
 		if isParsingFunction() {
-			TheProgram.error(valueT, ConstantValueKindNotAllowed)
+			TheProgram.saveErrorAtToken(valueT, ConstantValueKindNotAllowed)
 		} else {
 			ReportErrorAtLocation(ConstantValueKindNotAllowed, valueT.loc)
 			ExitWithError(ParseError)
@@ -370,7 +384,7 @@ func createVariable() {
 	if !match(TOKEN_WORD) {
 		t := parser.previousToken
 		if isParsingFunction() {
-			TheProgram.error(t, DeclarationWordMissing)
+			TheProgram.saveErrorAtToken(t, DeclarationWordMissing)
 		} else {
 			ReportErrorAtLocation(DeclarationWordMissing, t.loc)
 			ExitWithError(ParseError)
@@ -387,7 +401,7 @@ func createVariable() {
 
 	if isWordInUse(wordT) {
 		if isParsingFunction() {
-			TheProgram.error(wordT, DeclarationWordAlreadyUsed, newVar.word)
+			TheProgram.saveErrorAtToken(wordT, DeclarationWordAlreadyUsed, newVar.word)
 		} else {
 			ReportErrorAtLocation(
 				DeclarationWordAlreadyUsed,
@@ -414,7 +428,7 @@ func createVariable() {
 		newVar.kind = STRING
 	default:
 		if isParsingFunction() {
-			TheProgram.error(valueT, VariableValueKindNotAllowed)
+			TheProgram.saveErrorAtToken(valueT, VariableValueKindNotAllowed)
 		} else {
 			ReportErrorAtLocation(VariableValueKindNotAllowed, valueT.loc)
 			ExitWithError(ParseError)
@@ -1082,36 +1096,9 @@ func parseFunction(token Token) {
 
 /*
  * Compilation: First Pass
- *   This step goes through the files and check for the TOKEN_USING, adding those
- *   files to the compilation queue.
+ *   This step registers the words the program will use.
  */
 func compilationFirstPass(index int) {
-	f := file.files[index]
-
-	startParser(f)
-
-	for !check(TOKEN_EOF) {
-		advance()
-		token := parser.previousToken
-
-		if token.kind == TOKEN_USING {
-			advance()
-
-			if parser.previousToken.kind != TOKEN_WORD {
-				errorAt(&parser.previousToken, "TODO: ERROR USING")
-				ExitWithError(CodeParseError)
-			}
-
-			file.Open(parser.previousToken.value.(string))
-		}
-	}
-}
-
-/*
- * Compilation: Second Pass
- *   The second step registers the words the program will use.
- */
-func compilationSecondPass(index int) {
 	f := file.files[index]
 
 	startParser(f)
@@ -1124,16 +1111,19 @@ func compilationSecondPass(index int) {
 		// The second pass will care about the following tokens:
 		case TOKEN_CONST:
 			createConstant()
-		case TOKEN_VAR:
-			createVariable()
-
-		case TOKEN_FN: registerFunction(token)
-
-		// But it needs to do nothing when it sees the followings:
-		//   TOKEN_USING: advance over the string, then continue back to the loop.
+		case TOKEN_FN:
+			registerFunction(token)
 		case TOKEN_USING:
 			advance()
-			continue
+
+			if parser.previousToken.kind != TOKEN_WORD {
+				errorAt(&parser.previousToken, "TODO: ERROR USING")
+				ExitWithError(CodeParseError)
+			}
+
+			file.Open(parser.previousToken.value.(string))
+		case TOKEN_VAR:
+			createVariable()
 
 		// Now, if it matches with something else, then error.
 		default:
@@ -1144,11 +1134,11 @@ func compilationSecondPass(index int) {
 }
 
 /*
- * Compilation: Third Pass
- *   The third step goes through each function and compiles the code for each one
+ * Compilation: Second Pass
+ *   This step goes through each function and compiles the code for each one
  *   of them. Register and make all the OP codes for these functions.
  */
-func compilationThirdPass(index int) {
+func compilationSecondPass(index int) {
 	f := file.files[index]
 
 	startParser(f)
@@ -1179,10 +1169,6 @@ func FrontendRun() {
 
 	for index := 0; index < len(file.files); index++ {
 		compilationSecondPass(index)
-	}
-
-	for index := 0; index < len(file.files); index++ {
-		compilationThirdPass(index)
 	}
 
 	TheProgram.validate()
