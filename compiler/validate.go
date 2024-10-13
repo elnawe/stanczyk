@@ -8,10 +8,7 @@ import (
 
 const STACK_SIZE = 1024
 
-type Stack struct {
-	count  int
-	values [STACK_SIZE]ValueKind
-}
+type Stack []ValueKind
 
 type Simulation struct {
 	calledIPs   []int
@@ -24,7 +21,7 @@ type Simulation struct {
 }
 
 func (this *Simulation) pop() ValueKind {
-	if this.stack.count == 0 {
+	if len(this.stack) == 0 {
 		ReportErrorAtFunction(
 			this.currentFn,
 			StackUnderflow, this.currentCode.op, this.currentCode.loc.l,
@@ -32,15 +29,14 @@ func (this *Simulation) pop() ValueKind {
 		ExitWithError(CriticalError)
 	}
 
-	this.stack.count--
-	r := this.stack.values[this.stack.count]
-	this.stack.values[this.stack.count] = NONE
+	lastIndex := len(this.stack)-1
+	r := this.stack[lastIndex]
+	this.stack = slices.Clone(this.stack[:lastIndex])
 	return r
 }
 
 func (this *Simulation) push(v ValueKind) {
-	this.stack.values[this.stack.count] = v
-	this.stack.count++
+	this.stack = append(this.stack, v)
 }
 
 func (this *Simulation) popIP() int {
@@ -63,8 +59,7 @@ func (this *Simulation) reset() {
 	this.currentFn    = nil
 	this.currentCode  = nil
 	this.scope        = 0
-	this.stack.values = [STACK_SIZE]ValueKind{}
-	this.stack.count  = 0
+	this.stack        = make(Stack, 0, 0)
 }
 
 func (this *Simulation) setup(fn *Function) {
@@ -90,11 +85,12 @@ func (this *Simulation) setup(fn *Function) {
 }
 
 func (this *Simulation) validate() {
+	stackCount := len(this.stack)
 	expectedResults := len(this.currentFn.returns.types)
 
-	if this.stack.count != expectedResults {
+	if stackCount != expectedResults {
 		ReportErrorAtFunction(this.currentFn,
-			StackUnhandled, this.stack.count, expectedResults, getStackValues())
+			StackUnhandled, stackCount, expectedResults, getStackValues())
 		ExitWithError(UnhandledStackError)
 	}
 
@@ -104,12 +100,13 @@ func (this *Simulation) validate() {
 var sim = &TheProgram.simulation
 
 func getStackValues() string {
+	stackCount := len(sim.stack)
 	r := ""
 
-	for index := 0; index < sim.stack.count; index++ {
-		r += valueKindString(sim.stack.values[index])
+	for index := 0; index < stackCount; index++ {
+		r += valueKindString(sim.stack[index])
 
-		if (index != sim.stack.count - 1) {
+		if (index != stackCount - 1) {
 			r += " "
 		}
 	}
@@ -369,7 +366,7 @@ func ValidateRun() {
 				var have []ValueKind
 				var want []ValueKind
 				var fns []Function
-				var funcRef Function
+				var funcRef *Function
 
 				calls := code.value.([]FunctionCall)
 
@@ -379,7 +376,7 @@ func ValidateRun() {
 
 				if len(fns) == 1 {
 					// We have found only one function with this signature.
-					funcRef = fns[0]
+					funcRef = &fns[0]
 				} else {
 					// The function call is polymorphistic, we need to find the
 					// one with the same signature and calling convention.
@@ -388,17 +385,17 @@ func ValidateRun() {
 						// (simulating we pop from it) and then shrink it to the number
 						// of values expected in arguments (since stack sim in
 						// typechecking is not a dynamic array).
-						var argTypes []ValueKind
-						reverseStackOrder := sim.stack.count - len(f.arguments.types)
-					    stackReversed := sim.stack.values[reverseStackOrder:]
-						stackReducedToArgsLen := stackReversed[:len(f.arguments.types)]
+						var match Stack
+						reversed := slices.Clone(sim.stack)
+						slices.Reverse(reversed)
+						stackReducedToArgsLen := reversed[:len(f.arguments.types)]
 
-						for _, d := range f.arguments.types {
-							argTypes = append(argTypes, d.typ)
+						for _, t := range f.arguments.types {
+							match = append(match, t.typ)
 						}
 
-						if reflect.DeepEqual(argTypes, stackReducedToArgsLen) {
-							funcRef = f
+						if reflect.DeepEqual(match, stackReducedToArgsLen) {
+							funcRef = &f
 							break
 						}
 					}
@@ -419,13 +416,13 @@ func ValidateRun() {
 				inferredTypes = make(map[string]ValueKind)
 
 				if funcRef.arguments.parapoly {
-					reverseStackOrder := sim.stack.count - len(funcRef.arguments.types)
-					stackReversed := sim.stack.values[reverseStackOrder:]
+					sizeToArgs := len(sim.stack) - len(funcRef.arguments.types)
+					reducedStack := slices.Clone(sim.stack[sizeToArgs:])
 
 					for i, d := range funcRef.arguments.types {
 						if d.typ == VARIADIC {
 							if inferredTypes[d.name] == NONE {
-								inferredTypes[d.name] = stackReversed[i]
+								inferredTypes[d.name] = reducedStack[i]
 							}
 						}
 					}
