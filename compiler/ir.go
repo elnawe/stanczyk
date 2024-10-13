@@ -81,6 +81,7 @@ type Program struct {
 	errors           []ProgramError
 	variables        []Variable
 	staticMemorySize int
+	simulation       Simulation
 }
 
 type Argument struct {

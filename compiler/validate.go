@@ -8,36 +8,42 @@ import (
 
 const STACK_SIZE = 1024
 
-type ValidateState struct {
-	bindsTable    []ValueKind
-	calledIPs     []int
-	currentFn     *Function
-	currentOp     *Code
-	mainHandled   bool
-	stack         []ValueKind
-	scopeSnapshot [][]ValueKind
+type Stack struct {
+	count  int
+	scope  int
+	values [STACK_SIZE]ValueKind
 }
 
-func (this *ValidateState) pop() ValueKind {
-	if len(this.stack) == 0 {
+type Simulation struct {
+	calledIPs   []int
+	currentFn   *Function
+	currentCode *Code
+	mainHandled bool
+	stack       Stack
+	snapshots   [10]Stack
+}
+
+func (this *Simulation) pop() ValueKind {
+	if this.stack.count == 0 {
 		ReportErrorAtFunction(
 			this.currentFn,
-			StackUnderflow, this.currentOp.op, this.currentOp.loc.l,
+			StackUnderflow, this.currentCode.op, this.currentCode.loc.l,
 		)
 		ExitWithError(CriticalError)
 	}
 
-	lastIndex := len(this.stack)-1
-	result := this.stack[lastIndex]
-	this.stack = slices.Clone(this.stack[:lastIndex])
-	return result
+	this.stack.count--
+	r := this.stack.values[this.stack.count]
+	this.stack.values[this.stack.count] = NONE
+	return r
 }
 
-func (this *ValidateState) push(v ValueKind) {
-	this.stack = append(this.stack, v)
+func (this *Simulation) push(v ValueKind) {
+	this.stack.values[this.stack.count] = v
+	this.stack.count++
 }
 
-func (this *ValidateState) popIP() int {
+func (this *Simulation) popIP() int {
 	if len(this.calledIPs) == 0 {
 		ReportErrorAtEOF(CompilerBug)
 		ExitWithError(CriticalError)
@@ -49,19 +55,19 @@ func (this *ValidateState) popIP() int {
 	return result
 }
 
-func (this *ValidateState) pushIP(ip int) {
+func (this *Simulation) pushIP(ip int) {
 	this.calledIPs = append(this.calledIPs, ip)
 }
 
-func (this *ValidateState) reset() {
-	this.bindsTable    = make([]ValueKind, 0, 0)
-	this.currentFn     = nil
-	this.currentOp     = nil
-	this.stack         = make([]ValueKind, 0, 0)
-	this.scopeSnapshot = make([][]ValueKind, 0, 0)
+func (this *Simulation) reset() {
+	this.currentFn    = nil
+	this.currentCode  = nil
+	this.stack.scope  = 0
+	this.stack.values = [STACK_SIZE]ValueKind{}
+	this.stack.count  = 0
 }
 
-func (this *ValidateState) setup(fn *Function) {
+func (this *Simulation) setup(fn *Function) {
 	this.currentFn = fn
 
 	arguments := fn.arguments.types
@@ -91,7 +97,7 @@ type Typecheck struct {
 
 var tc Typecheck
 var snapshots [10]Typecheck
-var validate ValidateState
+var simulation = &TheProgram.simulation
 
 func getStackValues() string {
 	r := ""
@@ -238,23 +244,10 @@ func ValidateRun() {
 	for indexFn, _ := range TheProgram.chunks {
 		var bindings []ValueKind
 		function := &TheProgram.chunks[indexFn]
-
-		validate.setup(function)
+		simulation.setup(function)
 
 		argumentTypes := function.arguments.types
 		returnTypes := function.returns.types
-
-		if function.name == "main" {
-			validate.pushIP(function.ip)
-
-			if len(argumentTypes) > 0 || len(returnTypes) > 0 {
-				ReportErrorAtLocation(
-					MsgTypecheckMainFunctionNoArgumentsOrReturn,
-					function.loc,
-				)
-				ExitWithError(CodeTypecheckError)
-			}
-		}
 
 		expectedReturnCount := len(returnTypes)
 
@@ -264,7 +257,7 @@ func ValidateRun() {
 
 		for indexCode, _ := range function.code {
 			code := &function.code[indexCode]
-			validate.currentOp = code
+			simulation.currentCode = code
 			instruction := code.op
 			loc := code.loc
 			value := code.value
@@ -510,15 +503,16 @@ func ValidateRun() {
 		}
 
 		tc.reset()
+		simulation.reset()
 	}
 
-	if !validate.mainHandled {
+	if !simulation.mainHandled {
 		ReportErrorAtEOF(string(MainFunctionUndefined))
 		ExitWithError(CriticalError)
 	}
 
-	for len(validate.calledIPs) > 0 {
-		ip := validate.popIP()
+	for len(simulation.calledIPs) > 0 {
+		ip := simulation.popIP()
 
 		for i, _ := range TheProgram.chunks {
 			function := &TheProgram.chunks[i]
@@ -532,7 +526,7 @@ func ValidateRun() {
 						f := findFunctionByIP(newCall.ip)
 
 						if !f.called {
-							validate.pushIP(newCall.ip)
+							simulation.pushIP(newCall.ip)
 						}
 					}
 				}
