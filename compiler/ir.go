@@ -129,7 +129,7 @@ type Scope struct {
 }
 
 type Variable struct {
-	dtype  ValueKind
+	kind   ValueKind
 	offset int
 	word   string
 }

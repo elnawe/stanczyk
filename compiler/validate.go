@@ -250,7 +250,7 @@ func ValidateRun() {
 			case OP_PUSH_VAR_GLOBAL:
 				for _, v := range TheProgram.variables {
 					if v.offset == value.(int) {
-						sim.push(v.dtype)
+						sim.push(v.kind)
 					}
 				}
 			case OP_PUSH_VAR_GLOBAL_ADDR:
@@ -258,7 +258,7 @@ func ValidateRun() {
 			case OP_PUSH_VAR_LOCAL:
 				for _, v := range function.variables {
 					if v.offset == value.(int) {
-						sim.push(v.dtype)
+						sim.push(v.kind)
 					}
 				}
 			case OP_PUSH_VAR_LOCAL_ADDR:

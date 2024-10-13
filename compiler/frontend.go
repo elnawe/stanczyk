@@ -379,11 +379,11 @@ func newVariable(token Token, offset int) (Variable, int) {
 	vt := parser.previousToken
 
 	switch vt.kind {
-	case TOKEN_BOOL:	newVar.dtype = BOOL
-	case TOKEN_BYTE:	newVar.dtype = BYTE
-	case TOKEN_INT:		newVar.dtype = INT
-	case TOKEN_PTR:		newVar.dtype = RAWPOINTER
-	case TOKEN_STR:		newVar.dtype = STRING
+	case TOKEN_BOOL:	newVar.kind = BOOL
+	case TOKEN_BYTE:	newVar.kind = BYTE
+	case TOKEN_INT:		newVar.kind = INT
+	case TOKEN_PTR:		newVar.kind = RAWPOINTER
+	case TOKEN_STR:		newVar.kind = STRING
 	default:
 		errorAt(&parser.previousToken, MsgParseVarMissingValue)
 		ExitWithError(CodeParseError)
