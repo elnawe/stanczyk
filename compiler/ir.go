@@ -95,8 +95,10 @@ type Arity struct {
 }
 
 type Constant struct {
+	kind  ValueKind
+	token Token
+	value any
 	word  string
-	value int
 }
 
 type Bind struct {
@@ -136,6 +138,7 @@ type Function struct {
 	ip              int
 	name            string
 	loc             Location
+	token           Token
 
 	arguments       Arity
 	returns         Arity
@@ -179,12 +182,12 @@ type FunctionCall struct {
 }
 
 type ProgramError struct {
-	err string
-	step CompilationStep
+	err   string
+	token Token
 }
 
-func (this *Program) error(step CompilationStep, msg ErrorMessage, args ...any) {
-	pErr := ProgramError{err: fmt.Sprintf(string(msg), args...), step: step}
+func (this *Program) error(t Token, msg ErrorMessage, args ...any) {
+	pErr := ProgramError{err: fmt.Sprintf(string(msg), args...), token: t}
 	this.errors = append(this.errors, pErr)
 }
 

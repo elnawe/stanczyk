@@ -1,5 +1,7 @@
-making sure all these values are 30
 30  30
-30  30
-30  30
+String constant  String constant
+true  true
+false  false
 20  20
+local  local
+false  false

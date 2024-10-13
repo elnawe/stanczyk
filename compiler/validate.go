@@ -73,9 +73,7 @@ func (this *Simulation) setup(fn *Function) {
 		this.pushIP(fn.ip)
 
 		if len(arguments) > 0 || len(results) > 0 {
-			TheProgram.error(stepValidate,
-				MainFunctionInvalidSignature, len(arguments), len(results),
-			)
+			TheProgram.error(fn.token, MainFunctionInvalidSignature, len(arguments), len(results))
 		}
 	}
 

@@ -5,17 +5,22 @@ using io
 ;    making sure consts are evaluated correctly
 
 const thirty 30
-const +2010 ( 20 10 + )
-const *103  ( 10 3 * )
+const string "String constant"
+const booleanTrue true
+const booleanFalse false
 
 fn main ()
-  "making sure all these values are 30" println
+	const twenty 20
+  const local "local"
 
   "30  " print thirty println
-  "30  " print +2010 println
-  "30  " print *103 println
-
-	const twenty 20
+  "String constant  " print string println
+  "true  " print booleanTrue println
+  "false  " print booleanFalse println
 
 	"20  " print twenty println
+  "local  " print local println
+
+  const booleanTrue false
+  "false  " print booleanTrue println
 ret

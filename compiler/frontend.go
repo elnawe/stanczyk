@@ -27,6 +27,7 @@ type Parser struct {
 	bodyStack     []Token
 	currentFn     *Function
 	error         bool
+	globalWords   []string
 
 	previousToken Token
 	currentToken  Token
@@ -91,6 +92,24 @@ func match(tt TokenType) bool {
 	}
     advance();
     return true;
+}
+
+func isWordInUse(t Token) bool {
+	test := t.value.(string)
+
+	if isParsingFunction() {
+		// TODO: Implement the checks here, these are different from
+		// the global ones because it needs to check for the word being
+		// used in local scope and disregard globals, except for Functions
+	} else {
+		for _, word := range parser.globalWords {
+			if word == test {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 /*   ___ ___
@@ -167,6 +186,27 @@ func emit(code Code) {
 	parser.currentFn.WriteCode(code)
 }
 
+func emitConstantValue(kind ValueKind, value any) {
+	code := Code{loc: parser.previousToken.loc, value: value}
+
+	switch kind {
+	case BOOL:   code.op = OP_PUSH_BOOL
+	case BYTE:   code.op = OP_PUSH_BYTE
+	case INT:    code.op = OP_PUSH_INT
+	case STRING: code.op = OP_PUSH_STR
+	}
+
+	emit(code)
+}
+
+func emitFromConstants(word string) bool {
+	c, found := getConstant(word)
+
+	if found { emitConstantValue(c.kind, c.value) }
+
+	return found
+}
+
 func emitReturn() {
 	emit(Code{
 		op: OP_RET,
@@ -180,61 +220,71 @@ func emitReturn() {
  *  |  _/   / _||  _/   / (_) | (__| _|\__ \__ \ (_) |   /
  *  |_| |_|_\___|_| |_|_\\___/ \___|___|___/___/\___/|_|_\
  */
-func newConstant(token Token) Constant {
-	var constant Constant
-	var tokens []Token
+func createConstant() {
+	var newConst Constant
 
 	if !match(TOKEN_WORD) {
-		errorAt(&parser.previousToken, MsgParseConstMissingWord)
-		ExitWithError(CodeParseError)
-	}
+		t := parser.previousToken
 
-	wordToken := parser.previousToken
-	constant.word = wordToken.value.(string)
-
-	// TODO: Support rebiding constants in same scope if build configuration allows for it.
-	_, found := getConstant(wordToken)
-
-	if found {
-		msg := fmt.Sprintf(MsgParseConstOverrideNotAllowed, constant.word)
-		errorAt(&token, msg)
-		ExitWithError(CodeParseError)
-	}
-
-	if match(TOKEN_PAREN_CLOSE) {
-		msg := fmt.Sprintf(MsgParseConstInvalidContent, constant.word)
-		errorAt(&token, msg)
-	}
-
-	if match(TOKEN_PAREN_OPEN) {
-		for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
-			advance()
-			tokens = append(tokens, parser.previousToken)
+		if isParsingFunction() {
+			TheProgram.error(t, DeclarationWordMissing)
+		} else {
+			ReportErrorAtLocation(DeclarationWordMissing, t.loc)
+			ExitWithError(ParseError)
 		}
+	}
 
-		if len(tokens) > 3 || len(tokens) == 2 {
-			msg := fmt.Sprintf(MsgParseConstInvalidContent, constant.word)
-			errorAt(&token, msg)
-			ExitWithError(CodeParseError)
-		} else if len(tokens) == 3 {
-			left := tokens[0].value.(int)
-			right := tokens[1].value.(int)
+	wordT := parser.previousToken
+	newConst.word = wordT.value.(string)
 
-			switch tokens[2].typ {
-			case TOKEN_PLUS: constant.value = left + right
-			case TOKEN_STAR: constant.value = left * right
-			}
-		} else if len(tokens) == 1 {
-			constant.value = tokens[0].value.(int)
+	if isWordInUse(wordT) {
+		if isParsingFunction() {
+			TheProgram.error(wordT, DeclarationWordAlreadyUsed, newConst.word)
+		} else {
+			ReportErrorAtLocation(
+				DeclarationWordAlreadyUsed,
+				wordT.loc,
+				newConst.word,
+			)
+			ExitWithError(ParseError)
 		}
+	}
 
-		consume(TOKEN_PAREN_CLOSE, MsgParseConstMissingCloseStmt)
+	advance()
+	valueT := parser.previousToken
+	newConst.token = valueT
+
+	switch valueT.typ {
+	case TOKEN_CONSTANT_BYTE:
+		newConst.kind = BYTE
+		newConst.value = valueT.value
+	case TOKEN_CONSTANT_FALSE:
+		newConst.kind = BOOL
+		newConst.value = 0
+	case TOKEN_CONSTANT_INT:
+		newConst.kind = INT
+		newConst.value = valueT.value
+	case TOKEN_CONSTANT_STR:
+		newConst.kind = STRING
+		newConst.value = valueT.value
+	case TOKEN_CONSTANT_TRUE:
+		newConst.kind = BOOL
+		newConst.value = 1
+	default:
+		if isParsingFunction() {
+			TheProgram.error(valueT, ConstantValueKindNotAllowed)
+		} else {
+			ReportErrorAtLocation(ConstantValueKindNotAllowed, valueT.loc)
+			ExitWithError(ParseError)
+		}
+	}
+
+	if isParsingFunction() {
+		parser.currentFn.constants = append(parser.currentFn.constants, newConst)
 	} else {
-		advance()
-		constant.value = parser.previousToken.value.(int)
+		parser.globalWords = append(parser.globalWords, newConst.word)
+		TheProgram.constants = append(TheProgram.constants, newConst)
 	}
-
-	return constant
 }
 
 func registerFunction(token Token) {
@@ -242,7 +292,7 @@ func registerFunction(token Token) {
 
 	function.internal = parser.internal
 	function.ip = len(TheProgram.chunks)
-	function.loc = token.loc
+	function.token = token
 	function.parsed = false
 
 	if !match(TOKEN_WORD) {
@@ -383,32 +433,22 @@ func getBind(token Token) (Code, bool) {
 	return Code{}, false
 }
 
-func getConstant(token Token) (Code, bool) {
-	word := token.value.(string)
-
+func getConstant(word string) (*Constant, bool) {
 	if isParsingFunction() {
 		for _, c := range parser.currentFn.constants {
 			if c.word == word {
-				return Code{
-					op: OP_PUSH_INT,
-					loc: token.loc,
-					value: c.value,
-				}, true
+				return &c, true
 			}
 		}
 	}
 
 	for _, c := range TheProgram.constants {
 		if c.word == word {
-			return Code{
-				op: OP_PUSH_INT,
-				loc: token.loc,
-				value: c.value,
-			}, true
+			return &c, true
 		}
 	}
 
-	return Code{}, false
+	return nil, false
 }
 
 func getVariable(token Token) (Code, bool) {
@@ -457,6 +497,8 @@ func getFunction(token Token) (Code, bool) {
 }
 
 func expandWord(token Token) {
+	t := parser.previousToken
+	word := t.value.(string)
 	b, bfound := getBind(token)
 
 	if bfound {
@@ -470,13 +512,6 @@ func expandWord(token Token) {
 		return
 	}
 
-	c, cfound := getConstant(token)
-
-	if cfound {
-		emit(c)
-		return
-	}
-
 	// Find the word in functions. If it returns one, emit it
 	code_f, ok_f := getFunction(token)
 
@@ -485,10 +520,12 @@ func expandWord(token Token) {
 		return
 	}
 
-	// If nothing has been found, emit the error.
-	msg := fmt.Sprintf(MsgParseWordNotFound, token.value.(string))
-	ReportErrorAtLocation(msg, token.loc)
-	ExitWithError(CodeCodegenError)
+	if !(emitFromConstants(word)) {
+		// If nothing has been found, emit the error.
+		msg := fmt.Sprintf(MsgParseWordNotFound, word)
+		ReportErrorAtLocation(msg, t.loc)
+		ExitWithError(CodeCodegenError)
+	}
 }
 
 func parseToken(token Token) {
@@ -497,24 +534,18 @@ func parseToken(token Token) {
 	code.value = token.value
 
 	switch token.typ {
-	// Constants
+	// CONSTANTS
 	case TOKEN_CONSTANT_BYTE:
-		code.op = OP_PUSH_BYTE
-		emit(code)
+		emitConstantValue(BYTE, token.value)
 	case TOKEN_CONSTANT_FALSE:
-		code.op = OP_PUSH_BOOL
-		code.value = 0
-		emit(code)
+		emitConstantValue(BOOL, 0)
 	case TOKEN_CONSTANT_INT:
-		code.op = OP_PUSH_INT
-		emit(code)
+		emitConstantValue(INT, token.value)
 	case TOKEN_CONSTANT_STR:
-		code.op = OP_PUSH_STR
-		emit(code)
+		emitConstantValue(STRING, token.value)
 	case TOKEN_CONSTANT_TRUE:
-		code.op = OP_PUSH_BOOL
-		code.value = 1
-		emit(code)
+		emitConstantValue(BOOL, 1)
+
 	case TOKEN_AMPERSAND:
 		b, bfound := getBind(token)
 		if bfound {
@@ -553,8 +584,7 @@ func parseToken(token Token) {
 
 	// DEFINITION
 	case TOKEN_CONST:
-		newConst := newConstant(token)
-		parser.currentFn.constants = append(parser.currentFn.constants, newConst)
+		createConstant()
 	case TOKEN_CURLY_BRACKET_OPEN:
 		var tokens []Token
 
@@ -609,7 +639,7 @@ func parseToken(token Token) {
 			case TOKEN_WORD:
 				word := t.value.(string)
 
-				c, found := getConstant(t)
+				c, found := getConstant(word)
 
 				if found {
  					line = append(line, strconv.Itoa(c.value.(int)))
@@ -1002,8 +1032,7 @@ func compilationSecondPass(index int) {
 		switch token.typ {
 		// The second pass will care about the following tokens:
 		case TOKEN_CONST:
-			newConst := newConstant(token)
-			TheProgram.constants = append(TheProgram.constants, newConst)
+			createConstant()
 		case TOKEN_VAR:
 			newVar, newOffset := newVariable(token, TheProgram.staticMemorySize)
 			TheProgram.variables = append(TheProgram.variables, newVar)
