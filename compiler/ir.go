@@ -115,7 +115,9 @@ type Binding struct {
 type ScopeType int
 
 const (
-	SCOPE_BIND ScopeType = iota
+	GlobalScope ScopeType = iota
+	FunctionScope
+	SCOPE_BIND
 	SCOPE_LOOP
 	SCOPE_IF
 	SCOPE_ELSE
@@ -131,6 +133,7 @@ type Scope struct {
 type Variable struct {
 	kind   ValueKind
 	offset int
+	scope  ScopeType
 	word   string
 }
 

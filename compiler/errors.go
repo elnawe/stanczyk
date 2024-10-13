@@ -22,7 +22,7 @@ const (
 type ErrorMessage string
 
 const (
-	CompilerBug =
+	CompilerBug ErrorMessage =
 		"compiler bug found!"
 	ConstantValueKindNotAllowed =
 		"syntax error: unknown value in constant declaration"
@@ -39,8 +39,8 @@ const (
 		"stack underflow when trying to %s at line %d"
 	StackUnhandled =
 		"unhandled stack values at the end of function (got %d, expected %d)\n" + "\t%s"
-
-	Unknown ErrorMessage = "unknown error, most likely a compiler bug"
+	VariableValueKindNotAllowed =
+		"syntax error: unknown value type in variable declaration"
 )
 
 func ReportErrorAtEOF(msg string) {

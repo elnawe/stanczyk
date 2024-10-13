@@ -41,7 +41,7 @@ func (this *Simulation) push(v ValueKind) {
 
 func (this *Simulation) popIP() int {
 	if len(this.calledIPs) == 0 {
-		ReportErrorAtEOF(CompilerBug)
+		ReportErrorAtEOF(string(CompilerBug))
 		ExitWithError(CriticalError)
 	}
 

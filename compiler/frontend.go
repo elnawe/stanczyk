@@ -195,6 +195,22 @@ func emitFromConstants(word string) bool {
 	return found
 }
 
+func emitFromVariables(word string) bool {
+	t := parser.previousToken
+	v, found := getVariable(word)
+
+	if found {
+		switch v.scope {
+		case FunctionScope:
+			emit(Code{op: OP_PUSH_VAR_LOCAL, loc: t.loc, value: v.offset})
+		case GlobalScope:
+			emit(Code{op: OP_PUSH_VAR_GLOBAL, loc: t.loc, value: v.offset})
+		}
+	}
+
+	return found
+}
+
 func emitReturn() {
 	emit(Code{
 		op: OP_RET,
@@ -272,6 +288,84 @@ func createConstant() {
 	} else {
 		parser.globalWords = append(parser.globalWords, newConst.word)
 		TheProgram.constants = append(TheProgram.constants, newConst)
+	}
+}
+
+func createVariable() {
+	var newVar Variable
+	var currentOffset int
+	var newOffset int
+	const SIZE_64b = 8
+
+	if isParsingFunction() {
+		currentOffset = parser.currentFn.localMemorySize
+		newVar.scope = FunctionScope
+	} else {
+		currentOffset = TheProgram.staticMemorySize
+		newVar.scope = GlobalScope
+	}
+
+	if !match(TOKEN_WORD) {
+		t := parser.previousToken
+		if isParsingFunction() {
+			TheProgram.error(t, DeclarationWordMissing)
+		} else {
+			ReportErrorAtLocation(DeclarationWordMissing, t.loc)
+			ExitWithError(ParseError)
+		}
+	}
+
+	wordT := parser.previousToken
+	newVar.word = wordT.value.(string)
+	newVar.offset = currentOffset
+	// TODO: This should be calculated, not hardcoded. It should take the size
+	// of the type (next token) and align it to 8 bytes
+	// formula: size + 7 / 8 * 8
+	newOffset = currentOffset + SIZE_64b
+
+	if isWordInUse(wordT) {
+		if isParsingFunction() {
+			TheProgram.error(wordT, DeclarationWordAlreadyUsed, newVar.word)
+		} else {
+			ReportErrorAtLocation(
+				DeclarationWordAlreadyUsed,
+				wordT.loc,
+				newVar.word,
+			)
+			ExitWithError(ParseError)
+		}
+	}
+
+	advance()
+	valueT := parser.previousToken
+
+	switch valueT.kind {
+	case TOKEN_BOOL:
+		newVar.kind = BOOL
+	case TOKEN_BYTE:
+		newVar.kind = BYTE
+	case TOKEN_INT:
+		newVar.kind = INT
+	case TOKEN_PTR:
+		newVar.kind = RAWPOINTER
+	case TOKEN_STR:
+		newVar.kind = STRING
+	default:
+		if isParsingFunction() {
+			TheProgram.error(valueT, VariableValueKindNotAllowed)
+		} else {
+			ReportErrorAtLocation(VariableValueKindNotAllowed, valueT.loc)
+			ExitWithError(ParseError)
+		}
+	}
+
+	if isParsingFunction() {
+		parser.currentFn.variables = append(parser.currentFn.variables, newVar)
+		parser.currentFn.localMemorySize = newOffset
+	} else {
+		parser.globalWords = append(parser.globalWords, newVar.word)
+		TheProgram.variables = append(TheProgram.variables, newVar)
+		TheProgram.staticMemorySize = newOffset
 	}
 }
 
@@ -355,43 +449,6 @@ func registerFunction(token Token) {
 	TheProgram.chunks = append(TheProgram.chunks, function)
 }
 
-// Gets the initial token and the current offset. Returns the
-// new Variable object and the new offset.
-func newVariable(token Token, offset int) (Variable, int) {
-	var newVar Variable
-	var newOffset int
-	const SIZE_64b = 8
-	const SIZE_8b  = 1
-
-	if !match(TOKEN_WORD) {
-		errorAt(&token, MsgParseVarMissingWord)
-		ExitWithError(CodeParseError)
-	}
-
-	newVar.word = parser.previousToken.value.(string)
-	newVar.offset = offset
-	// TODO: This should technically support bigger sizes for arrays
-	newOffset = offset + SIZE_64b
-
-	// TODO: Check for duplicated name
-
-	advance()
-	vt := parser.previousToken
-
-	switch vt.kind {
-	case TOKEN_BOOL:	newVar.kind = BOOL
-	case TOKEN_BYTE:	newVar.kind = BYTE
-	case TOKEN_INT:		newVar.kind = INT
-	case TOKEN_PTR:		newVar.kind = RAWPOINTER
-	case TOKEN_STR:		newVar.kind = STRING
-	default:
-		errorAt(&parser.previousToken, MsgParseVarMissingValue)
-		ExitWithError(CodeParseError)
-	}
-
-	return newVar, newOffset
-}
-
 /*    ___ ___  __  __ ___ ___ _      _ _____ ___ ___  _  _
  *   / __/ _ \|  \/  | _ \_ _| |    /_\_   _|_ _/ _ \| \| |
  *  | (_| (_) | |\/| |  _/| || |__ / _ \| |  | | (_) | .` |
@@ -439,32 +496,22 @@ func getConstant(word string) (*Constant, bool) {
 	return nil, false
 }
 
-func getVariable(token Token) (Code, bool) {
-	word := token.value.(string)
-
+func getVariable(word string) (*Variable, bool) {
 	if isParsingFunction() {
 		for _, v := range parser.currentFn.variables {
 			if v.word == word {
-				return Code{
-					op: OP_PUSH_VAR_LOCAL,
-					loc: token.loc,
-					value: v.offset,
-				}, true
+				return &v, true
 			}
 		}
 	}
 
 	for _, v := range TheProgram.variables {
 		if v.word == word {
-			return Code{
-				op: OP_PUSH_VAR_GLOBAL,
-				loc: token.loc,
-				value: v.offset,
-			}, true
+			return &v, true
 		}
 	}
 
-	return Code{}, false
+	return nil, false
 }
 
 func getFunction(token Token) (Code, bool) {
@@ -494,12 +541,6 @@ func expandWord(token Token) {
 		return
 	}
 
-	v, vfound := getVariable(token)
-	if vfound {
-		emit(v)
-		return
-	}
-
 	// Find the word in functions. If it returns one, emit it
 	code_f, ok_f := getFunction(token)
 
@@ -508,7 +549,7 @@ func expandWord(token Token) {
 		return
 	}
 
-	if !(emitFromConstants(word)) {
+	if !(emitFromConstants(word) || emitFromVariables(word)) {
 		// If nothing has been found, emit the error.
 		msg := fmt.Sprintf(MsgParseWordNotFound, word)
 		ReportErrorAtLocation(msg, t.loc)
@@ -542,13 +583,13 @@ func parseToken(token Token) {
 			emit(code)
 			return
 		}
-		v, vfound := getVariable(token)
+		v, vfound := getVariable(token.value.(string))
 		if vfound {
-			switch v.op {
-			case OP_PUSH_VAR_LOCAL: code.op = OP_PUSH_VAR_LOCAL_ADDR
-			case OP_PUSH_VAR_GLOBAL: code.op = OP_PUSH_VAR_GLOBAL_ADDR
+			switch v.scope {
+			case FunctionScope: code.op = OP_PUSH_VAR_LOCAL_ADDR
+			case GlobalScope: code.op = OP_PUSH_VAR_GLOBAL_ADDR
 			}
-			code.value = v.value
+			code.value = v.offset
 			emit(code)
 		}
 
@@ -594,9 +635,7 @@ func parseToken(token Token) {
 		consume(TOKEN_CURLY_BRACKET_CLOSE, "TODO: Missing curly bracket")
 		parser.bodyStack = tokens
 	case TOKEN_VAR:
-		newVar, newOffset := newVariable(token, parser.currentFn.localMemorySize)
-		parser.currentFn.variables = append(parser.currentFn.variables, newVar)
-		parser.currentFn.localMemorySize = newOffset
+		createVariable()
 
 	// Intrinsics
 	case TOKEN_ARGC:
@@ -1022,9 +1061,7 @@ func compilationSecondPass(index int) {
 		case TOKEN_CONST:
 			createConstant()
 		case TOKEN_VAR:
-			newVar, newOffset := newVariable(token, TheProgram.staticMemorySize)
-			TheProgram.variables = append(TheProgram.variables, newVar)
-			TheProgram.staticMemorySize = newOffset
+			createVariable()
 
 		case TOKEN_FN: registerFunction(token)
 
