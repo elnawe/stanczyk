@@ -10,7 +10,6 @@ const STACK_SIZE = 1024
 
 type Stack struct {
 	count  int
-	scope  int
 	values [STACK_SIZE]ValueKind
 }
 
@@ -20,6 +19,7 @@ type Simulation struct {
 	currentCode *Code
 	mainHandled bool
 	stack       Stack
+	scope       int
 	snapshots   [10]Stack
 }
 
@@ -62,7 +62,7 @@ func (this *Simulation) pushIP(ip int) {
 func (this *Simulation) reset() {
 	this.currentFn    = nil
 	this.currentCode  = nil
-	this.stack.scope  = 0
+	this.scope        = 0
 	this.stack.values = [STACK_SIZE]ValueKind{}
 	this.stack.count  = 0
 }
@@ -89,23 +89,27 @@ func (this *Simulation) setup(fn *Function) {
 	}
 }
 
-type Typecheck struct {
-	stack       [STACK_SIZE]ValueKind
-	stackCount  int
-	scope       int
+func (this *Simulation) validate() {
+	expectedResults := len(this.currentFn.returns.types)
+
+	if this.stack.count != expectedResults {
+		ReportErrorAtFunction(this.currentFn,
+			StackUnhandled, this.stack.count, expectedResults, getStackValues())
+		ExitWithError(UnhandledStackError)
+	}
+
+	sim.reset()
 }
 
-var tc Typecheck
-var snapshots [10]Typecheck
-var simulation = &TheProgram.simulation
+var sim = &TheProgram.simulation
 
 func getStackValues() string {
 	r := ""
 
-	for index := 0; index < tc.stackCount; index++ {
-		r += valueKindString(tc.stack[index])
+	for index := 0; index < sim.stack.count; index++ {
+		r += valueKindString(sim.stack.values[index])
 
-		if (index != tc.stackCount - 1) {
+		if (index != sim.stack.count - 1) {
 			r += " "
 		}
 	}
@@ -220,44 +224,15 @@ func findFunctionByIP(ip int) Function {
 	return TheProgram.chunks[ip]
 }
 
-func (this *Typecheck) reset() {
-	this.stack = [STACK_SIZE]ValueKind{}
-	this.stackCount = 0
-}
-
-func (this *Typecheck) push(t ValueKind) {
-	this.stack[this.stackCount] = t
-	this.stackCount++
-}
-
-func (this *Typecheck) pop() ValueKind {
-	if this.stackCount == 0 {
-		return NONE
-	}
-	this.stackCount--
-	v := this.stack[this.stackCount]
-	this.stack[this.stackCount] = NONE
-	return v
-}
-
 func ValidateRun() {
 	for indexFn, _ := range TheProgram.chunks {
 		var bindings []ValueKind
 		function := &TheProgram.chunks[indexFn]
-		simulation.setup(function)
-
-		argumentTypes := function.arguments.types
-		returnTypes := function.returns.types
-
-		expectedReturnCount := len(returnTypes)
-
-		for _, t := range argumentTypes {
-			tc.push(t.typ)
-		}
+		sim.setup(function)
 
 		for indexCode, _ := range function.code {
 			code := &function.code[indexCode]
-			simulation.currentCode = code
+			sim.currentCode = code
 			instruction := code.op
 			loc := code.loc
 			value := code.value
@@ -265,69 +240,69 @@ func ValidateRun() {
 			switch instruction {
 			// CONSTANT
 			case OP_PUSH_BOOL:
-				tc.push(BOOL)
+				sim.push(BOOL)
 			case OP_PUSH_BIND:
 				value := code.value.(int)
-				tc.push(bindings[value])
+				sim.push(bindings[value])
 			case OP_PUSH_BIND_ADDR:
-				tc.push(RAWPOINTER)
+				sim.push(RAWPOINTER)
 			case OP_PUSH_BYTE:
-				tc.push(BYTE)
+				sim.push(BYTE)
 			case OP_PUSH_INT:
-				tc.push(INT)
+				sim.push(INT)
 			case OP_PUSH_STR:
-				tc.push(STRING)
+				sim.push(STRING)
 			case OP_PUSH_VAR_GLOBAL:
 				for _, v := range TheProgram.variables {
 					if v.offset == value.(int) {
-						tc.push(v.dtype)
+						sim.push(v.dtype)
 					}
 				}
 			case OP_PUSH_VAR_GLOBAL_ADDR:
-				tc.push(RAWPOINTER)
+				sim.push(RAWPOINTER)
 			case OP_PUSH_VAR_LOCAL:
 				for _, v := range function.variables {
 					if v.offset == value.(int) {
-						tc.push(v.dtype)
+						sim.push(v.dtype)
 					}
 				}
 			case OP_PUSH_VAR_LOCAL_ADDR:
-				tc.push(RAWPOINTER)
+				sim.push(RAWPOINTER)
 
 			// MATH ARITHMETICS
 			case OP_MULTIPLY:
-				b := tc.pop()
-				a := tc.pop()
+				b := sim.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a, b), dtArray(INT, INT), code, loc)
-				tc.push(INT)
+				sim.push(INT)
 
 			case OP_STORE:
-				b := tc.pop()
-				a := tc.pop()
+				b := sim.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a, b), dtArray(ANY, RAWPOINTER), code, loc)
 			case OP_STORE_BYTE:
-				b := tc.pop()
-				a := tc.pop()
+				b := sim.pop()
+				a := sim.pop()
 				assertArgumentType(
 					dtArray(ANY, RAWPOINTER),
 					dtArray(a, b), code, loc,
 				)
 			case OP_LOAD:
-				a := tc.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a), dtArray(RAWPOINTER), code, loc)
-				tc.push(INT)
+				sim.push(INT)
 			case OP_LOAD_BYTE:
-				b := tc.pop()
-				a := tc.pop()
+				b := sim.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a, b), dtArray(INT, RAWPOINTER), code, loc)
-				tc.push(BYTE)
+				sim.push(BYTE)
 
 			case OP_LET_BIND:
 				var have []ValueKind
 				var wants []ValueKind
 				newBinds := code.value.(int)
 				for i := newBinds; i > 0; i-- {
-					a := tc.pop()
+					a := sim.pop()
 					bindings = append([]ValueKind{a}, bindings...)
 					have = append([]ValueKind{a}, have...)
 					wants = append(wants, ANY)
@@ -337,7 +312,7 @@ func ValidateRun() {
 				unbound := code.value.(int)
 				bindings = bindings[:len(bindings)-unbound]
 			case OP_REBIND:
-				a := tc.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a), dtArray(ANY), code, loc)
 
 			// Intrinsics
@@ -347,49 +322,49 @@ func ValidateRun() {
 				val := value.(ASMValue)
 
 				for i := val.argumentCount; i > 0; i-- {
-					a := tc.pop()
+					a := sim.pop()
 					have = append([]ValueKind{a}, have...)
 					want = append(want, ANY)
 				}
 				for i := 0; i < val.returnCount; i++ {
-					tc.push(INT)
+					sim.push(INT)
 				}
 			case OP_ADD, OP_SUBSTRACT:
 				// TODO: Current supporting any as first argument, this might have to
 				// change for type safety. But it allows to use parapoly.
-				b := tc.pop()
-				a := tc.pop()
+				b := sim.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a, b), dtArray(ANY, INT), code, loc)
 				if a == INT && b == INT {
-					tc.push(INT)
+					sim.push(INT)
 				} else if a == BYTE || b == BYTE {
-					tc.push(BYTE)
+					sim.push(BYTE)
 				} else {
-					tc.push(RAWPOINTER)
+					sim.push(RAWPOINTER)
 				}
 			case OP_ARGC:
-				tc.push(INT)
+				sim.push(INT)
 			case OP_ARGV:
-				tc.push(RAWPOINTER)
+				sim.push(RAWPOINTER)
 			case OP_CAST:
-				a := tc.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a), dtArray(ANY), code, loc)
-				tc.push(code.value.(ValueKind))
+				sim.push(code.value.(ValueKind))
 			case OP_DIVIDE:
-				b := tc.pop()
-				a := tc.pop()
+				b := sim.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a, b), dtArray(INT, INT), code, loc)
-				tc.push(INT)
+				sim.push(INT)
 			case OP_MODULO:
-				b := tc.pop()
-				a := tc.pop()
+				b := sim.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a, b), dtArray(INT, INT), code, loc)
-				tc.push(INT)
+				sim.push(INT)
 			case OP_EQUAL, OP_NOT_EQUAL, OP_GREATER, OP_GREATER_EQUAL, OP_LESS, OP_LESS_EQUAL:
-				b := tc.pop()
-				a := tc.pop()
+				b := sim.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a, b), dtArray(ANY, ANY), code, loc)
-				tc.push(BOOL)
+				sim.push(BOOL)
 			case OP_FUNCTION_CALL:
 				var have []ValueKind
 				var want []ValueKind
@@ -411,11 +386,11 @@ func ValidateRun() {
 					for _, f := range fns {
 						// To easily match the stack behavior, we first reverse it
 						// (simulating we pop from it) and then shrink it to the number
-						// of values expected in arguments (since stack simulation in
+						// of values expected in arguments (since stack sim in
 						// typechecking is not a dynamic array).
 						var argTypes []ValueKind
-						reverseStackOrder := tc.stackCount - len(f.arguments.types)
-					    stackReversed := tc.stack[reverseStackOrder:]
+						reverseStackOrder := sim.stack.count - len(f.arguments.types)
+					    stackReversed := sim.stack.values[reverseStackOrder:]
 						stackReducedToArgsLen := stackReversed[:len(f.arguments.types)]
 
 						for _, d := range f.arguments.types {
@@ -444,8 +419,8 @@ func ValidateRun() {
 				inferredTypes = make(map[string]ValueKind)
 
 				if funcRef.arguments.parapoly {
-					reverseStackOrder := tc.stackCount - len(funcRef.arguments.types)
-					stackReversed := tc.stack[reverseStackOrder:]
+					reverseStackOrder := sim.stack.count - len(funcRef.arguments.types)
+					stackReversed := sim.stack.values[reverseStackOrder:]
 
 					for i, d := range funcRef.arguments.types {
 						if d.typ == VARIADIC {
@@ -457,7 +432,7 @@ func ValidateRun() {
 				}
 
 				for _, d := range funcRef.arguments.types {
-					t := tc.pop()
+					t := sim.pop()
 					have = append([]ValueKind{t}, have...)
 					want = append(want, d.typ)
 				}
@@ -466,27 +441,27 @@ func ValidateRun() {
 
 				for _, d := range funcRef.returns.types {
 					if d.typ == VARIADIC {
-						tc.push(inferredTypes[d.name])
+						sim.push(inferredTypes[d.name])
 					} else {
-						tc.push(d.typ)
+						sim.push(d.typ)
 					}
 				}
 
 			case OP_IF_START:
-				a := tc.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a), dtArray(BOOL), code, loc)
-				tc.scope++
-				snapshots[tc.scope] = tc
+				sim.scope++
+				sim.snapshots[sim.scope] = sim.stack
 			case OP_IF_END, OP_IF_ELSE:
 
 			case OP_LOOP_END:
-				tc.scope--
+				sim.scope--
 			case OP_LOOP_SETUP:
 				// NOTE: This is just meant to be a label in the code.
 			case OP_LOOP_START:
-				a := tc.pop()
+				a := sim.pop()
 				assertArgumentType(dtArray(a), dtArray(BOOL), code, loc)
-				tc.scope++
+				sim.scope++
 
 			case OP_RET:
 
@@ -495,24 +470,16 @@ func ValidateRun() {
 			}
 		}
 
-		if tc.stackCount != expectedReturnCount {
-			msg := fmt.Sprintf(MsgTypecheckNotExplicitlyReturned,
-				function.name, getStackValues())
-			ReportErrorAtEOF(msg)
-			ExitWithError(CodeTypecheckError)
-		}
-
-		tc.reset()
-		simulation.reset()
+		sim.validate()
 	}
 
-	if !simulation.mainHandled {
+	if !sim.mainHandled {
 		ReportErrorAtEOF(string(MainFunctionUndefined))
 		ExitWithError(CriticalError)
 	}
 
-	for len(simulation.calledIPs) > 0 {
-		ip := simulation.popIP()
+	for len(sim.calledIPs) > 0 {
+		ip := sim.popIP()
 
 		for i, _ := range TheProgram.chunks {
 			function := &TheProgram.chunks[i]
@@ -526,7 +493,7 @@ func ValidateRun() {
 						f := findFunctionByIP(newCall.ip)
 
 						if !f.called {
-							simulation.pushIP(newCall.ip)
+							sim.pushIP(newCall.ip)
 						}
 					}
 				}

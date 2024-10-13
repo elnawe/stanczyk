@@ -15,6 +15,7 @@ const (
 	CodeTypecheckError
 	CodeCodegenError
 	CriticalError
+	UnhandledStackError
 )
 
 type ErrorMessage string
@@ -25,6 +26,7 @@ const (
 	MainFunctionInvalidSignature = "main function can not have arguments or returns (got %d arguments and %d results)"
 	MainFunctionUndefined = "critical error: 'main' function not defined"
 	StackUnderflow = "stack underflow when trying to %s at line %d"
+	StackUnhandled = "unhandled stack values at the end of function (got %d, expected %d)\n" + "\t%s"
 
 	Unknown ErrorMessage = "unknown error, most likely a compiler bug"
 )
