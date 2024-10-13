@@ -48,7 +48,7 @@ func ReportErrorAtEOF(msg string) {
 }
 
 func ReportErrorAtFunction(fn *Function, err ErrorMessage, args ...any) {
-	pos := fmt.Sprintf("%s:%d:%d (%s)", fn.loc.f, fn.loc.l, fn.loc.c, fn.name)
+	pos := fmt.Sprintf("%s:%d:%d (%s)", fn.loc.f, fn.loc.l, fn.loc.c, fn.word)
 	msg := fmt.Sprintf(string(err), args...)
 	fmt.Fprintf(os.Stderr, "%s %s\n", pos, msg)
 }
@@ -60,5 +60,9 @@ func ReportErrorAtLocation(err string, loc Location, args ...any) {
 }
 
 func ExitWithError(error ErrorCode) {
+	for _, e := range TheProgram.errors {
+		ReportErrorAtLocation(e.err, e.token.loc)
+	}
+
 	os.Exit(int(error))
 }

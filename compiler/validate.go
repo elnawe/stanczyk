@@ -66,9 +66,9 @@ func (this *Simulation) setup(fn *Function) {
 	this.currentFn = fn
 
 	arguments := fn.arguments.types
-	results := fn.returns.types
+	results := fn.results.types
 
-	if fn.name == "main" {
+	if fn.word == "main" {
 		this.mainHandled = true
 		this.pushIP(fn.ip)
 
@@ -84,7 +84,7 @@ func (this *Simulation) setup(fn *Function) {
 
 func (this *Simulation) validate() {
 	stackCount := len(this.stack)
-	expectedResults := len(this.currentFn.returns.types)
+	expectedResults := len(this.currentFn.results.types)
 
 	if stackCount != expectedResults {
 		ReportErrorAtFunction(this.currentFn,
@@ -366,10 +366,10 @@ func ValidateRun() {
 				var fns []Function
 				var funcRef *Function
 
-				calls := code.value.([]FunctionCall)
+				calls := code.value.([]int)
 
-				for _, c := range calls {
-					fns = append(fns, findFunctionByIP(c.ip))
+				for _, ip := range calls {
+					fns = append(fns, findFunctionByIP(ip))
 				}
 
 				if len(fns) == 1 {
@@ -403,7 +403,7 @@ func ValidateRun() {
 				// We do this while typechecking, so we can allow for polymorphism in
 				// the parameters of the functions. Once we get here, we have found the
 				// exact function according to the stack values provided.
-				code.value = FunctionCall{name: funcRef.name, ip: funcRef.ip}
+				code.value = funcRef.ip
 
 				// Doing parapoly initial checks. We go over the parameters, if parapoly
 				// is enabled in this function, and then map each type of parameter that
@@ -419,8 +419,8 @@ func ValidateRun() {
 
 					for i, d := range funcRef.arguments.types {
 						if d.kind == VARIADIC {
-							if inferredTypes[d.name] == NONE {
-								inferredTypes[d.name] = reducedStack[i]
+							if inferredTypes[d.word] == NONE {
+								inferredTypes[d.word] = reducedStack[i]
 							}
 						}
 					}
@@ -434,9 +434,9 @@ func ValidateRun() {
 
 				assertArgumentType(have, want, code, loc)
 
-				for _, d := range funcRef.returns.types {
+				for _, d := range funcRef.results.types {
 					if d.kind == VARIADIC {
-						sim.push(inferredTypes[d.name])
+						sim.push(inferredTypes[d.word])
 					} else {
 						sim.push(d.kind)
 					}
@@ -484,11 +484,11 @@ func ValidateRun() {
 
 				for _, c := range function.code {
 					if c.op == OP_FUNCTION_CALL {
-						newCall := c.value.(FunctionCall)
-						f := findFunctionByIP(newCall.ip)
+						ip := c.value.(int)
+						f := findFunctionByIP(ip)
 
 						if !f.called {
-							sim.pushIP(newCall.ip)
+							sim.pushIP(ip)
 						}
 					}
 				}

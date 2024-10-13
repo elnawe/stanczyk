@@ -1,9 +1,5 @@
 package skc
 
-import (
-	"fmt"
-)
-
 type OpCode string
 
 const (
@@ -75,18 +71,9 @@ const (
 	VARIADIC
 )
 
-type Program struct {
-	chunks           []Function
-	constants        []Constant
-	errors           []ProgramError
-	variables        []Variable
-	staticMemorySize int
-	simulation       Simulation
-}
-
 type Argument struct {
 	kind ValueKind
-	name string
+	word string
 }
 
 type Arity struct {
@@ -112,49 +99,19 @@ type Binding struct {
 	words []string
 }
 
-type ScopeType int
-
-const (
-	GlobalScope ScopeType = iota
-	FunctionScope
-	SCOPE_BIND
-	SCOPE_LOOP
-	SCOPE_IF
-	SCOPE_ELSE
-)
 
 type Scope struct {
 	ipStart    int
 	ipThen     int
 	tokenStart Token
-	kind       ScopeType
+	kind       ScopeName
 }
 
 type Variable struct {
 	kind   ValueKind
 	offset int
-	scope  ScopeType
+	scope  ScopeName
 	word   string
-}
-
-type Function struct {
-	ip              int
-	name            string
-	loc             Location
-	token           Token
-
-	arguments       Arity
-	returns         Arity
-	bindings        Binding
-	code            []Code
-	scope           []Scope
-	constants       []Constant
-	variables       []Variable
-
-	localMemorySize int
-	parsed          bool
-	called          bool
-	internal        bool
 }
 
 type ASMValue struct {
@@ -165,7 +122,7 @@ type ASMValue struct {
 
 type Assembly struct {
 	arguments Arity
-	returns   Arity
+	results   Arity
 	body      []string
 }
 
@@ -179,21 +136,7 @@ type Chunk struct {
 	code []Code
 }
 
-type FunctionCall struct {
-	name string
-	ip   int
-}
-
 type ProgramError struct {
 	err   string
 	token Token
-}
-
-func (this *Program) error(t Token, msg ErrorMessage, args ...any) {
-	pErr := ProgramError{err: fmt.Sprintf(string(msg), args...), token: t}
-	this.errors = append(this.errors, pErr)
-}
-
-func (this *Function) WriteCode(code Code) {
-	this.code = append(this.code, code)
 }

@@ -61,18 +61,18 @@ func generateLinuxX64() {
 
 		if !function.called {
 			if !function.internal {
-				msg := fmt.Sprintf(MsgTypecheckWarningNotCalled, function.name)
+				msg := fmt.Sprintf(MsgTypecheckWarningNotCalled, function.word)
 				ReportErrorAtLocation(msg, function.loc)
 			}
 			continue
 		}
 
-		if function.name == "main" {
+		if function.word == "main" {
 			mainFuncIP = function.ip
 		}
 
 		out.WriteText("fn%d:", function.ip)
-		out.WriteText(";; start fn %s (%s:%d:%d)", function.name,
+		out.WriteText(";; start fn %s (%s:%d:%d)", function.word,
 			function.loc.f, function.loc.l, function.loc.c)
 		out.WriteText("    sub rsp, %d", function.localMemorySize)
 		out.WriteText("    mov [return_stack_rsp], rsp")
@@ -276,10 +276,10 @@ func generateLinuxX64() {
 					out.WriteText("    %s", s)
 				}
 			case OP_FUNCTION_CALL:
-				fnCall := value.(FunctionCall)
+				ip := value.(int)
 				out.WriteText("    mov rax, rsp")
 				out.WriteText("    mov rsp, [return_stack_rsp]")
-				out.WriteText("    call fn%d", fnCall.ip)
+				out.WriteText("    call fn%d", ip)
 				out.WriteText("    mov [return_stack_rsp], rsp")
 				out.WriteText("    mov rsp, rax")
 			case OP_REBIND:
@@ -327,7 +327,7 @@ func generateLinuxX64() {
 			}
 		}
 
-		out.WriteText(";; end fn %s (%s:%d:%d)", function.name,
+		out.WriteText(";; end fn %s (%s:%d:%d)", function.word,
 			function.loc.f, function.loc.l, function.loc.c)
 	}
 

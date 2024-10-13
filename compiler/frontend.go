@@ -7,6 +7,38 @@ import (
 	"strings"
 )
 
+type ScopeName string
+
+const (
+	UndefinedScope ScopeName = ""
+	GlobalScope   = "global"
+	FunctionScope = "function"
+	BindScope     = "bind"
+	LoopScope     = "loop"
+	IfScope       = "if"
+	ElseScope     = "else"
+)
+
+type Function struct {
+	ip              int
+	word            string
+	loc             Location
+	token           Token
+
+	arguments       Arity
+	results         Arity
+	bindings        Binding
+	code            []Code
+	scope           []Scope
+	constants       []Constant
+	variables       []Variable
+
+	localMemorySize int
+	error           bool
+	parsed          bool
+	called          bool
+	internal        bool
+}
 
 type Parser struct {
 	// array of tokens passed into the next macro used. It can
@@ -24,8 +56,38 @@ type Parser struct {
 	tokens        []Token
 }
 
+type Program struct {
+	chunks           []Function
+	constants        []Constant
+	errors           []ProgramError
+	parser           Parser
+	simulation       Simulation
+	staticMemorySize int
+	variables        []Variable
+}
+
+func (this *Program) error(t Token, msg ErrorMessage, args ...any) {
+	if isParsingFunction() {
+		this.parser.currentFn.error = true
+	}
+
+	pErr := ProgramError{err: fmt.Sprintf(string(msg), args...), token: t}
+	this.errors = append(this.errors, pErr)
+}
+
+func (this *Program) validate() {
+	if len(this.errors) > 0 {
+		ExitWithError(ValidationError)
+	}
+}
+
+func (this *Program) write(code Code) {
+	fn := this.parser.currentFn
+	fn.code = append(fn.code, code)
+}
+
 var file FileManager
-var parser Parser
+var parser = &TheProgram.parser
 
 /*   ___ ___ ___  ___  ___  ___
  *  | __| _ \ _ \/ _ \| _ \/ __|
@@ -124,7 +186,7 @@ func unbind() int {
 	return unbindAmount
 }
 
-func openScope(s ScopeType, t Token) *Scope {
+func openScope(s ScopeName, t Token) *Scope {
 	newScope := Scope{
 		ipStart: len(parser.currentFn.code),
 		tokenStart: t,
@@ -140,7 +202,7 @@ func getCurrentScope() *Scope {
 	return &parser.currentFn.scope[lastScopeIndex]
 }
 
-func getCountForScopeType(s ScopeType) int {
+func getCountForScopeName(s ScopeName) int {
 	var count int
 	for _, ss := range parser.currentFn.scope {
 		if ss.kind == s {
@@ -150,7 +212,7 @@ func getCountForScopeType(s ScopeType) int {
 	return count
 }
 
-func closeScopeAfterCheck(s ScopeType) {
+func closeScopeAfterCheck(s ScopeName) {
 	lastScopeIndex := len(parser.currentFn.scope)-1
 	lastOpenedScope := parser.currentFn.scope[lastScopeIndex]
 
@@ -163,7 +225,7 @@ func closeScopeAfterCheck(s ScopeType) {
 
 func getLimitIndexBindWord() (string, string) {
 	loopIndexByte := 72
-	loopScopeDepth := getCountForScopeType(SCOPE_LOOP)
+	loopScopeDepth := getCountForScopeName(LoopScope)
 	loopIndexByte += loopScopeDepth
 	loopIndexWord := string(byte(loopIndexByte))
 	limitWord := loopIndexWord + "limit"
@@ -171,7 +233,7 @@ func getLimitIndexBindWord() (string, string) {
 }
 
 func emit(code Code) {
-	parser.currentFn.WriteCode(code)
+	TheProgram.write(code)
 }
 
 func emitConstantValue(kind ValueKind, value any) {
@@ -383,11 +445,11 @@ func registerFunction(token Token) {
 	}
 
 	tokenWord := parser.previousToken
-	function.name = tokenWord.value.(string)
+	function.word = tokenWord.value.(string)
 
-	if function.name == "main" {
+	if function.word == "main" {
 		for _, f := range TheProgram.chunks {
-			if f.name == "main" {
+			if f.word == "main" {
 				msg := fmt.Sprintf(MsgParseFunctionMainAlreadyDefined,
 					GetRelativePath(f.loc.f), f.loc.l)
 				errorAt(&token, msg)
@@ -420,8 +482,8 @@ func registerFunction(token Token) {
 	fcode, found := getFunction(tokenWord)
 
 	if found {
-		for _, fc := range fcode.value.([]FunctionCall) {
-			f := TheProgram.chunks[fc.ip]
+		for _, ip := range fcode.value.([]int) {
+			f := TheProgram.chunks[ip]
 
 			if reflect.DeepEqual(f.arguments, function.arguments) {
 				msg := fmt.Sprintf(MsgParseArityArgumentSameSignatureError,
@@ -430,7 +492,7 @@ func registerFunction(token Token) {
 				ExitWithError(CodeParseError)
 			}
 
-			if !reflect.DeepEqual(f.returns, function.returns) {
+			if !reflect.DeepEqual(f.results, function.results) {
 				msg := fmt.Sprintf(MsgParseArityReturnDifferentSignatureError,
 					GetRelativePath(f.loc.f), f.loc.l)
 				errorAt(&tokenWord, msg)
@@ -515,12 +577,12 @@ func getVariable(word string) (*Variable, bool) {
 }
 
 func getFunction(token Token) (Code, bool) {
-	var val []FunctionCall
+	var val []int
 	word := token.value.(string)
 
 	for _, f := range TheProgram.chunks {
-		if f.name == word {
-			val = append(val, FunctionCall{name: f.name, ip: f.ip})
+		if f.word == word {
+			val = append(val, f.ip)
 		}
 	}
 
@@ -541,7 +603,7 @@ func expandWord(token Token) {
 		return
 	}
 
-	// Find the word in functions. If it returns one, emit it
+	// Find the word in functions. If it results one, emit it
 	code_f, ok_f := getFunction(token)
 
 	if ok_f {
@@ -557,8 +619,9 @@ func expandWord(token Token) {
 	}
 }
 
-func parseToken(token Token) {
+func parseToken() {
 	var code Code
+	token := parser.previousToken
 	code.loc = token.loc
 	code.value = token.value
 
@@ -724,13 +787,13 @@ func parseToken(token Token) {
 		}
 
 		consume(TOKEN_IN, MsgParseLetMissingIn)
-		openScope(SCOPE_BIND, token)
+		openScope(BindScope, token)
 
 		code.op = OP_LET_BIND
 		code.value = bind(newWords)
 		emit(code)
 	case TOKEN_DONE:
-		closeScopeAfterCheck(SCOPE_BIND)
+		closeScopeAfterCheck(BindScope)
 		code.op = OP_LET_UNBIND
 		code.value = unbind()
 		emit(code)
@@ -783,7 +846,7 @@ func parseToken(token Token) {
 		// label.
 		copyOfLoopStartCodeOps := takeFromFunctionCode(3)
 
-		c := openScope(SCOPE_LOOP, token)
+		c := openScope(LoopScope, token)
 
 		// We bind the limit and the index values for future use.
 		limitN, indexN := getLimitIndexBindWord()
@@ -798,7 +861,7 @@ func parseToken(token Token) {
 		emit(copyOfLoopStartCodeOps[2])
 		emit(Code{op: OP_LOOP_START, loc: code.loc, value: c.ipStart})
 	case TOKEN_WHILE:
-		c := openScope(SCOPE_LOOP, token)
+		c := openScope(LoopScope, token)
 		_, indexN := getLimitIndexBindWord()
 		emit(Code{op: OP_LET_BIND, loc: code.loc, value: bind([]string{indexN})})
 		emit(Code{op: OP_LOOP_SETUP, loc: code.loc, value: c.ipStart})
@@ -808,7 +871,7 @@ func parseToken(token Token) {
 	case TOKEN_LOOP:
 		c := getCurrentScope()
 
-		if c.kind != SCOPE_LOOP {
+		if c.kind != LoopScope {
 			// TODO: Improve error message, showing the starting and closing statements
 			errorAt(&c.tokenStart, "TODO: ERROR MESSAGE")
 			errorAt(&token, "TODO: ERROR MESSAGE")
@@ -830,9 +893,9 @@ func parseToken(token Token) {
 			emit(Code{op: OP_LET_UNBIND, loc: code.loc, value: unbind()})
 		}
 
-		closeScopeAfterCheck(SCOPE_LOOP)
+		closeScopeAfterCheck(LoopScope)
 	case TOKEN_IF:
-		c := openScope(SCOPE_IF, token)
+		c := openScope(IfScope, token)
 
 		code.op = OP_IF_START
 		code.value = c.ipStart
@@ -841,35 +904,36 @@ func parseToken(token Token) {
 		c := getCurrentScope()
 
 		switch c.kind {
-		case SCOPE_IF:
+		case IfScope:
 			code.op = OP_IF_ELSE
 			code.value = c.ipStart
 			emit(code)
 			code.op = OP_IF_END
 			emit(code)
-			closeScopeAfterCheck(SCOPE_IF)
-		case SCOPE_ELSE:
+			closeScopeAfterCheck(IfScope)
+		case ElseScope:
 			code.op = OP_IF_END
 			code.value = c.ipStart
 			emit(code)
-			closeScopeAfterCheck(SCOPE_ELSE)
+			closeScopeAfterCheck(ElseScope)
 		default:
 			errorAt(&c.tokenStart, "TODO: ERROR MESSAGE")
 			errorAt(&token, "TODO: ERROR MESSAGE")
 			ExitWithError(CodeParseError)
 		}
-	case TOKEN_CASE:
-
 	case TOKEN_ELSE:
 		c := getCurrentScope()
+		previousIpStart := c.ipStart
 
-		if c.kind != SCOPE_IF {
+		if c.kind != IfScope {
 			errorAt(&c.tokenStart, "TODO: ERROR MESSAGE")
 			errorAt(&token, "TODO: ERROR MESSAGE")
 			ExitWithError(CodeParseError)
 		}
 
-		c.kind = SCOPE_ELSE
+		closeScopeAfterCheck(IfScope)
+		c = openScope(ElseScope, token)
+		c.ipStart = previousIpStart
 		code.op = OP_IF_ELSE
 		code.value = c.ipStart
 		emit(code)
@@ -927,7 +991,7 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 		}
 
 		newArg.kind = VARIADIC
-		newArg.name = token.value.(string)
+		newArg.word = token.value.(string)
 		function.arguments.parapoly = true
 	case TOKEN_WORD:
 		w := token.value.(string)
@@ -939,12 +1003,12 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 		}
 
 		funcArgs := function.arguments
-		argTest := Argument{name: w, kind: VARIADIC}
+		argTest := Argument{word: w, kind: VARIADIC}
 
 		if funcArgs.parapoly && Contains(funcArgs.types, argTest) {
 			newArg.kind = VARIADIC
-			newArg.name = w
-			function.returns.parapoly = true
+			newArg.word = w
+			function.results.parapoly = true
 		} else {
 			msg := fmt.Sprintf(MsgParseArityReturnParapolyNotFound, w)
 			errorAt(&token, msg)
@@ -959,7 +1023,7 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 	if parsingArguments {
 		function.arguments.types = append(function.arguments.types, newArg)
 	} else {
-		function.returns.types = append(function.returns.types, newArg)
+		function.results.types = append(function.results.types, newArg)
 	}
 }
 
@@ -969,7 +1033,7 @@ func parseFunction(token Token) {
 	var testFunc Function
 
 	advance()
-	testFunc.name = parser.previousToken.value.(string)
+	testFunc.word = parser.previousToken.value.(string)
 	advance()
 
 	parsingArguments := true
@@ -987,7 +1051,7 @@ func parseFunction(token Token) {
 	}
 
 	for index, f := range TheProgram.chunks {
-		if !f.parsed && f.name == testFunc.name &&
+		if !f.parsed && f.word == testFunc.word &&
 			reflect.DeepEqual(f.arguments, testFunc.arguments) {
 			parser.currentFn = &TheProgram.chunks[index]
 			break
@@ -997,7 +1061,7 @@ func parseFunction(token Token) {
 	if isParsingFunction() {
 		for !match(TOKEN_RET) {
 			advance()
-			parseToken(parser.previousToken)
+			if !parser.currentFn.error { parseToken() }
 		}
 
 		emitReturn()
@@ -1008,9 +1072,9 @@ func parseFunction(token Token) {
 		parser.currentFn = nil
 	} else {
 		// This would be a catastrophic issue. Since we already registered functions,
-		// there's no way we don't find a function with the same name that has not been
+		// there's no way we don't find a function with the same word that has not been
 		// parsed yet. Since we can't recover from this error, we must exit.
-		msg := fmt.Sprintf(MsgParseFunctionSignatureNotFound, testFunc.name)
+		msg := fmt.Sprintf(MsgParseFunctionSignatureNotFound, testFunc.word)
 		errorAt(&parser.previousToken, msg)
 		ExitWithError(CodeParseError)
 	}
@@ -1120,6 +1184,8 @@ func FrontendRun() {
 	for index := 0; index < len(file.files); index++ {
 		compilationThirdPass(index)
 	}
+
+	TheProgram.validate()
 
 	if parser.error {
 		ExitWithError(CodeParseError)
