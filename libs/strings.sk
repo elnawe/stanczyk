@@ -41,7 +41,7 @@ fn len (int --- int) 0 dup rot < until ++ I 10 / loop ret
 ;   - <string> len
 ; Returns:
 ;   - The number of characters in teh string. "Stanczyk" returns 8
-fn len (str --- int) let s ! 0 0 dup s ptr @c != until ++ dup s ptr @c loop ret
+fn len (str --- int) let s in 0 0 dup s ptr @c != until ++ dup s ptr @c loop done ret
 
 ; Compares two strings and returns the results of the comparison
 ; Calling:
@@ -50,12 +50,13 @@ fn len (str --- int) let s ! 0 0 dup s ptr @c != until ++ dup s ptr @c loop ret
 ;   - A boolean true if the arguments are equal, false if they are different.
 fn strequal (str str --- bool)
   over len swap dup len
-  let s1 l1 s2 l2 !
-  l1 l2 = dup if
-    0 l1 <= until
-      I s1 ptr @c I s2 ptr @c != if false nip leave fi
-    I -- loop
-  fi
+  let s1 l1 s2 l2 in
+    l1 l2 = dup if
+      0 l1 <= until
+        I s1 ptr @c I s2 ptr @c != if false nip leave fi
+      I -- loop
+    fi
+  done
 ret
 
 ; Converts an integer to a string and returns the buffer where the result is saved
@@ -63,7 +64,6 @@ ret
 ;   - <int> itoa
 ; Returns:
 ;   - The pointer to the static memory where the string is saved
-
 fn itoa (int ptr)
   ;; TODO: There should be a way to initialize buffer automatically
   const BUFFER_CAP 20

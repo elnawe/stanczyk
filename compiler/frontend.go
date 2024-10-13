@@ -47,6 +47,7 @@ func registerFunction(token Token) {
 
 	tokenWord := parser.previousToken
 	function.name = tokenWord.value.(string)
+	function.name = tokenWord.value.(string)
 
 	if function.name == "main" {
 		for _, f := range TheProgram.chunks {
@@ -424,13 +425,13 @@ func parseToken(token Token) {
 		}
 
 		consume(TOKEN_IN, MsgParseLetMissingIn)
-		//openScope(SCOPE_BIND, token)
+		openScope(SCOPE_BIND, token)
 
 		code.op = OP_LET_BIND
 		code.value = bind(newWords)
 		emit(code)
 	case TOKEN_DONE:
-		//		closeScopeAfterCheck(SCOPE_BIND)
+		closeScopeAfterCheck(SCOPE_BIND)
 		code.op = OP_LET_UNBIND
 		code.value = unbind()
 		emit(code)

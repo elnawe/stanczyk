@@ -59,18 +59,19 @@ const (
 		"variadic parameter '%s' should only be used in arguments, maybe you want to use '%s' instead"
 	ParameterVariadicNotFound =
 		"variadic parameter '%s' definition not found in arguments"
-	StackChangedInCodeBlock =
-		"stack values (size or type) can't change inside scope blocks"
+	StackSizeChangedInCodeBlock =
+		"the size of the stack can't change inside scope blocks (was %d, and now is %d)"
+	StackTypesChangedInCodeBlock =
+		"the type of the values in the stack can't change inside scope blocks\n" +
+			"\tbefore: %s\n\tafter: %s"
 	StackUnderflow =
-		"missing stack values this operation"
+		"missing stack values when trying to '%s' in '%s'"
 	TypeError =
 		"incorrect arguments for %s\n"+
 			"\thave (%s)\n\twant (%s)"
 	TypeError2 =
 		"incorrect arguments for %s\n"+
 			"\thave (%s)\n\twant (%s) or (%s)"
-
-
 	UnexpectedCodeBlockSyntax =
 		"syntax error: '%s' can only be used after using %s"
 	UnexpectedSymbol =
@@ -102,7 +103,6 @@ func ExitWithError(error ErrorCode) {
 		for _, e := range TheProgram.errors {
 			ReportErrorAtLocation(e.message, e.token.loc)
 		}
-		ExitWithError(CompilationError)
 	}
 	os.Exit(int(error))
 }

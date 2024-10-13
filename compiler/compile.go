@@ -23,6 +23,7 @@ type Parser struct {
 type Stack struct {
 	binds        []ValueKind
 	bodyStack    []Token
+	calledFns    []int
 	currentScope int
 	scopeToken   [32]Token
 	snapshots    [32][]ValueKind
@@ -33,7 +34,8 @@ type Stack struct {
 type ScopeKind int
 
 const (
-	SCOPE_LOOP ScopeKind = iota
+	SCOPE_BIND ScopeKind = iota
+	SCOPE_LOOP
 	SCOPE_IF
 	SCOPE_ELSE
 )
@@ -46,18 +48,42 @@ func (this *Stack) castTo(v ValueKind) {
 
 func (this *Stack) pop() ValueKind {
 	if len(this.values) == 0 {
-		ReportErrorAtLocation(StackUnderflow, parser.previousToken.loc)
+		fn := parser.currentFn
+		code := fn.code[len(fn.code)-1]
+		ReportErrorAtLocation(StackUnderflow,
+			parser.previousToken.loc, code.op, fn.word)
 		ExitWithError(CriticalError)
 	}
 
 	lastIndex := len(this.values)-1
 	result := this.values[lastIndex]
 	this.values = slices.Clone(this.values[:lastIndex])
+	if parser.currentFn.word == "len" {
+		c := parser.currentFn.code[len(parser.currentFn.code)-1]
+		pos := fmt.Sprintf("%s:%d:%d: ", c.loc.f, c.loc.l, c.loc.c)
+		fmt.Println(pos, c.op, this.values)
+	}
 	return result
 }
 
 func (this *Stack) push(v ValueKind) {
 	this.values = append(this.values, v)
+	if parser.currentFn.word == "len" {
+		c := parser.currentFn.code[len(parser.currentFn.code)-1]
+		pos := fmt.Sprintf("%s:%d:%d: ", c.loc.f, c.loc.l, c.loc.c)
+		fmt.Println(pos, c.op, this.values)
+	}
+}
+
+func (this *Stack) popFn() int {
+	lastIndex := len(this.calledFns)-1
+	result := this.calledFns[lastIndex]
+	this.calledFns = slices.Clone(this.calledFns[:lastIndex])
+	return result
+}
+
+func (this *Stack) pushFn(ip int) {
+	this.calledFns = append(this.calledFns, ip)
 }
 
 func (this *Stack) popSnapshot() {
@@ -80,7 +106,8 @@ func (this *Stack) reset() {
 
 func (this *Stack) setup() {
 	for _, t := range parser.currentFn.arguments.types {
-		this.push(t.kind)
+		this.values = append(this.values, t.kind)
+		// this.push(t.kind)
 	}
 }
 
@@ -108,7 +135,7 @@ func (this *Stack) validate() {
 	// 			code: FunctionParseError,
 	// 			message: IncorrectValueTypeAtReturn,
 	// 			token: Token{loc: parser.currentFn.loc},
-	// 		}, parser.currentFn.word, skv, t.kind)
+	// 		}, parser.currentFn.word, skv, expectedKind)
 	// 	}
 	// }
 
@@ -120,19 +147,21 @@ func (this *Stack) validateSnapshot() {
 	c := getCurrentScope()
 
 	if len(currentSnapshotValues) != len(this.values) {
+		fmt.Println("before block: ", currentSnapshotValues)
+		fmt.Println("after block:  ", this.values)
 		addError(CompilerError{
 			code: CodeValidationError,
-			message: StackChangedInCodeBlock,
+			message: StackSizeChangedInCodeBlock,
 			token: c.tokenStart,
-		})
+		}, len(currentSnapshotValues), len(this.values))
 	} else {
 		for i, t := range currentSnapshotValues {
 			if this.values[i] != t {
 				addError(CompilerError{
 					code: CodeValidationError,
-					message: StackChangedInCodeBlock,
+					message: StackTypesChangedInCodeBlock,
 					token: c.tokenStart,
-				})
+				}, human(currentSnapshotValues...), human(this.values...))
 				break
 			}
 		}
@@ -146,12 +175,21 @@ var parser Parser
 var stack  Stack
 
 func addError(error CompilerError, args ...any) {
-	if parser.currentFn != nil {
-		parser.currentFn.error = true
-	}
-
 	error.message = fmt.Sprintf(error.message, args...)
 	TheProgram.errors = append(TheProgram.errors, error)
+
+	if isParsingFunction() {
+		parser.currentFn.error = true
+
+		// TODO: DEBUG MODE
+		for _, c := range parser.currentFn.code {
+			pos := fmt.Sprintf("%s:%d:%d: ", c.loc.f, c.loc.l, c.loc.c)
+			fmt.Println(pos, c.op, c.value)
+		}
+
+		ExitWithError(CompilationError)
+	}
+
 }
 
 func human(kinds ...ValueKind) string {
@@ -215,7 +253,7 @@ func takeFromFunctionCode(quant int) []Code {
 		result = append(result, parser.currentFn.code[index])
 	}
 
-	parser.currentFn.code = parser.currentFn.code[:codeLength-quant]
+	parser.currentFn.code = slices.Clone(parser.currentFn.code[:codeLength-quant])
 	return result
 }
 
@@ -314,7 +352,7 @@ func emitBinary(op OpCode) {
 				code: FunctionParseError,
 				message: TypeError,
 				token: t,
-			}, human(a, b), human(INT64, INT64))
+			}, op, human(a, b), human(INT64, INT64))
 		}
 	case OP_EQUAL, OP_NOT_EQUAL,
 		OP_GREATER, OP_GREATER_EQUAL,
@@ -330,8 +368,9 @@ func emitBinary(op OpCode) {
 				code: FunctionParseError,
 				message: TypeError,
 				token: t,
-			}, human(a, b), human(INT64, RAWPOINTER))
+			}, op, human(a, b), human(INT64, RAWPOINTER))
 		}
+		stack.push(INT64)
 	case OP_STORE, OP_STORE_BYTE:
 		b := stack.pop()
 		a := stack.pop()
@@ -340,7 +379,7 @@ func emitBinary(op OpCode) {
 				code: FunctionParseError,
 				message: TypeError,
 				token: t,
-			}, human(a, b), human(ANY, RAWPOINTER))
+			}, op, human(a, b), human(ANY, RAWPOINTER))
 		}
 	}
 
@@ -369,8 +408,7 @@ func emitFunctionCall(word string) bool {
 			var paramsFromFn []ValueKind
 			f := TheProgram.chunks[ip]
 			firstIndex := len(stack.values) - len(f.arguments.types)
-			fmt.Println(f, stack.values)
-			reversedStack := stack.values[firstIndex:]
+			reversedStack := slices.Clone(stack.values[firstIndex:])
 			stackValuesReduced := reversedStack[:len(f.arguments.types)]
 
 			for _, k := range f.arguments.types {
@@ -399,9 +437,7 @@ func emitFunctionCall(word string) bool {
 
 		for i, t := range funcRef.arguments.types {
 			if t.kind == VARIADIC {
-				if stack.variadicMap[t.name] == UNKNOWN {
-					stack.variadicMap[t.name] = reversedStack[i]
-				}
+				stack.variadicMap[t.name] = reversedStack[i]
 			}
 		}
 	}
@@ -445,9 +481,6 @@ func emitPushLet(word string) bool {
 		emit(Code{op: OP_PUSH_LET, loc: t.loc, value: b})
 	}
 
-	// Should add value to the stack
-	stack.push(RAWPOINTER)
-
 	return found
 }
 
@@ -469,7 +502,7 @@ func emitUnary(op OpCode) {
 				code: FunctionParseError,
 				message: TypeError,
 				token: t,
-			}, human(a), human(RAWPOINTER))
+			}, op, human(a), human(RAWPOINTER))
 		}
 		stack.push(INT64)
 	}
@@ -671,8 +704,6 @@ func createFunction() {
 	function.ip = len(TheProgram.chunks)
 	function.loc = t.loc
 	function.parsed = false
-	// TODO: Mark function as called after they are actually called
-	function.called = true
 
 	if !match(TOKEN_WORD) {
 		// If a word is not found after the function keyword we
@@ -696,6 +727,7 @@ func createFunction() {
 		switch t.kind {
 		case TOKEN_DASH_DASH_DASH:
 			parsingArguments = false
+			continue
 		case TOKEN_ANY:
 			if !parser.internal {
 				ReportErrorAtLocation(
@@ -908,6 +940,7 @@ func validateFunction(test Function) {
 	}
 
 	if test.word == "main" {
+		stack.pushFn(test.ip)
 
 		if len(other) > 0 {
 			ReportErrorAtLocation(MainFunctionRedefined, test.loc)
@@ -1107,6 +1140,8 @@ func parseTokens() {
 		emitBinary(OP_GREATER)
 	case TOKEN_GREATER_EQUAL:
 		emitBinary(OP_GREATER_EQUAL)
+	case TOKEN_LESS:
+		emitBinary(OP_LESS)
 	case TOKEN_LESS_EQUAL:
 		emitBinary(OP_LESS_EQUAL)
 	case TOKEN_MINUS:
@@ -1141,6 +1176,7 @@ func parseTokens() {
 		}
 	case TOKEN_ELSE:
 		c := getCurrentScope()
+		previousIP := c.ipStart
 
 		if c.kind != SCOPE_IF {
 			addError(CompilerError{
@@ -1150,7 +1186,9 @@ func parseTokens() {
 			}, "else", "if")
 		}
 
-		c.kind = SCOPE_ELSE
+		closeScopeAfterCheck(SCOPE_IF)
+		c = openScope(SCOPE_ELSE, t)
+		c.ipStart = previousIP
 		emit(Code{op: OP_IF_ELSE, loc: t.loc, value: c.ipStart})
 	case TOKEN_IF:
 		c := openScope(SCOPE_IF, t)
@@ -1164,6 +1202,16 @@ func parseTokens() {
 				message: UnexpectedCodeBlockSyntax,
 				token: t,
 			}, "loop", "until or while")
+		}
+
+		a := stack.pop()
+
+		if a != INT64 {
+			addError(CompilerError{
+				code: FunctionParseError,
+				message: TypeError,
+				token: t,
+			}, "loop", human(a), human(INT64))
 		}
 
 		// Note: UNTIL and WHILE have the same block closing mechanics
@@ -1185,14 +1233,18 @@ func parseTokens() {
 				code: FunctionParseError,
 				message: TypeError,
 				token: t,
-			}, human(a), human(BOOLEAN))
+			}, "until", human(a), human(BOOLEAN))
 		}
 
 		copyOfLoopStartCodeOps := takeFromFunctionCode(3)
 		c := openScope(SCOPE_LOOP, t)
 		limitName, indexName := getLimitIndexBindWords()
-		emitValue(copyOfLoopStartCodeOps[0].value.(Value))
-		emitValue(copyOfLoopStartCodeOps[1].value.(Value))
+
+		// TODO: Revamp this code below
+		emit(copyOfLoopStartCodeOps[0])
+		emit(copyOfLoopStartCodeOps[1])
+		stack.push(INT64)
+		stack.push(INT64)
 		emitLetBind(limitName, indexName)
 		emit(Code{op: OP_LOOP_SETUP, loc: t.loc, value: c.ipStart})
 		emitPushLet(limitName)
@@ -1206,7 +1258,7 @@ func parseTokens() {
 				code: FunctionParseError,
 				message: TypeError,
 				token: t,
-			}, human(b), human(BOOLEAN))
+			}, "until", human(b), human(BOOLEAN))
 		}
 	case TOKEN_WHILE:
 		// Note: WHILE loops are pretty simple. Before you close the block,
@@ -1300,16 +1352,34 @@ func Compile() {
 				emitReturn()
 				parser.currentFn.parsed = true
 				stack.validate()
-				stack.reset()
 				parser.currentFn = nil
 			}
 		}
 	}
 
 	if len(TheProgram.errors) > 0 {
-		for _, e := range TheProgram.errors {
-			ReportErrorAtLocation(e.message, e.token.loc)
-		}
 		ExitWithError(CompilationError)
+	}
+
+	for len(stack.calledFns) > 0 {
+		ip := stack.popFn()
+
+		for i, _ := range TheProgram.chunks {
+			function := &TheProgram.chunks[i]
+
+			if function.ip == ip {
+				function.called = true
+
+				for _, c := range function.code {
+					if c.op == OP_FUNCTION_CALL {
+						newIP := c.value.(int)
+						f := findFunctionByIP(newIP)
+						if f.called {
+							stack.pushFn(newIP)
+						}
+					}
+				}
+			}
+		}
 	}
 }

@@ -50,7 +50,7 @@ const (
 
 	// ARITHMETICS
 	OP_ADD					=  "OP_ADD"
-	OP_DIVIDE				=  "OP_DIVIDE"
+	OP_DIVIDE				=  "/"
 	OP_MODULO				=  "OP_MODULO"
 	OP_MULTIPLY				=  "OP_MULTIPLY"
 	OP_SUBSTRACT			=  "OP_SUBSTRACT"

@@ -376,8 +376,7 @@ func ValidateRun() {
 				// We do this while typechecking, so we can allow for polymorphism in
 				// the parameters of the functions. Once we get here, we have found the
 				// exact function according to the stack values provided.
-				TheProgram.chunks[ifunction].code[icode].value =
-					FunctionCall{name: funcRef.name, ip: funcRef.ip}
+				TheProgram.chunks[ifunction].code[icode].value = funcRef.ip
 
 				// Doing variadic initial checks. We go over the parameters, if variadic
 				// is enabled in this function, and then map each type of parameter that

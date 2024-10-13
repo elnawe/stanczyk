@@ -72,13 +72,13 @@ const O_CREATE       64
 ; Returns:
 ;   - A pointer to the element in the Array. If element is out of reach,
 ;     throws an error and stops execution.
-fn argv-array (int --- str)
-	8 * argv int + ptr @ str
-	dup int 0 = if
-		dup print
-		"argv empty" panic
-	fi
-ret
+; fn argv-array (int --- str)
+; 	8 * argv int + ptr @ str
+; 	dup int 0 = if
+; 		dup print
+; 		"argv empty" panic
+; 	fi
+; ret
 
 ; Helper function to clear the console screen. Widely supported, but not for
 ; all terminals.
