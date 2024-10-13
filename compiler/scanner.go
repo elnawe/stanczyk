@@ -92,69 +92,69 @@ const (
 )
 
 type reserved struct {
-	word  string
-	typ   TokenType
+	kind TokenType
+	word string
 }
 
 var reservedWords = []reserved{
 	// CONSTANTS
-	reserved{typ: TOKEN_CONSTANT_FALSE, word: "false"  },
-	reserved{typ: TOKEN_CONSTANT_TRUE,  word: "true"   },
+	reserved{kind: TOKEN_CONSTANT_FALSE, word: "false"  },
+	reserved{kind: TOKEN_CONSTANT_TRUE,  word: "true"   },
 
 	// DATA TYPES
-	reserved{typ: TOKEN_ANY,            word: "any"    },
-	reserved{typ: TOKEN_BOOL,           word: "bool"   },
-	reserved{typ: TOKEN_STARBOOL,       word: "*bool"  },
-	reserved{typ: TOKEN_BYTE,           word: "byte"   },
-	reserved{typ: TOKEN_STARBYTE,       word: "*byte"  },
-	reserved{typ: TOKEN_INT,            word: "int"    },
-	reserved{typ: TOKEN_STARINT,        word: "*int"   },
-	reserved{typ: TOKEN_PTR,            word: "ptr"    },
-	reserved{typ: TOKEN_STR,            word: "str"    },
-	reserved{typ: TOKEN_STARSTR,        word: "*str"   },
+	reserved{kind: TOKEN_ANY,            word: "any"    },
+	reserved{kind: TOKEN_BOOL,           word: "bool"   },
+	reserved{kind: TOKEN_STARBOOL,       word: "*bool"  },
+	reserved{kind: TOKEN_BYTE,           word: "byte"   },
+	reserved{kind: TOKEN_STARBYTE,       word: "*byte"  },
+	reserved{kind: TOKEN_INT,            word: "int"    },
+	reserved{kind: TOKEN_STARINT,        word: "*int"   },
+	reserved{kind: TOKEN_PTR,            word: "ptr"    },
+	reserved{kind: TOKEN_STR,            word: "str"    },
+	reserved{kind: TOKEN_STARSTR,        word: "*str"   },
 
 	// MACROS
-	reserved{typ: TOKEN_ASM,            word: "ASM"    },
-	reserved{typ: TOKEN_AT_BODY,        word: "@body"  },
+	reserved{kind: TOKEN_ASM,            word: "ASM"    },
+	reserved{kind: TOKEN_AT_BODY,        word: "@body"  },
 
-	reserved{typ: TOKEN_DASH_DASH_DASH, word: "---"    },
-	reserved{typ: TOKEN_LET,            word: "let"    },
-	reserved{typ: TOKEN_IN,             word: "in"     },
-	reserved{typ: TOKEN_DONE,           word: "done"   },
+	reserved{kind: TOKEN_DASH_DASH_DASH, word: "---"    },
+	reserved{kind: TOKEN_LET,            word: "let"    },
+	reserved{kind: TOKEN_IN,             word: "in"     },
+	reserved{kind: TOKEN_DONE,           word: "done"   },
 
-	reserved{typ: TOKEN_BANG,           word: "!"      },
-	reserved{typ: TOKEN_AT,             word: "@"      },
-	reserved{typ: TOKEN_BANG_BYTE,      word: "!b"     },
-	reserved{typ: TOKEN_AT_BYTE,        word: "@b"     },
+	reserved{kind: TOKEN_BANG,           word: "!"      },
+	reserved{kind: TOKEN_AT,             word: "@"      },
+	reserved{kind: TOKEN_BANG_BYTE,      word: "!b"     },
+	reserved{kind: TOKEN_AT_BYTE,        word: "@b"     },
 
-	reserved{typ: TOKEN_ELSE,           word: "else"   },
-	reserved{typ: TOKEN_FI,             word: "fi"     },
-	reserved{typ: TOKEN_IF,             word: "if"     },
-	reserved{typ: TOKEN_LOOP,           word: "loop"   },
-	reserved{typ: TOKEN_UNTIL,          word: "until"  },
-	reserved{typ: TOKEN_WHILE,          word: "while"  },
+	reserved{kind: TOKEN_ELSE,           word: "else"   },
+	reserved{kind: TOKEN_FI,             word: "fi"     },
+	reserved{kind: TOKEN_IF,             word: "if"     },
+	reserved{kind: TOKEN_LOOP,           word: "loop"   },
+	reserved{kind: TOKEN_UNTIL,          word: "until"  },
+	reserved{kind: TOKEN_WHILE,          word: "while"  },
 
-	reserved{typ: TOKEN_ARGC,           word: "argc"   },
-	reserved{typ: TOKEN_ARGV,           word: "argv"   },
-	reserved{typ: TOKEN_BANG_EQUAL,     word: "!="     },
-	reserved{typ: TOKEN_CONST,          word: "const"  },
-	reserved{typ: TOKEN_EQUAL,          word: "="      },
-	reserved{typ: TOKEN_FN,             word: "fn"     },
-	reserved{typ: TOKEN_GREATER,        word: ">"      },
-	reserved{typ: TOKEN_GREATER_EQUAL,  word: ">="     },
-	reserved{typ: TOKEN_LEAVE,          word: "leave"  },
-	reserved{typ: TOKEN_LESS,           word: "<"      },
-	reserved{typ: TOKEN_LESS_EQUAL,     word: "<="     },
-	reserved{typ: TOKEN_MINUS,          word: "-"      },
-	reserved{typ: TOKEN_PERCENT,        word: "%"      },
-	reserved{typ: TOKEN_PLUS,           word: "+"      },
-	reserved{typ: TOKEN_RET,            word: "ret"    },
-	reserved{typ: TOKEN_RIGHT_ARROW,    word: "->"     },
-	reserved{typ: TOKEN_SLASH,          word: "/"      },
-	reserved{typ: TOKEN_STAR,           word: "*"      },
-	reserved{typ: TOKEN_THIS,           word: "this"   },
-	reserved{typ: TOKEN_USING,          word: "using"  },
-	reserved{typ: TOKEN_VAR,            word: "var"    },
+	reserved{kind: TOKEN_ARGC,           word: "argc"   },
+	reserved{kind: TOKEN_ARGV,           word: "argv"   },
+	reserved{kind: TOKEN_BANG_EQUAL,     word: "!="     },
+	reserved{kind: TOKEN_CONST,          word: "const"  },
+	reserved{kind: TOKEN_EQUAL,          word: "="      },
+	reserved{kind: TOKEN_FN,             word: "fn"     },
+	reserved{kind: TOKEN_GREATER,        word: ">"      },
+	reserved{kind: TOKEN_GREATER_EQUAL,  word: ">="     },
+	reserved{kind: TOKEN_LEAVE,          word: "leave"  },
+	reserved{kind: TOKEN_LESS,           word: "<"      },
+	reserved{kind: TOKEN_LESS_EQUAL,     word: "<="     },
+	reserved{kind: TOKEN_MINUS,          word: "-"      },
+	reserved{kind: TOKEN_PERCENT,        word: "%"      },
+	reserved{kind: TOKEN_PLUS,           word: "+"      },
+	reserved{kind: TOKEN_RET,            word: "ret"    },
+	reserved{kind: TOKEN_RIGHT_ARROW,    word: "->"     },
+	reserved{kind: TOKEN_SLASH,          word: "/"      },
+	reserved{kind: TOKEN_STAR,           word: "*"      },
+	reserved{kind: TOKEN_THIS,           word: "this"   },
+	reserved{kind: TOKEN_USING,          word: "using"  },
+	reserved{kind: TOKEN_VAR,            word: "var"    },
 }
 
 type Location struct {
@@ -164,7 +164,7 @@ type Location struct {
 }
 
 type Token struct {
-	typ   TokenType
+	kind   TokenType
 	loc   Location
 	value any
 }
@@ -181,7 +181,7 @@ var scanner Scanner
 
 func makeToken(t TokenType, value ...any) {
 	var token Token
-	token.typ = t
+	token.kind = t
 	token.loc = Location{
 		f: GetRelativePath(scanner.filename),
 		c: scanner.column,
@@ -198,7 +198,7 @@ func makeToken(t TokenType, value ...any) {
 func makeReservedToken(word string) bool {
 	for _, reserved := range reservedWords {
 		if reserved.word == word {
-			makeToken(reserved.typ)
+			makeToken(reserved.kind)
 			return true
 		}
 	}
@@ -286,14 +286,14 @@ func makeChar(c byte, line string, index *int) {
 }
 
 func makeWord(c byte, line string, index *int) {
-	var typ TokenType
+	var kind TokenType
 	var word string
 
 	if c == '&' {
-		typ = TOKEN_AMPERSAND
+		kind = TOKEN_AMPERSAND
 		word = ""
 	} else {
-		typ = TOKEN_WORD
+		kind = TOKEN_WORD
 		word = string(c)
 	}
 
@@ -303,7 +303,7 @@ func makeWord(c byte, line string, index *int) {
 
 
 	if !makeReservedToken(word) {
-		makeToken(typ, word)
+		makeToken(kind, word)
 	}
 }
 

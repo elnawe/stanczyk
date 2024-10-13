@@ -7,18 +7,6 @@ import (
 	"strings"
 )
 
-type ObjectType int
-
-const (
-	OBJ_CONSTANT ObjectType = iota
-)
-
-type Object struct {
-	dtype ValueKind
-	value any
-	typ   ObjectType
-	word  string
-}
 
 type Parser struct {
 	// array of tokens passed into the next macro used. It can
@@ -70,7 +58,7 @@ func advance() {
 }
 
 func consume(tt TokenType, err string) {
-	if tt == parser.currentToken.typ {
+	if tt == parser.currentToken.kind {
 		advance()
 		return
 	}
@@ -79,7 +67,7 @@ func consume(tt TokenType, err string) {
 }
 
 func check(tt TokenType) bool {
-	return tt == parser.currentToken.typ
+	return tt == parser.currentToken.kind
 }
 
 func isParsingFunction() bool {
@@ -140,7 +128,7 @@ func openScope(s ScopeType, t Token) *Scope {
 	newScope := Scope{
 		ipStart: len(parser.currentFn.code),
 		tokenStart: t,
-		typ: s,
+		kind: s,
 	}
 	parser.currentFn.scope = append(parser.currentFn.scope, newScope)
 	lastScopeIndex := len(parser.currentFn.scope)-1
@@ -155,7 +143,7 @@ func getCurrentScope() *Scope {
 func getCountForScopeType(s ScopeType) int {
 	var count int
 	for _, ss := range parser.currentFn.scope {
-		if ss.typ == s {
+		if ss.kind == s {
 			count++
 		}
 	}
@@ -166,7 +154,7 @@ func closeScopeAfterCheck(s ScopeType) {
 	lastScopeIndex := len(parser.currentFn.scope)-1
 	lastOpenedScope := parser.currentFn.scope[lastScopeIndex]
 
-	if lastOpenedScope.typ == s {
+	if lastOpenedScope.kind == s {
 		parser.currentFn.scope = parser.currentFn.scope[:lastScopeIndex]
 	} else {
 		errorAt(&parser.previousToken, "TODO: Error closing scope")
@@ -254,7 +242,7 @@ func createConstant() {
 	valueT := parser.previousToken
 	newConst.token = valueT
 
-	switch valueT.typ {
+	switch valueT.kind {
 	case TOKEN_CONSTANT_BYTE:
 		newConst.kind = BYTE
 		newConst.value = valueT.value
@@ -322,7 +310,7 @@ func registerFunction(token Token) {
 		advance()
 		t := parser.previousToken
 
-		if t.typ == TOKEN_DASH_DASH_DASH {
+		if t.kind == TOKEN_DASH_DASH_DASH {
 			parsingArguments = false
 			continue
 		}
@@ -390,7 +378,7 @@ func newVariable(token Token, offset int) (Variable, int) {
 	advance()
 	vt := parser.previousToken
 
-	switch vt.typ {
+	switch vt.kind {
 	case TOKEN_BOOL:	newVar.dtype = BOOL
 	case TOKEN_BYTE:	newVar.dtype = BYTE
 	case TOKEN_INT:		newVar.dtype = INT
@@ -533,7 +521,7 @@ func parseToken(token Token) {
 	code.loc = token.loc
 	code.value = token.value
 
-	switch token.typ {
+	switch token.kind {
 	// CONSTANTS
 	case TOKEN_CONSTANT_BYTE:
 		emitConstantValue(BYTE, token.value)
@@ -629,7 +617,7 @@ func parseToken(token Token) {
 		parser.bodyStack = make([]Token, 0, 0)
 
 		for i, t := range body {
-			switch t.typ {
+			switch t.kind {
 			case TOKEN_BRACKET_CLOSE:
 				line = append(line, "]")
 			case TOKEN_BRACKET_OPEN:
@@ -781,14 +769,14 @@ func parseToken(token Token) {
 	case TOKEN_LOOP:
 		c := getCurrentScope()
 
-		if c.typ != SCOPE_LOOP {
+		if c.kind != SCOPE_LOOP {
 			// TODO: Improve error message, showing the starting and closing statements
 			errorAt(&c.tokenStart, "TODO: ERROR MESSAGE")
 			errorAt(&token, "TODO: ERROR MESSAGE")
 			ExitWithError(CodeParseError)
 		}
 
-		switch c.tokenStart.typ {
+		switch c.tokenStart.kind {
 		case TOKEN_UNTIL:
 			_, indexN := getLimitIndexBindWord()
 			bc, _ := getBind(Token{loc: token.loc, value: indexN})
@@ -813,7 +801,7 @@ func parseToken(token Token) {
 	case TOKEN_FI:
 		c := getCurrentScope()
 
-		switch c.typ {
+		switch c.kind {
 		case SCOPE_IF:
 			code.op = OP_IF_ELSE
 			code.value = c.ipStart
@@ -836,13 +824,13 @@ func parseToken(token Token) {
 	case TOKEN_ELSE:
 		c := getCurrentScope()
 
-		if c.typ != SCOPE_IF {
+		if c.kind != SCOPE_IF {
 			errorAt(&c.tokenStart, "TODO: ERROR MESSAGE")
 			errorAt(&token, "TODO: ERROR MESSAGE")
 			ExitWithError(CodeParseError)
 		}
 
-		c.typ = SCOPE_ELSE
+		c.kind = SCOPE_ELSE
 		code.op = OP_IF_ELSE
 		code.value = c.ipStart
 		emit(code)
@@ -852,17 +840,17 @@ func parseToken(token Token) {
 func parseArityInAssembly(token Token, args *Arity) {
 	var newArg Argument
 
-	switch token.typ {
+	switch token.kind {
 	case TOKEN_BOOL:
-		newArg.typ = BOOL
+		newArg.kind = BOOL
 	case TOKEN_BYTE:
-		newArg.typ = BYTE
+		newArg.kind = BYTE
 	case TOKEN_INT:
-		newArg.typ = INT
+		newArg.kind = INT
 	case TOKEN_PTR:
-		newArg.typ = RAWPOINTER
+		newArg.kind = RAWPOINTER
 	case TOKEN_STR:
-		newArg.typ = STRING
+		newArg.kind = STRING
 	default:
 		msg := fmt.Sprintf(MsgParseTypeUnknown, token.value.(string))
 		errorAt(&token, msg)
@@ -875,31 +863,31 @@ func parseArityInAssembly(token Token, args *Arity) {
 func parseArityInFunction(token Token, function *Function, parsingArguments bool) {
 	var newArg Argument
 
-	switch token.typ {
+	switch token.kind {
 	case TOKEN_ANY:
 		if !parser.internal {
 			errorAt(&token, MsgParseArityArgumentAnyOnlyInternal)
 			ExitWithError(CodeParseError)
 		}
 
-		newArg.typ = ANY
+		newArg.kind = ANY
 	case TOKEN_BOOL:
-		newArg.typ = BOOL
+		newArg.kind = BOOL
 	case TOKEN_BYTE:
-		newArg.typ = BYTE
+		newArg.kind = BYTE
 	case TOKEN_INT:
-		newArg.typ = INT
+		newArg.kind = INT
 	case TOKEN_PTR:
-		newArg.typ = RAWPOINTER
+		newArg.kind = RAWPOINTER
 	case TOKEN_STR:
-		newArg.typ = STRING
+		newArg.kind = STRING
 	case TOKEN_PARAPOLY:
 		if !parsingArguments {
 			errorAt(&token, MsgParseArityReturnParapolyNotAllowed)
 			ExitWithError(CodeParseError)
 		}
 
-		newArg.typ = VARIADIC
+		newArg.kind = VARIADIC
 		newArg.name = token.value.(string)
 		function.arguments.parapoly = true
 	case TOKEN_WORD:
@@ -912,10 +900,10 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 		}
 
 		funcArgs := function.arguments
-		argTest := Argument{name: w, typ: VARIADIC}
+		argTest := Argument{name: w, kind: VARIADIC}
 
 		if funcArgs.parapoly && Contains(funcArgs.types, argTest) {
-			newArg.typ = VARIADIC
+			newArg.kind = VARIADIC
 			newArg.name = w
 			function.returns.parapoly = true
 		} else {
@@ -951,7 +939,7 @@ func parseFunction(token Token) {
 		advance()
 		t := parser.previousToken
 
-		if t.typ == TOKEN_DASH_DASH_DASH {
+		if t.kind == TOKEN_DASH_DASH_DASH {
 			parsingArguments = false
 			continue
 		}
@@ -1003,10 +991,10 @@ func compilationFirstPass(index int) {
 		advance()
 		token := parser.previousToken
 
-		if token.typ == TOKEN_USING {
+		if token.kind == TOKEN_USING {
 			advance()
 
-			if parser.previousToken.typ != TOKEN_WORD {
+			if parser.previousToken.kind != TOKEN_WORD {
 				errorAt(&parser.previousToken, "TODO: ERROR USING")
 				ExitWithError(CodeParseError)
 			}
@@ -1029,7 +1017,7 @@ func compilationSecondPass(index int) {
 		advance()
 		token := parser.previousToken
 
-		switch token.typ {
+		switch token.kind {
 		// The second pass will care about the following tokens:
 		case TOKEN_CONST:
 			createConstant()
@@ -1068,7 +1056,7 @@ func compilationThirdPass(index int) {
 		advance()
 		token := parser.previousToken
 
-		if token.typ == TOKEN_FN {
+		if token.kind == TOKEN_FN {
 			parseFunction(token)
 		}
 	}

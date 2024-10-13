@@ -78,7 +78,7 @@ func (this *Simulation) setup(fn *Function) {
 	}
 
 	for _, p := range arguments {
-		this.push(p.typ)
+		this.push(p.kind)
 	}
 }
 
@@ -389,7 +389,7 @@ func ValidateRun() {
 						stackReducedToArgsLen := reversed[:len(f.arguments.types)]
 
 						for _, t := range f.arguments.types {
-							match = append(match, t.typ)
+							match = append(match, t.kind)
 						}
 
 						if reflect.DeepEqual(match, stackReducedToArgsLen) {
@@ -418,7 +418,7 @@ func ValidateRun() {
 					reducedStack := slices.Clone(sim.stack[sizeToArgs:])
 
 					for i, d := range funcRef.arguments.types {
-						if d.typ == VARIADIC {
+						if d.kind == VARIADIC {
 							if inferredTypes[d.name] == NONE {
 								inferredTypes[d.name] = reducedStack[i]
 							}
@@ -429,16 +429,16 @@ func ValidateRun() {
 				for _, d := range funcRef.arguments.types {
 					t := sim.pop()
 					have = append([]ValueKind{t}, have...)
-					want = append(want, d.typ)
+					want = append(want, d.kind)
 				}
 
 				assertArgumentType(have, want, code, loc)
 
 				for _, d := range funcRef.returns.types {
-					if d.typ == VARIADIC {
+					if d.kind == VARIADIC {
 						sim.push(inferredTypes[d.name])
 					} else {
-						sim.push(d.typ)
+						sim.push(d.kind)
 					}
 				}
 

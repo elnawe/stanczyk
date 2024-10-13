@@ -85,8 +85,8 @@ type Program struct {
 }
 
 type Argument struct {
-	name  string
-	typ   ValueKind
+	kind ValueKind
+	name string
 }
 
 type Arity struct {
@@ -125,7 +125,7 @@ type Scope struct {
 	ipStart    int
 	ipThen     int
 	tokenStart Token
-	typ        ScopeType
+	kind       ScopeType
 }
 
 type Variable struct {
