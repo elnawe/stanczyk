@@ -20,25 +20,22 @@ type Object struct {
 	word  string
 }
 
-type Frontend struct {
+type Parser struct {
 	// array of tokens passed into the next macro used. It can
 	// only be populated once, so if the user tries to generate a new
 	// body before flushing this stack, it should get an error.
-	bodyStack  []Token
-	current	   *Function
-	error      bool
-}
+	bodyStack     []Token
+	currentFn     *Function
+	error         bool
 
-type Parser struct {
-	previous Token
-	current  Token
-	tokens   []Token
-	internal bool
-	index    int
+	previousToken Token
+	currentToken  Token
+	index         int
+	internal      bool
+	tokens        []Token
 }
 
 var file FileManager
-var frontend Frontend
 var parser Parser
 
 /*   ___ ___ ___  ___  ___  ___
@@ -47,7 +44,7 @@ var parser Parser
  *  |___|_|_\_|_\\___/|_|_\|___/
  */
 func errorAt(token *Token, format string, values ...any) {
-	frontend.error = true
+	parser.error = true
 
 	msg := fmt.Sprintf(format, values...)
 	ReportErrorAtLocation(msg, token.loc)
@@ -61,33 +58,31 @@ func errorAt(token *Token, format string, values ...any) {
 func startParser(f File) {
 	parser.index = 0
 	parser.tokens = TokenizeFile(f.filename, f.source)
-	parser.current = parser.tokens[parser.index]
+	parser.currentToken = parser.tokens[parser.index]
 	parser.internal = f.internal
 }
 
 func advance() {
 	parser.index++
-	parser.previous = parser.current
-	parser.current = parser.tokens[parser.index]
-}
-
-func jumpTo(index int) {
-	parser.index = index
-	parser.current = parser.tokens[index]
-	advance()
+	parser.previousToken = parser.currentToken
+	parser.currentToken = parser.tokens[parser.index]
 }
 
 func consume(tt TokenType, err string) {
-	if tt == parser.current.typ {
+	if tt == parser.currentToken.typ {
 		advance()
 		return
 	}
 
-	errorAt(&parser.current, err)
+	errorAt(&parser.currentToken, err)
 }
 
 func check(tt TokenType) bool {
-	return tt == parser.current.typ
+	return tt == parser.currentToken.typ
+}
+
+func isParsingFunction() bool {
+	return parser.currentFn != nil
 }
 
 func match(tt TokenType) bool {
@@ -107,7 +102,7 @@ func match(tt TokenType) bool {
 // space is moved backwards and now, the top of top of the static memory is taken
 // by these values, and the previous existing values are offset by `count` QWORD.
 func bind(nw []string) int {
-	bindings := &frontend.current.bindings
+	bindings := &parser.currentFn.bindings
 	count := len(nw)
 	bindings.count = append([]int{count}, bindings.count...)
 	bindings.words = append(nw, bindings.words...)
@@ -115,8 +110,8 @@ func bind(nw []string) int {
 }
 
 func unbind() int {
-	bindings := &frontend.current.bindings
-	unbindAmount := frontend.current.bindings.count[0]
+	bindings := &parser.currentFn.bindings
+	unbindAmount := bindings.count[0]
 	bindings.count = bindings.count[1:]
 	bindings.words = bindings.words[unbindAmount:]
 	return unbindAmount
@@ -124,23 +119,23 @@ func unbind() int {
 
 func openScope(s ScopeType, t Token) *Scope {
 	newScope := Scope{
-		ipStart: len(frontend.current.code),
+		ipStart: len(parser.currentFn.code),
 		tokenStart: t,
 		typ: s,
 	}
-	frontend.current.scope = append(frontend.current.scope, newScope)
-	lastScopeIndex := len(frontend.current.scope)-1
-	return &frontend.current.scope[lastScopeIndex]
+	parser.currentFn.scope = append(parser.currentFn.scope, newScope)
+	lastScopeIndex := len(parser.currentFn.scope)-1
+	return &parser.currentFn.scope[lastScopeIndex]
 }
 
 func getCurrentScope() *Scope {
-	lastScopeIndex := len(frontend.current.scope)-1
-	return &frontend.current.scope[lastScopeIndex]
+	lastScopeIndex := len(parser.currentFn.scope)-1
+	return &parser.currentFn.scope[lastScopeIndex]
 }
 
 func getCountForScopeType(s ScopeType) int {
 	var count int
-	for _, ss := range frontend.current.scope {
+	for _, ss := range parser.currentFn.scope {
 		if ss.typ == s {
 			count++
 		}
@@ -149,13 +144,13 @@ func getCountForScopeType(s ScopeType) int {
 }
 
 func closeScopeAfterCheck(s ScopeType) {
-	lastScopeIndex := len(frontend.current.scope)-1
-	lastOpenedScope := frontend.current.scope[lastScopeIndex]
+	lastScopeIndex := len(parser.currentFn.scope)-1
+	lastOpenedScope := parser.currentFn.scope[lastScopeIndex]
 
 	if lastOpenedScope.typ == s {
-		frontend.current.scope = frontend.current.scope[:lastScopeIndex]
+		parser.currentFn.scope = parser.currentFn.scope[:lastScopeIndex]
 	} else {
-		errorAt(&parser.previous, "TODO: Error closing scope")
+		errorAt(&parser.previousToken, "TODO: Error closing scope")
 	}
 }
 
@@ -169,13 +164,13 @@ func getLimitIndexBindWord() (string, string) {
 }
 
 func emit(code Code) {
-	frontend.current.WriteCode(code)
+	parser.currentFn.WriteCode(code)
 }
 
 func emitReturn() {
 	emit(Code{
 		op: OP_RET,
-		loc: parser.previous.loc,
+		loc: parser.previousToken.loc,
 		value: 0,
 	})
 }
@@ -190,11 +185,11 @@ func newConstant(token Token) Constant {
 	var tokens []Token
 
 	if !match(TOKEN_WORD) {
-		errorAt(&parser.previous, MsgParseConstMissingWord)
+		errorAt(&parser.previousToken, MsgParseConstMissingWord)
 		ExitWithError(CodeParseError)
 	}
 
-	wordToken := parser.previous
+	wordToken := parser.previousToken
 	constant.word = wordToken.value.(string)
 
 	// TODO: Support rebiding constants in same scope if build configuration allows for it.
@@ -214,7 +209,7 @@ func newConstant(token Token) Constant {
 	if match(TOKEN_PAREN_OPEN) {
 		for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
 			advance()
-			tokens = append(tokens, parser.previous)
+			tokens = append(tokens, parser.previousToken)
 		}
 
 		if len(tokens) > 3 || len(tokens) == 2 {
@@ -236,7 +231,7 @@ func newConstant(token Token) Constant {
 		consume(TOKEN_PAREN_CLOSE, MsgParseConstMissingCloseStmt)
 	} else {
 		advance()
-		constant.value = parser.previous.value.(int)
+		constant.value = parser.previousToken.value.(int)
 	}
 
 	return constant
@@ -255,7 +250,7 @@ func registerFunction(token Token) {
 		ExitWithError(CodeParseError)
 	}
 
-	tokenWord := parser.previous
+	tokenWord := parser.previousToken
 	function.name = tokenWord.value.(string)
 
 	if function.name == "main" {
@@ -275,7 +270,7 @@ func registerFunction(token Token) {
 
 	for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
 		advance()
-		t := parser.previous
+		t := parser.previousToken
 
 		if t.typ == TOKEN_DASH_DASH_DASH {
 			parsingArguments = false
@@ -335,7 +330,7 @@ func newVariable(token Token, offset int) (Variable, int) {
 		ExitWithError(CodeParseError)
 	}
 
-	newVar.word = parser.previous.value.(string)
+	newVar.word = parser.previousToken.value.(string)
 	newVar.offset = offset
 	// TODO: This should technically support bigger sizes for arrays
 	newOffset = offset + SIZE_64b
@@ -343,7 +338,7 @@ func newVariable(token Token, offset int) (Variable, int) {
 	// TODO: Check for duplicated name
 
 	advance()
-	vt := parser.previous
+	vt := parser.previousToken
 
 	switch vt.typ {
 	case TOKEN_BOOL:	newVar.dtype = BOOL
@@ -352,7 +347,7 @@ func newVariable(token Token, offset int) (Variable, int) {
 	case TOKEN_PTR:		newVar.dtype = RAWPOINTER
 	case TOKEN_STR:		newVar.dtype = STRING
 	default:
-		errorAt(&parser.previous, MsgParseVarMissingValue)
+		errorAt(&parser.previousToken, MsgParseVarMissingValue)
 		ExitWithError(CodeParseError)
 	}
 
@@ -366,20 +361,20 @@ func newVariable(token Token, offset int) (Variable, int) {
  */
 func takeFromFunctionCode(quant int) []Code {
 	var result []Code
-	codeLength := len(frontend.current.code)
+	codeLength := len(parser.currentFn.code)
 
 	for index := codeLength-quant; index < codeLength; index++ {
-		result = append(result, frontend.current.code[index])
+		result = append(result, parser.currentFn.code[index])
 	}
 
-	frontend.current.code = frontend.current.code[:codeLength-quant]
+	parser.currentFn.code = parser.currentFn.code[:codeLength-quant]
 	return result
 }
 
 func getBind(token Token) (Code, bool) {
 	word := token.value.(string)
 
-	for bindex, bind := range frontend.current.bindings.words {
+	for bindex, bind := range parser.currentFn.bindings.words {
 		if bind == word {
 			return Code{op: OP_PUSH_BIND, loc: token.loc, value: bindex}, true
 		}
@@ -391,8 +386,8 @@ func getBind(token Token) (Code, bool) {
 func getConstant(token Token) (Code, bool) {
 	word := token.value.(string)
 
-	if frontend.current != nil {
-		for _, c := range frontend.current.constants {
+	if isParsingFunction() {
+		for _, c := range parser.currentFn.constants {
 			if c.word == word {
 				return Code{
 					op: OP_PUSH_INT,
@@ -419,8 +414,8 @@ func getConstant(token Token) (Code, bool) {
 func getVariable(token Token) (Code, bool) {
 	word := token.value.(string)
 
-	if frontend.current != nil {
-		for _, v := range frontend.current.variables {
+	if isParsingFunction() {
+		for _, v := range parser.currentFn.variables {
 			if v.word == word {
 				return Code{
 					op: OP_PUSH_VAR_LOCAL,
@@ -559,18 +554,18 @@ func parseToken(token Token) {
 	// DEFINITION
 	case TOKEN_CONST:
 		newConst := newConstant(token)
-		frontend.current.constants = append(frontend.current.constants, newConst)
+		parser.currentFn.constants = append(parser.currentFn.constants, newConst)
 	case TOKEN_CURLY_BRACKET_OPEN:
 		var tokens []Token
 
-		if len(frontend.bodyStack) > 0 {
+		if len(parser.bodyStack) > 0 {
 			errorAt(&token, "TODO: Cannot parse another body")
 			ExitWithError(CodeParseError)
 		}
 
 		for !check(TOKEN_CURLY_BRACKET_CLOSE) && !check(TOKEN_EOF) {
 			advance()
-			tokens = append(tokens, parser.previous)
+			tokens = append(tokens, parser.previousToken)
 		}
 
 		if len(tokens) == 0 {
@@ -579,11 +574,11 @@ func parseToken(token Token) {
 		}
 
 		consume(TOKEN_CURLY_BRACKET_CLOSE, "TODO: Missing curly bracket")
-		frontend.bodyStack = tokens
+		parser.bodyStack = tokens
 	case TOKEN_VAR:
-		newVar, newOffset := newVariable(token, frontend.current.localMemorySize)
-		frontend.current.variables = append(frontend.current.variables, newVar)
-		frontend.current.localMemorySize = newOffset
+		newVar, newOffset := newVariable(token, parser.currentFn.localMemorySize)
+		parser.currentFn.variables = append(parser.currentFn.variables, newVar)
+		parser.currentFn.localMemorySize = newOffset
 
 	// Intrinsics
 	case TOKEN_ARGC:
@@ -600,8 +595,8 @@ func parseToken(token Token) {
 		var pushCount int
 		var line []string
 		var value ASMValue
-		body := frontend.bodyStack
-		frontend.bodyStack = make([]Token, 0, 0)
+		body := parser.bodyStack
+		parser.bodyStack = make([]Token, 0, 0)
 
 		for i, t := range body {
 			switch t.typ {
@@ -667,7 +662,7 @@ func parseToken(token Token) {
 		var newWords []string
 
 		for match(TOKEN_WORD) {
-			word := parser.previous.value.(string)
+			word := parser.previousToken.value.(string)
 			newWords = append(newWords, word)
 		}
 
@@ -917,14 +912,14 @@ func parseFunction(token Token) {
 	var testFunc Function
 
 	advance()
-	testFunc.name = parser.previous.value.(string)
+	testFunc.name = parser.previousToken.value.(string)
 	advance()
 
 	parsingArguments := true
 
 	for !match(TOKEN_PAREN_CLOSE) {
 		advance()
-		t := parser.previous
+		t := parser.previousToken
 
 		if t.typ == TOKEN_DASH_DASH_DASH {
 			parsingArguments = false
@@ -937,29 +932,29 @@ func parseFunction(token Token) {
 	for index, f := range TheProgram.chunks {
 		if !f.parsed && f.name == testFunc.name &&
 			reflect.DeepEqual(f.arguments, testFunc.arguments) {
-			frontend.current = &TheProgram.chunks[index]
+			parser.currentFn = &TheProgram.chunks[index]
 			break
 		}
 	}
 
-	if frontend.current != nil {
+	if isParsingFunction() {
 		for !match(TOKEN_RET) {
 			advance()
-			parseToken(parser.previous)
+			parseToken(parser.previousToken)
 		}
 
 		emitReturn()
 
 		// Marking the function as "parsed", then clearing out the bindings, and
 		// removing the pointer to this function, so we can safely check for the next one.
-		frontend.current.parsed = true
-		frontend.current = nil
+		parser.currentFn.parsed = true
+		parser.currentFn = nil
 	} else {
 		// This would be a catastrophic issue. Since we already registered functions,
 		// there's no way we don't find a function with the same name that has not been
 		// parsed yet. Since we can't recover from this error, we must exit.
 		msg := fmt.Sprintf(MsgParseFunctionSignatureNotFound, testFunc.name)
-		errorAt(&parser.previous, msg)
+		errorAt(&parser.previousToken, msg)
 		ExitWithError(CodeParseError)
 	}
 }
@@ -976,17 +971,17 @@ func compilationFirstPass(index int) {
 
 	for !check(TOKEN_EOF) {
 		advance()
-		token := parser.previous
+		token := parser.previousToken
 
 		if token.typ == TOKEN_USING {
 			advance()
 
-			if parser.previous.typ != TOKEN_WORD {
-				errorAt(&parser.previous, "TODO: ERROR USING")
+			if parser.previousToken.typ != TOKEN_WORD {
+				errorAt(&parser.previousToken, "TODO: ERROR USING")
 				ExitWithError(CodeParseError)
 			}
 
-			file.Open(parser.previous.value.(string))
+			file.Open(parser.previousToken.value.(string))
 		}
 	}
 }
@@ -1002,7 +997,7 @@ func compilationSecondPass(index int) {
 
 	for !check(TOKEN_EOF) {
 		advance()
-		token := parser.previous
+		token := parser.previousToken
 
 		switch token.typ {
 		// The second pass will care about the following tokens:
@@ -1042,7 +1037,7 @@ func compilationThirdPass(index int) {
 
 	for !check(TOKEN_EOF) {
 		advance()
-		token := parser.previous
+		token := parser.previousToken
 
 		if token.typ == TOKEN_FN {
 			parseFunction(token)
@@ -1072,7 +1067,7 @@ func FrontendRun() {
 		compilationThirdPass(index)
 	}
 
-	if frontend.error {
+	if parser.error {
 		ExitWithError(CodeParseError)
 	}
 }

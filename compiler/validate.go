@@ -117,12 +117,12 @@ func getStackValues() string {
 func valueKindString(v ValueKind) string {
 	r := ""
 	switch v {
-	case NONE:       r = ""
+	case NONE:       r = "unknown"
 	case ANY:        r = "any"
 	case BOOL:       r = "bool"
 	case BYTE:       r = "byte"
 	case INT:        r = "int"
-	case RAWPOINTER: r = "ptr"
+	case RAWPOINTER: r = "rawptr"
 	case STRING:     r = "str"
 	case VARIADIC:   r = "$T"
 	}
