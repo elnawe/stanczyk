@@ -160,14 +160,6 @@ func generateLinuxX64() {
 				out.WriteCode("    pop rax")
 				out.WriteCode("    pop rbx")
 				out.WriteCode("    mov [rax], bl")
-
-				// out.WriteCode("    xor rbx, rbx")
-				// out.WriteCode("    xor rax, rax")
-				// out.WriteCode("    pop rcx")
-				// out.WriteCode("    pop rbx")
-                // out.WriteCode("    pop rax")
-				// out.WriteCode("    add rcx, rax")
-                // out.WriteCode("    mov [rcx], bl")
 			case OP_LOAD:
 				out.WriteCode("    pop rax")
                 out.WriteCode("    xor rbx, rbx")
