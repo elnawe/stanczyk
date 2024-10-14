@@ -60,6 +60,7 @@ type Program struct {
 	chunks           []Function
 	constants        []Constant
 	errors           []ProgramError
+	libcEnabled      bool
 	parser           Parser
 	simulation       Simulation
 	staticMemorySize int

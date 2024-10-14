@@ -7,15 +7,14 @@ import (
 )
 
 type OutputCode struct {
-	bss    []string
-	data   []string
-	rodata []string
-	text   []string
+	code     []string
+	data     []string
+	metadata []string
 }
 
-func (this *OutputCode) WriteBss(s string, values ...any) {
+func (this *OutputCode) WriteCode(s string, values ...any) {
 	newLine := fmt.Sprintf(s + "\n", values...)
-	this.bss = append(this.bss, newLine)
+	this.code = append(this.code, newLine)
 }
 
 func (this *OutputCode) WriteData(s string, values ...any) {
@@ -23,14 +22,9 @@ func (this *OutputCode) WriteData(s string, values ...any) {
 	this.data = append(this.data, newLine)
 }
 
-func (this *OutputCode) WriteRodata(s string, values ...any) {
+func (this *OutputCode) WriteMetadata(s string, values ...any) {
 	newLine := fmt.Sprintf(s + "\n", values...)
-	this.text = append(this.rodata, newLine)
-}
-
-func (this *OutputCode) WriteText(s string, values ...any) {
-	newLine := fmt.Sprintf(s + "\n", values...)
-	this.text = append(this.text, newLine)
+	this.metadata = append(this.metadata, newLine)
 }
 
 func OutputRun(asm OutputCode) {
@@ -41,7 +35,7 @@ func OutputRun(asm OutputCode) {
 
 	b := bufio.NewWriter(f)
 
-	for _, line := range asm.text {
+	for _, line := range asm.metadata {
 		f.WriteString(line)
 	}
 
@@ -53,15 +47,10 @@ func OutputRun(asm OutputCode) {
 
 	f.WriteString("\n")
 
-	for _, line := range asm.rodata {
+	for _, line := range asm.code {
 		f.WriteString(line)
 	}
 
-	f.WriteString("\n")
-
-	for _, line := range asm.bss {
-		f.WriteString(line)
-	}
 
 	b.Flush()
 }

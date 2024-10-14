@@ -7,20 +7,25 @@ import (
 )
 
 func BackendRun() {
-	compilerArgs := strings.Split("-m 524288 output.asm", " ")
-	chmodArgs := strings.Split("+x output", " ")
-	// linkerArgs := strings.Split("-o output output.o -m elf_x86_64", " ")
-
-	_, err := exec.Command("fasm", compilerArgs...).Output()
-	CheckError(err, "backend.go-1")
-	_, err = exec.Command("chmod", chmodArgs...).Output()
-	CheckError(err, "backend.go-2")
-	// _, err = exec.Command("ld", linkerArgs...).Output()
-	// CheckError(err, "backend.go-2")
+	if TheProgram.libcEnabled {
+		compilerArgs := strings.Split("-m 524288 output.asm output.o", " ")
+		linkerArgs := strings.Split("-L. -no-pie -z noexecstack output.o -o output", " ")
+		_, err := exec.Command("fasm", compilerArgs...).Output()
+		CheckError(err, "backend.go-1")
+		_, err = exec.Command("gcc", linkerArgs...).Output()
+		CheckError(err, "backend.go-2")
+	} else {
+		compilerArgs := strings.Split("-m 524288 output.asm", " ")
+		chmodArgs := strings.Split("+x output", " ")
+		_, err := exec.Command("fasm", compilerArgs...).Output()
+		CheckError(err, "backend.go-1")
+		_, err = exec.Command("chmod", chmodArgs...).Output()
+		CheckError(err, "backend.go-2")
+	}
 
 	if Stanczyk.options.clean {
-		_, err = exec.Command("rm", "output.o").Output()
-		_, err = exec.Command("rm", "output.asm").Output()
+		_, _ = exec.Command("rm", "output.o").Output()
+		_, _ = exec.Command("rm", "output.asm").Output()
 	}
 
 	if Stanczyk.options.run {
@@ -31,7 +36,7 @@ func BackendRun() {
 		fmt.Print(b.String())
 
 		if Stanczyk.options.clean {
-			_, err = exec.Command("rm", "output").Output()
+			_, _ = exec.Command("rm", "output").Output()
 		}
 	}
 }
