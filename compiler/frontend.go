@@ -21,23 +21,24 @@ const (
 
 type Function struct {
 	ip              int
-	word            string
 	loc             Location
 	token           Token
+	word            string
 
 	arguments       Arity
-	results         Arity
 	bindings        Binding
 	code            []Code
-	scope           []Scope
 	constants       []Constant
+	localMemorySize int
+	results         Arity
+	scope           []Scope
 	variables       []Variable
 
-	localMemorySize int
-	error           bool
-	parsed          bool
 	called          bool
+	error           bool
+	foreign         bool
 	internal        bool
+	parsed          bool
 }
 
 type Parser struct {
@@ -48,11 +49,12 @@ type Parser struct {
 	currentFn     *Function
 	error         bool
 	globalWords   []string
+	foreingSwitch bool
 
-	previousToken Token
 	currentToken  Token
 	index         int
 	internal      bool
+	previousToken Token
 	tokens        []Token
 }
 
@@ -134,13 +136,13 @@ func advance() {
 	parser.currentToken = parser.tokens[parser.index]
 }
 
-func consume(tt TokenType, err string) {
+func consume(tt TokenType, err string, values ...any) {
 	if tt == parser.currentToken.kind {
 		advance()
 		return
 	}
 
-	errorAt(&parser.currentToken, err)
+	errorAt(&parser.currentToken, err, values...)
 }
 
 func check(tt TokenType) bool {
@@ -368,6 +370,58 @@ func createConstant() {
 	}
 }
 
+func createForeigns() {
+	t := parser.previousToken
+
+	consume(TOKEN_CURLY_BRACKET_OPEN,
+		UnexpectedSymbol, parser.previousToken.kind, "{")
+
+	for !check(TOKEN_CURLY_BRACKET_CLOSE) && !check(TOKEN_EOF) {
+		advance()
+		t := parser.previousToken
+
+		switch t.kind {
+		case TOKEN_FN:
+			function := Function{
+				foreign: true,
+				internal: parser.internal,
+				ip: len(TheProgram.chunks),
+				parsed: true,
+				token: t,
+			}
+			advance()
+
+			tokenWord := parser.previousToken
+			function.word = tokenWord.value.(string)
+			consume(TOKEN_PAREN_OPEN, UnexpectedSymbol, t.kind, "(")
+			parsingArguments := true
+
+			for !check(TOKEN_PAREN_CLOSE) && !check(TOKEN_EOF) {
+				advance()
+				t := parser.previousToken
+
+				if t.kind == TOKEN_DASH_DASH_DASH {
+					parsingArguments = false
+					continue
+				}
+
+				parseArityInFunction(t, &function, parsingArguments)
+			}
+
+			consume(TOKEN_PAREN_CLOSE, UnexpectedSymbol, t.kind, ")")
+			consume(TOKEN_DOT_DOT_DOT, UnexpectedSymbol, t.kind, "...")
+			function.code = append(function.code, Code{op: OP_C_FUNCTION_CALL, loc: t.loc})
+			function.code = append(function.code, Code{op: OP_RET, loc: t.loc})
+			TheProgram.chunks = append(TheProgram.chunks, function)
+		case TOKEN_USING:
+			// TODO: Add this functionality
+		}
+	}
+
+	consume(TOKEN_CURLY_BRACKET_CLOSE, UnexpectedSymbol, t.kind, "}")
+	TheProgram.libcEnabled = true
+}
+
 func createVariable() {
 	var newVar Variable
 	var currentOffset int
@@ -451,8 +505,8 @@ func registerFunction(token Token) {
 
 	function.internal = parser.internal
 	function.ip = len(TheProgram.chunks)
-	function.token = token
 	function.parsed = false
+	function.token = token
 
 	if !match(TOKEN_WORD) {
 		errorAt(&token, MsgParseFunctionMissingName)
@@ -1114,6 +1168,8 @@ func compilationFirstPass(index int) {
 			createConstant()
 		case TOKEN_FN:
 			registerFunction(token)
+		case TOKEN_FOREIGN:
+			createForeigns()
 		case TOKEN_USING:
 			advance()
 
@@ -1148,7 +1204,10 @@ func compilationSecondPass(index int) {
 		advance()
 		token := parser.previousToken
 
-		if token.kind == TOKEN_FN {
+		switch token.kind {
+		case TOKEN_FOREIGN:
+			for !match(TOKEN_BRACKET_CLOSE) && !check(TOKEN_EOF) { advance() }
+		case TOKEN_FN:
 			parseFunction(token)
 		}
 	}

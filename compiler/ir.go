@@ -53,6 +53,7 @@ const (
 	OP_CAST					=  "OP_CAST"
 	OP_EQUAL				=  "OP_EQUAL"
 	OP_FUNCTION_CALL		=  "OP_FUNCTION_CALL"
+	OP_C_FUNCTION_CALL      =  "OP_C_FUNCTION_CALL"
 	OP_RET					=  "OP_RET"
 
 	OP_EOC					=  "OP_EOC"

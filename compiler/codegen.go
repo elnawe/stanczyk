@@ -56,6 +56,11 @@ func generateLinuxX64() {
 
 		out.WriteMetadata("format ELF64")
 		out.WriteMetadata("public main")
+		for _, f := range TheProgram.chunks {
+			if f.foreign {
+				out.WriteMetadata("extrn %s", f.word)
+			}
+		}
 		out.WriteCode("section '.text' executable")
 		out.WriteData("section '.data' writable")
 	} else {
@@ -291,6 +296,22 @@ func generateLinuxX64() {
 				out.WriteCode("    call fn%d", ip)
 				out.WriteCode("    mov [return_stack_rsp], rsp")
 				out.WriteCode("    mov rsp, rax")
+			case OP_C_FUNCTION_CALL:
+				argumentsCount := len(function.arguments.types)
+				hasResults := len(function.results.types) > 0
+				registers := []string{"rdi", "rsi", "rdx", "rcx", "r8", "r9"}
+
+				out.WriteCode("    xor rax, rax")
+
+				for i := 0; i < argumentsCount; i++ {
+					out.WriteCode("    pop %s", registers[i])
+				}
+
+				out.WriteCode("    call %s", function.word)
+
+				if hasResults {
+					out.WriteCode("    push rax")
+				}
 			case OP_REBIND:
 				index := value.(int)
 				out.WriteCode("    mov rax, [return_stack_rsp]")

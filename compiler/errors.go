@@ -39,6 +39,8 @@ const (
 		"stack underflow when trying to %s at line %d"
 	StackUnhandled =
 		"unhandled stack values at the end of function (got %d, expected %d)\n" + "\t%s"
+	UnexpectedSymbol =
+		"syntax error: unexpected symbol found '%d', expected '%s'"
 	VariableValueKindNotAllowed =
 		"syntax error: unknown value type in variable declaration"
 )

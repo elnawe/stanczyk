@@ -428,7 +428,22 @@ func ValidateRun() {
 						sim.push(d.kind)
 					}
 				}
+			case OP_C_FUNCTION_CALL:
+				hasResults := len(function.results.types) > 0
+				var have []ValueKind
+				var want []ValueKind
 
+				for _, arg := range function.arguments.types {
+					a := sim.pop()
+					have = append([]ValueKind{a}, have...)
+					want = append(want, arg.kind)
+				}
+
+				assertArgumentType(have, want, code, loc)
+
+				if hasResults {
+					sim.push(INT)
+				}
 			case OP_IF_START:
 				a := sim.pop()
 				assertArgumentType(dtArray(a), dtArray(BOOL), code, loc)

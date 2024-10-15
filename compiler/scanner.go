@@ -67,8 +67,10 @@ const (
 	TOKEN_ARGV
 	TOKEN_BANG_EQUAL
 	TOKEN_CONST
+	TOKEN_DOT_DOT_DOT
 	TOKEN_EQUAL
 	TOKEN_FN
+	TOKEN_FOREIGN
 	TOKEN_GREATER
 	TOKEN_GREATER_EQUAL
 	TOKEN_LEAVE
@@ -97,63 +99,65 @@ type reserved struct {
 
 var reservedWords = []reserved{
 	// CONSTANTS
-	reserved{kind: TOKEN_CONSTANT_FALSE, word: "false"  },
-	reserved{kind: TOKEN_CONSTANT_TRUE,  word: "true"   },
+	reserved{kind: TOKEN_CONSTANT_FALSE, word: "false"   },
+	reserved{kind: TOKEN_CONSTANT_TRUE,  word: "true"    },
 
 	// DATA TYPES
-	reserved{kind: TOKEN_ANY,            word: "any"    },
-	reserved{kind: TOKEN_BOOL,           word: "bool"   },
-	reserved{kind: TOKEN_STARBOOL,       word: "*bool"  },
-	reserved{kind: TOKEN_BYTE,           word: "byte"   },
-	reserved{kind: TOKEN_STARBYTE,       word: "*byte"  },
-	reserved{kind: TOKEN_INT,            word: "int"    },
-	reserved{kind: TOKEN_STARINT,        word: "*int"   },
-	reserved{kind: TOKEN_PTR,            word: "ptr"    },
-	reserved{kind: TOKEN_STR,            word: "str"    },
-	reserved{kind: TOKEN_STARSTR,        word: "*str"   },
+	reserved{kind: TOKEN_ANY,            word: "any"     },
+	reserved{kind: TOKEN_BOOL,           word: "bool"    },
+	reserved{kind: TOKEN_STARBOOL,       word: "*bool"   },
+	reserved{kind: TOKEN_BYTE,           word: "byte"    },
+	reserved{kind: TOKEN_STARBYTE,       word: "*byte"   },
+	reserved{kind: TOKEN_INT,            word: "int"     },
+	reserved{kind: TOKEN_STARINT,        word: "*int"    },
+	reserved{kind: TOKEN_PTR,            word: "ptr"     },
+	reserved{kind: TOKEN_STR,            word: "str"     },
+	reserved{kind: TOKEN_STARSTR,        word: "*str"    },
 
 	// MACROS
-	reserved{kind: TOKEN_ASM,            word: "ASM"    },
-	reserved{kind: TOKEN_AT_BODY,        word: "@body"  },
+	reserved{kind: TOKEN_ASM,            word: "ASM"     },
+	reserved{kind: TOKEN_AT_BODY,        word: "@body"   },
 
-	reserved{kind: TOKEN_DASH_DASH_DASH, word: "---"    },
-	reserved{kind: TOKEN_LET,            word: "let"    },
-	reserved{kind: TOKEN_IN,             word: "in"     },
-	reserved{kind: TOKEN_DONE,           word: "done"   },
+	reserved{kind: TOKEN_DASH_DASH_DASH, word: "---"     },
+	reserved{kind: TOKEN_LET,            word: "let"     },
+	reserved{kind: TOKEN_IN,             word: "in"      },
+	reserved{kind: TOKEN_DONE,           word: "done"    },
 
-	reserved{kind: TOKEN_BANG,           word: "!"      },
-	reserved{kind: TOKEN_AT,             word: "@"      },
-	reserved{kind: TOKEN_BANG_BYTE,      word: "!b"     },
-	reserved{kind: TOKEN_AT_BYTE,        word: "@b"     },
+	reserved{kind: TOKEN_BANG,           word: "!"       },
+	reserved{kind: TOKEN_AT,             word: "@"       },
+	reserved{kind: TOKEN_BANG_BYTE,      word: "!b"      },
+	reserved{kind: TOKEN_AT_BYTE,        word: "@b"      },
 
-	reserved{kind: TOKEN_ELSE,           word: "else"   },
-	reserved{kind: TOKEN_FI,             word: "fi"     },
-	reserved{kind: TOKEN_IF,             word: "if"     },
-	reserved{kind: TOKEN_LOOP,           word: "loop"   },
-	reserved{kind: TOKEN_UNTIL,          word: "until"  },
-	reserved{kind: TOKEN_WHILE,          word: "while"  },
+	reserved{kind: TOKEN_ELSE,           word: "else"    },
+	reserved{kind: TOKEN_FI,             word: "fi"      },
+	reserved{kind: TOKEN_IF,             word: "if"      },
+	reserved{kind: TOKEN_LOOP,           word: "loop"    },
+	reserved{kind: TOKEN_UNTIL,          word: "until"   },
+	reserved{kind: TOKEN_WHILE,          word: "while"   },
 
-	reserved{kind: TOKEN_ARGC,           word: "argc"   },
-	reserved{kind: TOKEN_ARGV,           word: "argv"   },
-	reserved{kind: TOKEN_BANG_EQUAL,     word: "!="     },
-	reserved{kind: TOKEN_CONST,          word: "const"  },
-	reserved{kind: TOKEN_EQUAL,          word: "="      },
-	reserved{kind: TOKEN_FN,             word: "fn"     },
-	reserved{kind: TOKEN_GREATER,        word: ">"      },
-	reserved{kind: TOKEN_GREATER_EQUAL,  word: ">="     },
-	reserved{kind: TOKEN_LEAVE,          word: "leave"  },
-	reserved{kind: TOKEN_LESS,           word: "<"      },
-	reserved{kind: TOKEN_LESS_EQUAL,     word: "<="     },
-	reserved{kind: TOKEN_MINUS,          word: "-"      },
-	reserved{kind: TOKEN_PERCENT,        word: "%"      },
-	reserved{kind: TOKEN_PLUS,           word: "+"      },
-	reserved{kind: TOKEN_RET,            word: "ret"    },
-	reserved{kind: TOKEN_RIGHT_ARROW,    word: "->"     },
-	reserved{kind: TOKEN_SLASH,          word: "/"      },
-	reserved{kind: TOKEN_STAR,           word: "*"      },
-	reserved{kind: TOKEN_THIS,           word: "this"   },
-	reserved{kind: TOKEN_USING,          word: "using"  },
-	reserved{kind: TOKEN_VAR,            word: "var"    },
+	reserved{kind: TOKEN_ARGC,           word: "argc"    },
+	reserved{kind: TOKEN_ARGV,           word: "argv"    },
+	reserved{kind: TOKEN_BANG_EQUAL,     word: "!="      },
+	reserved{kind: TOKEN_CONST,          word: "const"   },
+	reserved{kind: TOKEN_DOT_DOT_DOT,    word: "..."     },
+	reserved{kind: TOKEN_EQUAL,          word: "="       },
+	reserved{kind: TOKEN_FN,             word: "fn"      },
+	reserved{kind: TOKEN_FOREIGN,        word: "foreign" },
+	reserved{kind: TOKEN_GREATER,        word: ">"       },
+	reserved{kind: TOKEN_GREATER_EQUAL,  word: ">="      },
+	reserved{kind: TOKEN_LEAVE,          word: "leave"   },
+	reserved{kind: TOKEN_LESS,           word: "<"       },
+	reserved{kind: TOKEN_LESS_EQUAL,     word: "<="      },
+	reserved{kind: TOKEN_MINUS,          word: "-"       },
+	reserved{kind: TOKEN_PERCENT,        word: "%"       },
+	reserved{kind: TOKEN_PLUS,           word: "+"       },
+	reserved{kind: TOKEN_RET,            word: "ret"     },
+	reserved{kind: TOKEN_RIGHT_ARROW,    word: "->"      },
+	reserved{kind: TOKEN_SLASH,          word: "/"       },
+	reserved{kind: TOKEN_STAR,           word: "*"       },
+	reserved{kind: TOKEN_THIS,           word: "this"    },
+	reserved{kind: TOKEN_USING,          word: "using"   },
+	reserved{kind: TOKEN_VAR,            word: "var"     },
 }
 
 type Location struct {
