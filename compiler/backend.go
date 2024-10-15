@@ -29,11 +29,9 @@ func BackendRun() {
 	}
 
 	if Stanczyk.options.run {
-		b := new(strings.Builder)
-		cmd := exec.Command("./output")
-		cmd.Stdout = b
-		cmd.Run()
-		fmt.Print(b.String())
+		stdout, err := exec.Command("./output").Output()
+		CheckError(err, "backend.go-3")
+		fmt.Print(string(stdout))
 
 		if Stanczyk.options.clean {
 			_, _ = exec.Command("rm", "output").Output()
