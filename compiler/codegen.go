@@ -58,7 +58,7 @@ func generateLinuxX64() {
 		out.WriteMetadata("public main")
 		for _, f := range TheProgram.chunks {
 			if f.foreign {
-				out.WriteMetadata("extrn %s", f.word)
+				out.WriteMetadata("extrn %s", f.name)
 			}
 		}
 		out.WriteCode("section '.text' executable")
@@ -307,7 +307,7 @@ func generateLinuxX64() {
 					out.WriteCode("    pop %s", registers[i])
 				}
 
-				out.WriteCode("    call %s", function.word)
+				out.WriteCode("    call %s", function.name)
 
 				if hasResults {
 					out.WriteCode("    push rax")
@@ -367,9 +367,14 @@ func generateLinuxX64() {
 	out.WriteCode("    mov rax, return_stack_rsp_end")
 	out.WriteCode("    mov [return_stack_rsp], rax")
 	out.WriteCode("    call fn%d", mainFuncIP)
-	out.WriteCode("    mov rax, 60")
-	out.WriteCode("    mov rdi, 0")
-	out.WriteCode("    syscall")
+	if TheProgram.libcEnabled {
+		out.WriteCode("    mov rdi, 0")
+		out.WriteCode("    call exit")
+	} else {
+		out.WriteCode("    mov rax, 60")
+		out.WriteCode("    mov rdi, 0")
+		out.WriteCode("    syscall")
+	}
 }
 
 func CodegenRun(out *OutputCode) {

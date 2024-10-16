@@ -22,6 +22,8 @@ const (
 type Function struct {
 	ip              int
 	loc             Location
+	name            string
+	namespace       string
 	token           Token
 	word            string
 
@@ -373,6 +375,14 @@ func createConstant() {
 func createForeigns() {
 	t := parser.previousToken
 
+	if !match(TOKEN_WORD) {
+		t := parser.previousToken
+		ReportErrorAtLocation(DeclarationWordMissing, t.loc)
+		ExitWithError(ParseError)
+	}
+
+	namespace := parser.previousToken.value.(string)
+
 	consume(TOKEN_CURLY_BRACKET_OPEN,
 		UnexpectedSymbol, parser.previousToken.kind, "{")
 
@@ -392,7 +402,9 @@ func createForeigns() {
 			advance()
 
 			tokenWord := parser.previousToken
-			function.word = tokenWord.value.(string)
+			function.namespace = namespace
+			function.name = tokenWord.value.(string)
+			function.word = function.namespace + "." + function.name
 			consume(TOKEN_PAREN_OPEN, UnexpectedSymbol, t.kind, "(")
 			parsingArguments := true
 
