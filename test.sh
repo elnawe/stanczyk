@@ -53,10 +53,12 @@ for FILE in tests/*.sk; do
         TEST_NAME="${TEST_SRC##*/}"
 
         if [ "$1" == "save" ]; then
-            ${SKC_EXEC} run ${TEST_SRC}.sk > ${TEST_SRC}.txt
+            ${SKC_EXEC} build ${TEST_SRC}.sk -clean -silent
+            ./output > ${TEST_SRC}.txt
         fi
 
-        ${SKC_EXEC} run ${TEST_SRC}.sk > result.txt
+        ${SKC_EXEC} build ${TEST_SRC}.sk -clean -silent
+        ./output > result.txt
 
         RESULT=$(diff ${TEST_SRC}.txt result.txt)
         echo -en $RED'┃'
@@ -75,6 +77,7 @@ for FILE in tests/*.sk; do
 
         echo -e $RED'  ┃'
         rm result.txt
+        rm output
     fi
 done
 
