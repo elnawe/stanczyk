@@ -51,12 +51,11 @@ const (
 	TOKEN_AMPERSAND
 
 	// Single characters
-	TOKEN_BRACKET_CLOSE
-	TOKEN_BRACKET_OPEN
 	TOKEN_PAREN_CLOSE
 	TOKEN_PAREN_OPEN
 
 	// NEW
+	TOKEN_OFFSET
 	TOKEN_DASH_DASH_DASH
 	TOKEN_LET
 	TOKEN_IN
@@ -320,6 +319,16 @@ func makeParapolyToken(c byte, line string, index *int) {
 	makeToken(TOKEN_PARAPOLY, word)
 }
 
+func makeOffsetToken(c byte, line string, index *int) {
+	value := ""
+
+	for Advance(&c, line, index) && c != ']' {
+		value += string(c)
+	}
+
+	makeToken(TOKEN_OFFSET, value)
+}
+
 func TokenizeFile(f string, s string) []Token {
 	scanner.filename = f
 	scanner.source = s
@@ -343,21 +352,15 @@ func TokenizeFile(f string, s string) []Token {
 			switch {
 			case c == '{': makeToken(TOKEN_CURLY_BRACKET_OPEN)
 			case c == '}': makeToken(TOKEN_CURLY_BRACKET_CLOSE)
-			case c == '[': makeToken(TOKEN_BRACKET_OPEN)
-			case c == ']': makeToken(TOKEN_BRACKET_CLOSE)
+			case c == '[': makeOffsetToken(c, line, &index)
 			case c == '(': makeToken(TOKEN_PAREN_OPEN)
 			case c == ')': makeToken(TOKEN_PAREN_CLOSE)
 			case c == '&': makeWord(c, line, &index)
-			case c == '$':
-				makeParapolyToken(c, line, &index)
-			case c == '"':
-				makeString(c, line, &index)
-			case c == '\'':
-				makeChar(c, line, &index)
-			case IsDigit(c):
-				makeNumber(c, line, &index)
-			default:
-				makeWord(c, line, &index)
+			case c == '$': makeParapolyToken(c, line, &index)
+			case c == '"': makeString(c, line, &index)
+			case c == '\'': makeChar(c, line, &index)
+			case IsDigit(c): makeNumber(c, line, &index)
+			default: makeWord(c, line, &index)
 			}
 		}
 

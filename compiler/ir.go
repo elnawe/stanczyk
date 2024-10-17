@@ -112,6 +112,7 @@ type Variable struct {
 	kind   ValueKind
 	offset int
 	scope  ScopeName
+	size   int
 	word   string
 }
 

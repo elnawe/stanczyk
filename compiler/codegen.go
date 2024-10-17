@@ -180,8 +180,8 @@ func generateLinuxX64() {
 
 			// NUMBER ARITHMETICS
 			case OP_ADD:
-				out.WriteCode("    pop rax")
 				out.WriteCode("    pop rbx")
+				out.WriteCode("    pop rax")
 				out.WriteCode("    add rax, rbx")
 				out.WriteCode("    push rax")
 			case OP_DIVIDE:

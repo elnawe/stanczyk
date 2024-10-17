@@ -324,7 +324,9 @@ func createConstant() {
 
 	if isWordInUse(wordT) {
 		if isParsingFunction() {
-			TheProgram.saveErrorAtToken(wordT, DeclarationWordAlreadyUsed, newConst.word)
+			TheProgram.saveErrorAtToken(
+				wordT, DeclarationWordAlreadyUsed, newConst.word,
+			)
 		} else {
 			ReportErrorAtLocation(
 				DeclarationWordAlreadyUsed,
@@ -435,10 +437,14 @@ func createForeigns() {
 }
 
 func createVariable() {
-	var newVar Variable
+	const SIZE_64b = 8
+	const SIZE_8b = 1
 	var currentOffset int
 	var newOffset int
-	const SIZE_64b = 8
+	var newVar Variable
+	// newOffset is 1 because we multiply it by the size of the type. But it may
+	// be greater than one if the user is creating an array.
+	offsetMultiplier := 1
 
 	if isParsingFunction() {
 		currentOffset = parser.currentFn.localMemorySize
@@ -461,14 +467,12 @@ func createVariable() {
 	wordT := parser.previousToken
 	newVar.word = wordT.value.(string)
 	newVar.offset = currentOffset
-	// TODO: This should be calculated, not hardcoded. It should take the size
-	// of the type (next token) and align it to 8 bytes
-	// formula: size + 7 / 8 * 8
-	newOffset = currentOffset + SIZE_64b
 
 	if isWordInUse(wordT) {
 		if isParsingFunction() {
-			TheProgram.saveErrorAtToken(wordT, DeclarationWordAlreadyUsed, newVar.word)
+			TheProgram.saveErrorAtToken(
+				wordT, DeclarationWordAlreadyUsed, newVar.word,
+			)
 		} else {
 			ReportErrorAtLocation(
 				DeclarationWordAlreadyUsed,
@@ -479,20 +483,29 @@ func createVariable() {
 		}
 	}
 
+	if match(TOKEN_OFFSET) {
+		offsetMultiplier = getOffsetValue()
+	}
+
 	advance()
 	valueT := parser.previousToken
 
 	switch valueT.kind {
 	case TOKEN_BOOL:
 		newVar.kind = BOOL
+		newVar.size = SIZE_8b
 	case TOKEN_BYTE:
 		newVar.kind = BYTE
+		newVar.size = SIZE_8b
 	case TOKEN_INT:
 		newVar.kind = INT
+		newVar.size = SIZE_64b
 	case TOKEN_PTR:
 		newVar.kind = RAWPOINTER
+		newVar.size = SIZE_64b
 	case TOKEN_STR:
 		newVar.kind = STRING
+		newVar.size = SIZE_64b
 	default:
 		if isParsingFunction() {
 			TheProgram.saveErrorAtToken(valueT, VariableValueKindNotAllowed)
@@ -502,13 +515,16 @@ func createVariable() {
 		}
 	}
 
+	// Formula to calculate total space for the array, aligning it to 8 bytes.
+	newOffset = int((newVar.size * offsetMultiplier + 7) / 8) * 8
+
 	if isParsingFunction() {
 		parser.currentFn.variables = append(parser.currentFn.variables, newVar)
-		parser.currentFn.localMemorySize = newOffset
+		parser.currentFn.localMemorySize += newOffset
 	} else {
 		parser.globalWords = append(parser.globalWords, newVar.word)
 		TheProgram.variables = append(TheProgram.variables, newVar)
-		TheProgram.staticMemorySize = newOffset
+		TheProgram.staticMemorySize += newOffset
 	}
 }
 
@@ -639,6 +655,20 @@ func getConstant(word string) (*Constant, bool) {
 	return nil, false
 }
 
+func getOffsetValue() int {
+	var offsetValue int
+	var err error
+	t := parser.previousToken
+
+	offsetValue, err = strconv.Atoi(t.value.(string))
+
+	if err != nil {
+		// TODO: Check for value in variables
+	}
+
+	return offsetValue
+}
+
 func getVariable(word string) (*Variable, bool) {
 	if isParsingFunction() {
 		for _, v := range parser.currentFn.variables {
@@ -735,6 +765,12 @@ func parseToken() {
 			}
 			code.value = v.offset
 			emit(code)
+
+			if match(TOKEN_OFFSET) {
+				offset := getOffsetValue()
+				emit(Code{op: OP_PUSH_INT, value: offset * v.size})
+				emit(Code{op: OP_ADD})
+			}
 		}
 
 	// TYPE CASTING
@@ -801,10 +837,6 @@ func parseToken() {
 
 		for i, t := range body {
 			switch t.kind {
-			case TOKEN_BRACKET_CLOSE:
-				line = append(line, "]")
-			case TOKEN_BRACKET_OPEN:
-				line = append(line, "[")
 			case TOKEN_CONSTANT_INT:
 				line = append(line, strconv.Itoa(t.value.(int)))
 			case TOKEN_WORD:
@@ -912,7 +944,6 @@ func parseToken() {
 	case TOKEN_BANG_BYTE:
 		code.op = OP_STORE_BYTE
 		emit(code)
-
 	// Special
 	case TOKEN_WORD: expandWord(token)
 
@@ -1096,7 +1127,7 @@ func parseArityInFunction(token Token, function *Function, parsingArguments bool
 			ExitWithError(CodeParseError)
 		}
 	default:
-		msg := fmt.Sprintf(MsgParseTypeUnknown, token.value.(string))
+		msg := fmt.Sprintf(MsgParseTypeUnknown, token.value)
 		errorAt(&token, msg)
 		ExitWithError(CodeParseError)
 	}
@@ -1176,8 +1207,7 @@ func compilationFirstPass(index int) {
 
 		switch token.kind {
 		// The second pass will care about the following tokens:
-		case TOKEN_CONST:
-			createConstant()
+		case TOKEN_CONST: createConstant()
 		case TOKEN_FN:
 			registerFunction(token)
 		case TOKEN_FOREIGN:
@@ -1218,7 +1248,9 @@ func compilationSecondPass(index int) {
 
 		switch token.kind {
 		case TOKEN_FOREIGN:
-			for !match(TOKEN_BRACKET_CLOSE) && !check(TOKEN_EOF) { advance() }
+			for !match(TOKEN_CURLY_BRACKET_CLOSE) {
+				advance()
+			}
 		case TOKEN_FN:
 			parseFunction(token)
 		}
